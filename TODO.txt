@@ -1,0 +1,11 @@
+TODO
+====
+
+* implement parameter and argument handling
+* implement namespaces and their handling
+* implement pointers properly in the parser
+* any other keywords? e.g., continue? 
+* implement semantic checker (a thorough one!)
+* implement code generator
+* implement constant and variable declarations
+* do we want member functions: x.y(); ?
