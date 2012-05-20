@@ -5,6 +5,11 @@
 #include "m1lexer.h"
 #include "m1_ast.h"
 #include "m1_eval.h"
+#include "m1_gencode.h"
+#include "m1_instr.h"
+#include "m1_symtab.h"
+
+extern m0_instr *instr(char op, char arg1, char arg2, char arg3);
 
 int 
 yywrap(void) {
@@ -38,9 +43,11 @@ main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
     yyin = fp;
+    init_symtabs();
     yyparse();
     
-    eval(ast);
+    //eval(ast);
+    gencode(ast);
     
     fclose(fp);
     return 0;
@@ -60,12 +67,18 @@ main(int argc, char *argv[]) {
     struct m1_object        *obj;
     struct m1_struct        *strct;
     struct m1_structfield   *sfld;
+    struct m1_var           *var;
+    struct m0_instr         *instr;
 }
+
+
+
 
 %token  TK_IDENT
         TK_NUMBER
         KW_NUM          "num"
         KW_INT          "int"
+        KW_STRING       "string"
         TK_INT          
         KW_STRUCT       "struct"
         TK_INC          "++"
@@ -93,8 +106,16 @@ main(int argc, char *argv[]) {
         TK_NS_SEP       "::"
         TK_LSH          "<<"
         TK_RSH          ">>"
+        TK_STRING_CONST
+        TK_INC_ASSIGN   "+="
+        TK_DEC_ASSIGN   "-="
+        KW_CASE         "case"
+        KW_DEFAULT      "default"
+        KW_SWITCH       "switch"
+        KW_PRINT        "print"
         
 %type <sval> TK_IDENT
+             TK_STRING_CONST
 
 %type <chunk> function_definition 
               chunks 
@@ -106,6 +127,8 @@ main(int argc, char *argv[]) {
              native_type 
              user_type
              TK_INT
+             m0_op
+             m0_arg
 
 %type <fval> TK_NUMBER
 
@@ -134,19 +157,32 @@ main(int argc, char *argv[]) {
              return_stat
              break_stat
              tertexpr
+             constexpr
+             switch_stat
+             const_declaration
+             var_declaration
+             unexpr
+             m0_block
+             print_stat
+             
+%type <instr> m0_instructions
+              m0_instr
+       
 
+%type <var>  var
 %type <sfld> struct_members struct_member
 %type <strct> struct_definition
              
 %type <obj> field_access             
             lhs_obj
         
+
+        
 %token  KW_M0
-        M0_NL   
-        M0_IDENT
+        TK_NL   
         M0_NUMBER
-        M0_ADD_I
-        M0_ADD_N     
+        KW_ADD_I
+        KW_ADD_N     
         
 
 %defines
@@ -154,10 +190,11 @@ main(int argc, char *argv[]) {
 
 %start TOP
 
+%nonassoc TK_INC_ASSIGN
 %left TK_LE TK_GE TK_LT TK_GT TK_EQ TK_NE
 %left TK_AND TK_OR TK_LSH TK_RSH
 %left '+' '-'
-%left '*' '/' '&' '|' '%' '?' ':'
+%left '*' '/' '&' '|' '%' '?' ':' '!'
 %right '^'
 %left TK_INC TK_DEC
 
@@ -172,9 +209,7 @@ main(int argc, char *argv[]) {
 %%
 
 TOP     : chunks
-            { 
-              $$ = ast = $1; 
-            }
+            { $$ = ast = $1; }
         ;
         
 chunks  : chunk
@@ -267,44 +302,72 @@ statement   : assign_stat
             | inc_or_dec_stat                                
             | block              
             | function_call_stat              
-            | var_declaration  
-                { $$ = NULL; /* TODO */}            
-            | const_declaration              
-                { $$ = NULL; /* TODO */}
+            | var_declaration                 
+            | const_declaration                           
             | return_stat  
-            | break_stat   
-            | m0_block                                  
-                { $$ = NULL; /* TODO */}
+            | break_stat  
+            | switch_stat 
+            | print_stat
+            | m0_block                                      
             ;
             
+print_stat  : "print" '(' expression ')' ';'
+                { $$ = expression(EXPR_PRINT); 
+                  expr_set_expr($$, $3);
+                }
+            ;
+                        
 m0_block    : KW_M0 '{' m0_instructions '}'
+                { $$ = expression(EXPR_M0BLOCK); }
             ;            
             
 m0_instructions : m0_instr
+
+                | m0_instructions m0_instr
+                    { 
+                      $1->next = $2; 
+                      $$ = $1;
+                    }
                 ;
                 
-m0_instr    : m0_op m0_arg ',' m0_arg ',' m0_arg 
+m0_instr    : m0_op m0_arg ',' m0_arg ',' m0_arg
+                { $$ = instr($1, $2, $4, $6); }
+            | m0_op m0_arg ',' m0_arg ',' 'x'
+                { $$ = instr($1, $2, $4, 0); }
+            | m0_op m0_arg ',' 'x' ',' 'x'
+                { $$ = instr($1, $2, 0, 0); }
+            | m0_op 'x' ',' 'x' ',' 'x'
+                { $$ = instr($1, 0, 0, 0); }
             ;                            
             
-m0_arg      : M0_NUMBER
+m0_arg      : M0_NUMBER  {$$=0;}
             /* add other argument types for M0 instructions */
             ;
             
-m0_op       : M0_ADD_I            
+m0_op       : KW_ADD_I   {$$=0;}         
             /* add other M0 ops */
             ;
                   
-const_declaration   : "const" type TK_IDENT '=' TK_NUMBER ';'
+const_declaration   : "const" type TK_IDENT '=' constexpr ';'
+                        { $$ = expression(EXPR_CONSTDECL);
+                          expr_set_const_decl($$, $2, $3, $5); 
+                        }
                     ;                  
                         
-var_declaration: type var_list ';'              
+var_declaration: type var ';'  
+                    { $$ = expression(EXPR_VARDECL);
+                      expr_set_var_decl($$, $1, $2);  
+                    }            
                ;         
-                              
+/*                              
 var_list    : var
             | var_list ',' var
             ;               
-            
+*/            
 var         : TK_IDENT opt_init
+                { $$ = var($1); }
+            | TK_IDENT '[' TK_INT ']'
+                { $$ = var($1); }
             ;           
             
 opt_init    : /* empty */
@@ -317,12 +380,18 @@ assign_stat : assign_expr ';'
                 { $$ = $1; }
             ;
             
-assign_expr : lhs '=' rhs
+assign_expr : lhs assignop rhs
                 { 
                   $$ = expression(EXPR_ASSIGN); 
                   expr_set_assign($$, $1, $3);
-                }            
+                }
+            
             ;
+            
+assignop    : '='
+            | "+="
+            | "-="
+            ;            
             
 if_stat     : "if" '(' expression ')' statement %prec LOWER_THAN_ELSE 
                 { 
@@ -351,6 +420,21 @@ do_stat     : "do" block "while" '(' expression ')' ';'
                 }
             ;
             
+switch_stat : "switch" '(' expression ')' '{' cases default_case '}'
+                { $$ = NULL; }
+            ;
+            
+cases       : /* empty */
+            | cases case 
+            ;
+            
+case        : "case" TK_INT ':' statements                       
+            ;
+            
+default_case: /* empty */
+            | "default" ':' statements
+            ;
+                        
 function_call_expr  : TK_IDENT '(' arguments ')' 
                          { 
                            $$ = expression(EXPR_FUNCALL);
@@ -482,8 +566,7 @@ field_access: '[' expression ']'
 rhs     : expression
         ;
         
-        
-expression  : TK_NUMBER    
+constexpr   : TK_NUMBER    
                 { 
                   $$ = expression(EXPR_NUMBER); 
                   expr_set_num($$, $1);
@@ -493,14 +576,18 @@ expression  : TK_NUMBER
                   $$ = expression(EXPR_INT);
                   expr_set_int($$, $1);     
                 }  
+            | TK_STRING_CONST
+                {
+                  $$ = expression(EXPR_STRING);
+                  expr_set_string($$, $1);    
+                }       
+            ;
+            
+expression  : constexpr 
             | inc_or_dec_expr                
             | '(' expression ')'
                 { $$ = $2; }
-            | '-' expression
-                { 
-                  $$ = expression(EXPR_UNARY);
-                  expr_set_unexpr($$, $2, UNOP_MINUS);
-                }
+            | unexpr             
             | binexpr
             | tertexpr
             | lhs                
@@ -508,6 +595,18 @@ expression  : TK_NUMBER
             | "null"
                 { $$ = expression(EXPR_NULL); }
             ;
+            
+unexpr  : '-' expression
+                { 
+                  $$ = expression(EXPR_UNARY);
+                  expr_set_unexpr($$, $2, UNOP_MINUS);
+                }
+        | '!' expression
+                {
+                  $$ = expression(EXPR_UNARY);
+                  expr_set_unexpr($$, $2, UNOP_NOT);    
+                }            
+        ;            
        
 tertexpr    : expression '?' expression ':' expression
                 { $$ = expression(EXPR_IF); 
@@ -598,8 +697,9 @@ type    : native_type
         | user_type  
         ;
         
-native_type : "int" { $$ = TYPE_INT; }
-            | "num" { $$ = TYPE_NUM; }
+native_type : "int"     { $$ = TYPE_INT; }
+            | "num"     { $$ = TYPE_NUM; }
+            | "string"  { $$ = TYPE_STRING; }
             ;
             
 user_type   : TK_IDENT { $$ = TYPE_USERDEFINED; }

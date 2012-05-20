@@ -4,8 +4,13 @@ TODO
 * implement parameter and argument handling
 * implement namespaces and their handling
 * implement pointers properly in the parser
+* implement structs or other aggregate types; PMCs native?
 * any other keywords? e.g., continue? 
 * implement semantic checker (a thorough one!)
-* implement code generator
+* finish code generator
 * implement constant and variable declarations
-* do we want member functions: x.y(); ?
+* do we want member functions: x.y(); ? (prob for PMCs)
+* exception handling at this level?
+* make compiler re-entrant
+* improve symbol table handling
+* free all memory after done.

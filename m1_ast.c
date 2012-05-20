@@ -7,6 +7,7 @@ AST node constructors
 #include <stdlib.h>
 #include <stdio.h>
 #include "m1_ast.h"
+#include "m1_symtab.h"
 
 static void *
 m1_malloc(size_t size) {
@@ -45,13 +46,15 @@ expression(m1_expr_type type) {
 void 
 expr_set_num(m1_expression *e, double v) {
     e->expr.floatval = v;
-    e->type = EXPR_NUMBER;   
+    e->type = EXPR_NUMBER; 
+    e->sym  = sym_enter_num(&floats, v);  
 }
 
 void 
 expr_set_int(m1_expression *e, int v) {
     e->expr.intval = v;
     e->type = EXPR_INT;
+    e->sym = sym_enter_int(&ints, v);
 }
 
 static m1_binexpr *
@@ -148,6 +151,12 @@ expr_set_assign(m1_expression *node, m1_expression *lhs, m1_expression *rhs) {
 }
 
 void 
+expr_set_string(m1_expression *node, char *str) {
+    node->expr.str = str;
+    node->sym = sym_enter_str(&strings, str, 0);
+}
+
+void 
 obj_set_ident(m1_object *node, char *ident) {
     node->obj.field = ident;    
 }
@@ -180,4 +189,31 @@ newstruct(char *name, m1_structfield *fields) {
     return str;   
 }
 
+m1_const *
+const_decl(data_type type, char *name, m1_expression *expr) {
+    m1_const *c = (m1_const *)m1_malloc(sizeof(m1_const));
+    c->type = type;
+    c->name = name;
+    c->value = expr;
+    return c;    
+}
 
+void
+expr_set_const_decl(m1_expression *node, data_type type, 
+                    char *name, m1_expression *expr) 
+{
+    node->expr.c = const_decl(type, name, expr);       
+}
+
+void
+expr_set_var_decl(m1_expression *node, data_type type, m1_var *decl) {
+    node->expr.v = decl;
+    decl->type   = type;    
+}
+
+m1_var *
+var(char *name) {
+    m1_var *v = (m1_var *)m1_malloc(sizeof(m1_var));
+    v->name   = name;
+    return v;    
+}

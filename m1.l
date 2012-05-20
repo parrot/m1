@@ -53,12 +53,16 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 ">>"                    { return TK_RSH; }
 
 "::"                    { return TK_NS_SEP; }
+"+="                    { return TK_INC_ASSIGN; }
+"-="                    { return TK_DEC_ASSIGN; }
 
 [\[\]{}();=+-/*^,\.]    { return yytext[0]; }
 [?%&!:]                 { return yytext[0]; }
 
 "break"                 { return KW_BREAK; }
+"case"                  { return KW_CASE; }
 "const"                 { return KW_CONST; }
+"default"               { return KW_DEFAULT; }
 "do"                    { return KW_DO; }
 "else"                  { return KW_ELSE; }
 "for"                   { return KW_FOR; }
@@ -70,11 +74,18 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "namespace"             { return KW_NAMESPACE; }
 "null"                  { return KW_NULL; }
 "num"                   { return KW_NUM; }
+"print"                 { return KW_PRINT; }
 "return"                { return KW_RETURN; }
+"string"                { return KW_STRING; }
 "struct"                { return KW_STRUCT; }
+"switch"                { return KW_SWITCH; }
 "void"                  { return KW_VOID; }
 "while"                 { return KW_WHILE; }
 
+{DQ_STRING}             {
+                          yylval.sval = strdup(yytext);
+                          return TK_STRING_CONST;
+                        }
 
 {DIGITS}                { 
                            yylval.ival = atoi(yytext); 

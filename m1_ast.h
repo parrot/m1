@@ -1,11 +1,15 @@
 #ifndef __M1_AST_H__
 #define __M1_AST_H__
 
+#include "m1_instr.h"
+
 typedef enum data_types {
-    TYPE_VOID,
-    TYPE_INT,
-    TYPE_NUM,
-    TYPE_USERDEFINED
+    TYPE_INT    = 0,
+    TYPE_NUM    = 1,
+    TYPE_STRING = 2,
+    TYPE_PMC    = 3,
+    TYPE_VOID   = 4,
+    TYPE_USERDEFINED = 5
     
 } data_type;
 
@@ -63,12 +67,14 @@ typedef enum m1_expr_type {
     EXPR_DEREF,
     EXPR_ADDRESS,
     EXPR_OBJECT,
-    EXPR_BREAK
+    EXPR_BREAK,
+    EXPR_STRING,
+    EXPR_CONSTDECL,
+    EXPR_VARDECL,
+    EXPR_M0BLOCK,
+    EXPR_PRINT
 } m1_expr_type;
 
-typedef struct m1_number {
-    double value;    
-} m1_number;
 
 typedef enum m1_binop {
     OP_PLUS,
@@ -103,7 +109,8 @@ typedef enum m1_unop {
     UNOP_POSTDEC,  /* a-- */
     UNOP_PREINC,   /* ++a */
     UNOP_PREDEC,   /* --a */
-    UNOP_MINUS     /* -a */ 
+    UNOP_MINUS,    /* -a */ 
+    UNOP_NOT
 } m1_unop;
 
 typedef struct m1_unexpr {
@@ -153,13 +160,34 @@ typedef struct m1_forexpr {
     struct m1_expression *block;    
 } m1_forexpr;
 
+typedef struct m1_const {
+    data_type type;
+    char *name;
+    struct m1_expression *value;
+} m1_const;
+
+typedef struct m1_var {
+    data_type type;
+    char *name;
+    
+} m1_var;
+
+
+
+
+typedef struct m0_block {
+    struct m0_instr *instr;
+    
+} m0_block;
+
 /* to represent statements */
 typedef struct m1_expression {
     union {
         struct m1_unexpr     *u;
         struct m1_binexpr    *b;
         double               floatval;
-        int                  intval;   
+        int                  intval;
+        char                 *str;   
         struct m1_funcall    *f;  
         struct m1_assignment *a; 
         struct m1_whileexpr  *w;  
@@ -167,9 +195,13 @@ typedef struct m1_expression {
         struct m1_ifexpr     *i;
         struct m1_expression *e; 
         struct m1_object     *t;
+        struct m1_const      *c;
+        struct m1_var        *v;
+        struct m0_block      *m0;
     } expr;
     
-    m1_expr_type type;
+    m1_expr_type      type;
+    struct m1_symbol *sym;
     
     struct m1_expression *next;
     
@@ -222,5 +254,14 @@ extern m1_structfield * structfield(char *name, data_type type);
 
 extern m1_struct *newstruct(char *name, m1_structfield *fields);
 
+extern void expr_set_string(m1_expression *node, char *str);
+
+
+extern void expr_set_const_decl(m1_expression *node, data_type type, 
+                    char *name, m1_expression *expr); 
+
+extern void expr_set_var_decl(m1_expression *node, data_type type, m1_var *decl);
+
+extern m1_var *var(char *name);
 #endif
 

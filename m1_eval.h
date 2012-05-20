@@ -5,9 +5,10 @@
 
 #include <stdio.h>
 
+
 extern void eval(m1_chunk *ast);
 
-extern void gencode(m1_chunk *ast);
+
 
 #endif
 
