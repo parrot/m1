@@ -67,7 +67,7 @@ main(int argc, char *argv[]) {
     init_symtabs();
     yyparse(yyscanner, &comp);
     
-    gencode(comp.ast);
+    gencode(&comp, comp.ast);
     
     fclose(fp);
     return 0;
@@ -83,7 +83,6 @@ main(int argc, char *argv[]) {
     struct m1_chunk         *chunk;
     struct m1_expression    *expr;
     struct m1_statement     *stat;
-    struct m1_funcall       *fun;
     struct m1_object        *obj;
     struct m1_struct        *strct;
     struct m1_structfield   *sfld;
@@ -198,11 +197,11 @@ main(int argc, char *argv[]) {
         
 
         
-%token  KW_M0
+%token  KW_M0		"M0"
         TK_NL   
         M0_NUMBER
-        KW_ADD_I
-        KW_ADD_N     
+        KW_ADD_I	"add_i"
+        KW_ADD_N    "add_n"
         
 %pure-parser
 
@@ -340,12 +339,10 @@ statement   : assign_stat
             ;
             
 print_stat  : "print" '(' expression ')' ';'
-                { $$ = expression(EXPR_PRINT); 
-                  expr_set_expr($$, $3);
-                }
+                { $$ = printexpr($3); }
             ;
                         
-m0_block    : KW_M0 '{' m0_instructions '}'
+m0_block    : "M0" '{' m0_instructions '}'
                 { $$ = expression(EXPR_M0BLOCK); }
             ;            
             
@@ -377,15 +374,11 @@ m0_op       : KW_ADD_I   {$$=0;}
             ;
                   
 const_declaration   : "const" type TK_IDENT '=' constexpr ';'
-                        { $$ = expression(EXPR_CONSTDECL);
-                          expr_set_const_decl($$, $2, $3, $5); 
-                        }
+                        { $$ = constdecl($2, $3, $5); }
                     ;                  
                         
 var_declaration: type var ';'  
-                    { $$ = expression(EXPR_VARDECL);
-                      expr_set_var_decl($$, $1, $2);  
-                    }            
+                    { $$ = vardecl($1, $2); }            
                ;         
 /*                              
 var_list    : var
@@ -409,10 +402,7 @@ assign_stat : assign_expr ';'
             ;
             
 assign_expr : lhs assignop rhs
-                { 
-                  $$ = expression(EXPR_ASSIGN); 
-                  expr_set_assign($$, $1, $3);
-                }
+                { $$ = assignexpr($1, $3); }
             
             ;
             
@@ -422,30 +412,18 @@ assignop    : '='
             ;            
             
 if_stat     : "if" '(' expression ')' statement %prec LOWER_THAN_ELSE 
-                { 
-                  $$ = expression(EXPR_IF); 
-                  expr_set_if($$, $3, $5, NULL);
-                }
+                { $$ = ifexpr($3, $5, NULL); }
             | "if" '(' expression ')' statement "else" statement 
-                { 
-                  $$ = expression(EXPR_IF); 
-                  expr_set_if($$, $3, $5, $7);
-                }
+                { $$ = ifexpr($3, $5, $7); }
             ;
             
             
 while_stat  : "while" '(' expression ')' statement
-                { 
-                  $$ = expression(EXPR_WHILE);
-                  expr_set_while($$, $3, $5);
-                }
+                { $$ = whileexpr($3, $5); }
             ;
             
 do_stat     : "do" block "while" '(' expression ')' ';'
-                { 
-                  $$ = expression(EXPR_DOWHILE);
-                  expr_set_while($$, $5, $2);  
-                }
+                { $$ = dowhileexpr($5, $2); }
             ;
             
 switch_stat : "switch" '(' expression ')' '{' cases default_case '}'
@@ -464,10 +442,7 @@ default_case: /* empty */
             ;
                         
 function_call_expr  : TK_IDENT '(' arguments ')' 
-                         { 
-                           $$ = expression(EXPR_FUNCALL);
-                           expr_set_funcall($$, funcall($1)); 
-                         }
+                         { $$ = funcall($1); }
                     ;
                     
 function_call_stat  : function_call_expr ';'
@@ -485,10 +460,7 @@ expr_list   : expression
             ;                                                    
             
 for_stat    : "for" '(' for_init ';' for_cond ';' for_step ')' statement
-                { 
-                   $$ = expression(EXPR_FOR);
-                   expr_set_for($$, $3, $5, $7, $9);
-                }
+                { $$ = forexpr($3, $5, $7, $9); }
             ;  
             
 for_init    : /* empty */
@@ -508,21 +480,13 @@ for_step    : /* empty */
             
 
 inc_or_dec_expr : lhs "++"
-                    { $$ = expression(EXPR_UNARY);
-                      expr_set_unexpr($$, $1, UNOP_POSTINC);  
-                    }
+                    { $$ = inc_or_dec($1, UNOP_POSTINC); }
                 | lhs "--"
-                    { $$ = expression(EXPR_UNARY);
-                      expr_set_unexpr($$, $1, UNOP_POSTDEC);
-                    }
+                    { $$ = inc_or_dec($1, UNOP_POSTDEC); }
                 | "++" lhs
-                    { $$ = expression(EXPR_UNARY);
-                      expr_set_unexpr($$, $2, UNOP_PREINC);
-                    }
+                    { $$ = inc_or_dec($2, UNOP_PREINC); }
                 | "--" lhs
-                    { $$ = expression(EXPR_UNARY);
-                      expr_set_unexpr($$, $2, UNOP_PREDEC);
-                    }
+                    { $$ = inc_or_dec($2, UNOP_PREDEC); }                    
                 ;
                 
 inc_or_dec_stat : inc_or_dec_expr ';'
@@ -533,27 +497,15 @@ break_stat  : "break" ';'
                 { $$ = expression(EXPR_BREAK); }                
                 
 return_stat : "return" expression ';'
-                { 
-                  $$ = expression(EXPR_RETURN);
-                  expr_set_expr($$, $2);
-                }
+                { $$ = returnexpr($2); }
             ;                
                             
 lhs     : lhs_obj
-           {
-             $$ = expression(EXPR_OBJECT);
-             expr_set_obj($$, $1); 
-           }
+           { $$ = objectexpr($1, EXPR_OBJECT); }           
         | '*' lhs_obj
-           { 
-             $$ = expression(EXPR_DEREF);
-             expr_set_obj($$, $2);
-           }
+           { $$ = objectexpr($2, EXPR_DEREF); }
         | '&' lhs_obj
-           { 
-             $$ = expression(EXPR_ADDRESS);
-             expr_set_obj($$, $2);             
-           }
+           { $$ = objectexpr($2, EXPR_ADDRESS); }
         ;
         
 lhs_obj : TK_IDENT
@@ -575,40 +527,22 @@ lhs_obj : TK_IDENT
         ;        
         
 field_access: '[' expression ']'
-                {
-                  $$ = object(OBJECT_INDEX);
-                  obj_set_index($$, $2);                    
-                }
+                { $$ = arrayindex($2); }                
             | '.' TK_IDENT
-                {
-                   $$ = object(OBJECT_FIELD);
-                   obj_set_ident($$, $2);
-                }
+                { $$ = objectfield($2); }           
             | "->" TK_IDENT
-                {
-                   $$ = object(OBJECT_DEREF);
-                   obj_set_ident($$, $2); 
-                }
+                { $$ = objectderef($2); }                
             ;        
 
 rhs     : expression
         ;
         
 constexpr   : TK_NUMBER    
-                { 
-                  $$ = expression(EXPR_NUMBER); 
-                  expr_set_num($$, $1);
-                }    
+                { $$ = number($1); }    
             | TK_INT
-                {
-                  $$ = expression(EXPR_INT);
-                  expr_set_int($$, $1);     
-                }  
+                { $$ = integer($1); }  
             | TK_STRING_CONST
-                {
-                  $$ = expression(EXPR_STRING);
-                  expr_set_string($$, $1);    
-                }       
+                { $$ = string($1); }
             ;
             
 expression  : constexpr 
@@ -625,95 +559,51 @@ expression  : constexpr
             ;
             
 unexpr  : '-' expression
-                { 
-                  $$ = expression(EXPR_UNARY);
-                  expr_set_unexpr($$, $2, UNOP_MINUS);
-                }
+                { $$ = unaryexpr(UNOP_MINUS, $2); }                
         | '!' expression
-                {
-                  $$ = expression(EXPR_UNARY);
-                  expr_set_unexpr($$, $2, UNOP_NOT);    
-                }            
+                { $$ = unaryexpr(UNOP_NOT, $2); }                            
         ;            
        
 tertexpr    : expression '?' expression ':' expression
-                { $$ = expression(EXPR_IF); 
-                  expr_set_if($$, $1, $3, $5);
-                }
+                { $$ = ifexpr($1, $3, $5); }
             ;
                    
 binexpr     : expression '+' expression
-                { $$ = expression(EXPR_BINARY);
-                  expr_set_binexpr($$, $1, OP_PLUS, $3);
-                }
+                { $$ = binexpr($1, OP_PLUS, $3); }
             | expression '-' expression
-                { $$ = expression(EXPR_BINARY);
-                  expr_set_binexpr($$, $1, OP_MINUS, $3);
-                }
+                { $$ = binexpr($1, OP_MINUS, $3); }
             | expression '*' expression
-                { $$ = expression(EXPR_BINARY);
-                  expr_set_binexpr($$, $1, OP_MUL, $3);
-                }
+                { $$ = binexpr($1, OP_MUL, $3); }
             | expression '/' expression
-                { $$ = expression(EXPR_BINARY);
-                  expr_set_binexpr($$, $1, OP_DIV, $3);
-                }
+                { $$ = binexpr($1, OP_DIV, $3); }
             | expression '%' expression
-                { $$ = expression(EXPR_BINARY);
-                  expr_set_binexpr($$, $1, OP_MOD, $3);
-                }
+                { $$ = binexpr($1, OP_MOD, $3); }
             | expression '^' expression
-                { $$ = expression(EXPR_BINARY);
-                  expr_set_binexpr($$, $1, OP_EXP, $3);
-                }
+                { $$ = binexpr($1, OP_EXP, $3); }
             | expression '&' expression
-                { $$ = expression(EXPR_BINARY);
-                  expr_set_binexpr($$, $1, OP_BAND, $3);
-                }
+                { $$ = binexpr($1, OP_BAND, $3); }
             | expression '|' expression
-                { $$ = expression(EXPR_BINARY);
-                  expr_set_binexpr($$, $1, OP_BOR, $3);
-                }
+                { $$ = binexpr($1, OP_BOR, $3); }
             | expression "==" expression
-                { $$ = expression(EXPR_BINARY);
-                  expr_set_binexpr($$, $1, OP_EQ, $3);
-                }
+                { $$ = binexpr($1, OP_EQ, $3); }
             | expression "!=" expression
-                { $$ = expression(EXPR_BINARY);
-                  expr_set_binexpr($$, $1, OP_NE, $3);
-                }
+                { $$ = binexpr($1, OP_NE, $3); }
             | expression ">" expression
-                { $$ = expression(EXPR_BINARY);
-                  expr_set_binexpr($$, $1, OP_GT, $3);
-                }
+                { $$ = binexpr($1, OP_GT, $3); }
             | expression "<" expression
-                { $$ = expression(EXPR_BINARY);
-                  expr_set_binexpr($$, $1, OP_LT, $3);
-                }
+                { $$ = binexpr($1, OP_LT, $3); }
             | expression "<=" expression
-                { $$ = expression(EXPR_BINARY);
-                  expr_set_binexpr($$, $1, OP_LE, $3);
-                }
+                { $$ = binexpr($1, OP_LE, $3); }
             | expression ">=" expression
-                { $$ = expression(EXPR_BINARY);
-                  expr_set_binexpr($$, $1, OP_GE, $3);
-                }
+                { $$ = binexpr($1, OP_GE, $3); }
             | expression "&&" expression
-                { $$ = expression(EXPR_BINARY);
-                  expr_set_binexpr($$, $1, OP_AND, $3);
-                }
+                { $$ = binexpr($1, OP_AND, $3); }
             | expression "||" expression
-                { $$ = expression(EXPR_BINARY);
-                  expr_set_binexpr($$, $1, OP_OR, $3);
-                }
+                { $$ = binexpr($1, OP_OR, $3); }
             | expression "<<" expression
-                { $$ = expression(EXPR_BINARY);
-                  expr_set_binexpr($$, $1, OP_LSH, $3);
-                }
+                { $$ = binexpr($1, OP_LSH, $3); }
             | expression ">>" expression
-                { $$ = expression(EXPR_BINARY);
-                  expr_set_binexpr($$, $1, OP_RSH, $3);
-                }
+                { $$ = binexpr($1, OP_RSH, $3); }
                 
             ;
            
