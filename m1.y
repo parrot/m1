@@ -2,52 +2,72 @@
     
 #include <stdio.h>
 #include <stdlib.h>
+
+/* m1parser.h needs to be included /before/ m1lexer.h. */
+#include "m1parser.h"
+
+/* prevent declaration of yyparse in m1lexer.h. */
+#define YY_DECL
 #include "m1lexer.h"
+
 #include "m1_ast.h"
 #include "m1_eval.h"
 #include "m1_gencode.h"
 #include "m1_instr.h"
 #include "m1_symtab.h"
+#include "m1_compiler.h"
+
+
+/* Just to make sure that yscan_t can be used as a type in this file.
+*/
+/*
+#ifndef YY_TYPEDEF_YY_SCANNER_T
+# define YY_TYPEDEF_YY_SCANNER_T
+
+typedef void * yyscan_t;
+
+#endif
+*/
+
+#ifndef YYLTYPE_IS_TRIVIAL
+# define YYLTYPE_IS_TRIVIAL 0
+#endif
 
 extern m0_instr *instr(char op, char arg1, char arg2, char arg3);
+extern int yyparse(yyscan_t yyscanner, struct M1_compiler * const comp);
+extern int yylex(YYSTYPE *yylval, yyscan_t yyscanner);
 
 int 
-yywrap(void) {
-    return 1;
-}
+yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 
-/* root of AST */
-m1_chunk *ast = NULL;
-
-extern int yyparse(void);
-
-extern char *yytext;
-extern int yylineno;
-extern int yylex(void);
-
-int 
-yyerror(char *str) {
     fprintf(stderr, "%s: unexpected token '%s' (line %d)\n\n", 
-            str, yytext, yylineno);
-            
+            str, yyget_text(yyscanner), yyget_lineno(yyscanner) );
+           
     return 0;
 }
 
 int
 main(int argc, char *argv[]) {
-    FILE *fp;
+    FILE        *fp;
+    yyscan_t     yyscanner;
+    M1_compiler  comp;
     
     fp = fopen(argv[1], "r");
     if (fp == NULL) {
         fprintf(stderr, "Could not open file\n");
         exit(EXIT_FAILURE);
     }
-    yyin = fp;
-    init_symtabs();
-    yyparse();
+   
+   
+    yylex_init(&yyscanner);
+    yyset_extra(&comp, yyscanner);
     
-    //eval(ast);
-    gencode(ast);
+    yyset_in(fp, yyscanner);
+
+    init_symtabs();
+    yyparse(yyscanner, &comp);
+    
+    gencode(comp.ast);
     
     fclose(fp);
     return 0;
@@ -184,6 +204,11 @@ main(int argc, char *argv[]) {
         KW_ADD_I
         KW_ADD_N     
         
+%pure-parser
+
+%parse-param	{yyscan_t yyscanner}
+%lex-param		{yyscan_t yyscanner}
+%parse-param	{struct M1_compiler * const comp}
 
 %defines
 %output="m1parser.c"
@@ -209,7 +234,10 @@ main(int argc, char *argv[]) {
 %%
 
 TOP     : chunks
-            { $$ = ast = $1; }
+            { 
+              M1_compiler *comp = yyget_extra(yyscanner);
+              comp->ast = $1; 
+            }
         ;
         
 chunks  : chunk
