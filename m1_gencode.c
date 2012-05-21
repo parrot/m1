@@ -7,69 +7,98 @@ code generation skeleton.
 #include <stdlib.h>
 #include "m1_gencode.h"
 #include "m1_ast.h"
+#include "m1_compiler.h"
+
+#include "m1_ann.h"
+
 #define OUT	stderr
 
 
+static m1_reg gencode_expr(M1_compiler *comp, m1_expression *e);
 
-static int
-gen_reg(data_type type) {
+/*
+
+Allocate new registers as needed.
+
+*/
+static m1_reg
+gen_reg(M1_compiler *comp, data_type type) {
     /* int, num, string, pmc */
-    static int regs[4] = {1, 1, 1, 1};
-    return regs[type]++;   
+    m1_reg reg;
+    reg.type = type;
+	reg.no   = comp->regs[type]++;   
+    return reg;
+}
+
+/*
+
+Generate label identifiers.
+
+*/
+static int
+gen_label(M1_compiler *comp) {
+	static int label = 0;
+	return label++;	
 }
 
 
-static m1_reg gencode_expr(m1_expression *e);
-
 static m1_reg
-gencode_number(double value) {
-    int valreg;
-    m1_reg reg;
-    reg.no = gen_reg(TYPE_NUM);
-    reg.type = 'N';
+gencode_number(M1_compiler *comp, double value) {
+	/*
+	deref Nx, CONSTS, <const_id>
+	*/
+    m1_reg     reg = gen_reg(comp, 'N');
+    m1_symbol *sym = sym_find_num(&floats, value);
 
-    fprintf(OUT, "deref\tN%d, CONSTS, %d\n", reg.no, valreg);
+
+    fprintf(OUT, "deref\tN%d, CONSTS, %d\n", reg.no, sym->constindex);
     return reg;
 }   
 
 static m1_reg
-gencode_int(int value) {
-    m1_reg reg;
-    reg.no = gen_reg(TYPE_INT);
-    reg.type = 'I';
-    fprintf(OUT, "deref\tI%d, CONSTS, %d\n", reg.no, value);
+gencode_int(M1_compiler *comp, int value) {
+	/*
+	deref Ix, CONSTS, <const_id>
+	*/
+    m1_reg     reg = gen_reg(comp, 'I');
+    m1_symbol *sym = sym_find_int(&ints, value);
+
+    fprintf(OUT, "deref\tI%d, CONSTS, %d\n", reg.no, sym->constindex);
     return reg;
 }
 
 static m1_reg
-gencode_string(char *value) {
-    m1_reg reg;
-    int idx;
+gencode_string(M1_compiler *comp, NOTNULL(char *value)) {
+    m1_reg     reg = gen_reg(comp, 'S');
     m1_symbol *sym = sym_find_str(&strings, value); /* find index of value in CONSTS */
-    idx = sym->constindex;
-    reg.no = gen_reg(TYPE_STRING);
-    reg.type = 'S';
-
-    fprintf(OUT, "deref\tS%d, CONSTS, %d\n", reg.no, idx);
+    fprintf(OUT, "deref\tS%d, CONSTS, %d\n", reg.no, sym->constindex);
     return reg;
 }
 
 
-static void
-gencode_assign(m1_assignment *a) {
-    gencode_expr(a->rhs);
-    gencode_expr(a->lhs);
-
+static m1_reg
+gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
+	m1_reg lhs, rhs;
+    rhs = gencode_expr(comp, a->rhs);
+    lhs = gencode_expr(comp, a->lhs);
+    fprintf(OUT, "set %c%d, %c%d, x\n", lhs.type, lhs.no, rhs.type, rhs.no);
+	return lhs;
 }
 
-static void
-gencode_null(void) {
-    fprintf(OUT, "null");    
+static m1_reg
+gencode_null(M1_compiler *comp) {
+	m1_reg reg;
+/*    fprintf(OUT, "null");    
+*/
+    return reg;
 }   
 
-static void
-gencode_obj(m1_object *obj) {
-	return;
+static m1_reg
+gencode_obj(M1_compiler *comp, m1_object *obj) {
+	m1_reg reg;
+	reg = gen_reg(comp, 'I');
+
+	return reg;
 	/*
     switch (obj->type) {
         case OBJECT_MAIN:
@@ -96,81 +125,194 @@ gencode_obj(m1_object *obj) {
     */
 }
 
-static void
-gencode_while(m1_whileexpr *w) {
-
-    gencode_expr(w->cond);
-
-    gencode_expr(w->block);
-
-}
-
-static void
-gencode_dowhile(m1_whileexpr *w) {
-    
-    gencode_expr(w->block);
-    
-    
-    gencode_expr(w->cond);
-    
-}
-
-static void
-gencode_for(m1_forexpr *i) {
-   
-    if (i->init)
-        gencode_expr(i->init);
-
-    if (i->cond)
-        gencode_expr(i->cond);
-   
-    if (i->step)
-        gencode_expr(i->step);
-   
-    if (i->block)
-        gencode_expr(i->block);
-   
-}
-
-static void
-gencode_if(m1_ifexpr *i) {
-
-    gencode_expr(i->cond);
-
-    gencode_expr(i->ifblock);
-
-    if (i->elseblock) {
-
-        gencode_expr(i->elseblock);
-
-    }
-           
-}
-
-static void
-gencode_deref(m1_object *o) {
-    fprintf(OUT, "*");
-    gencode_obj(o);
-}
-
-static void
-gencode_address(m1_object *o) {
-    fprintf(OUT, "&");
-    gencode_obj(o);   
-}
-
-static void
-gencode_return(m1_expression *e) {
-	m1_reg reg;
+static m1_reg
+gencode_while(M1_compiler *comp, m1_whileexpr *w) {
+	/*
 	
-    reg = gencode_expr(e);
+	START:
+	<code for cond>
+	goto_if END
+	<code for block>
+	goto START
+	END:
+	*/
+	m1_reg reg;
+	int endlabel   = gen_label(comp), 
+	    startlabel = gen_label(comp);
+	
+	fprintf(OUT, "L%d:\n", startlabel);
+    reg = gencode_expr(comp, w->cond);
+	fprintf(OUT, "goto_if\n");
+    gencode_expr(comp, w->block);
+    fprintf(OUT, "goto \tL%d\n", startlabel);
+	fprintf(OUT, "L%d:\n", endlabel);
+	
+	return reg;
 }
 
 static m1_reg
-gencode_binary(m1_binexpr *b) {
-    char *op;
-    m1_reg left, right; 
-    m1_reg target;
+gencode_dowhile(M1_compiler *comp, m1_whileexpr *w) {
+	/*
+	START:
+	<code for block>
+	<code for cond>
+	goto_if START
+	*/
+    m1_reg reg;
+    int    startlabel = gen_label(comp);
+    
+    fprintf(OUT, "L%d:\n", startlabel);
+    gencode_expr(comp, w->block);
+    
+    reg = gencode_expr(comp, w->cond);
+    fprintf(OUT, "goto_if\tL%d\n", startlabel);
+    
+    return reg;
+}
+
+static m1_reg
+gencode_for(M1_compiler *comp, m1_forexpr *i) {
+	/*
+	
+	<code for init>
+	START:
+	<code for cond>
+	goto_if END
+	<code for block>
+	<code for step>
+	goto START
+	END:
+	*/
+    int startlabel = gen_label(comp),
+        endlabel   = gen_label(comp);
+        
+    m1_reg reg;
+    
+    if (i->init)
+        gencode_expr(comp, i->init);
+
+	fprintf(OUT, "L%d\n", startlabel);
+	
+    if (i->cond)
+        reg = gencode_expr(comp, i->cond);
+   
+    fprintf(OUT, "goto_if L%d\n", endlabel);
+    
+    if (i->block) 
+        gencode_expr(comp, i->block);
+        
+    if (i->step)
+        gencode_expr(comp, i->step);
+    
+    fprintf(OUT, "goto L%d\n", startlabel);
+    fprintf(OUT, "L%d:\n", endlabel);
+    
+    
+    return reg;
+}
+
+static m1_reg 
+gencode_if(M1_compiler *comp, m1_ifexpr *i) {
+	/*
+	
+	result1 = <evaluate condition>
+	goto_if result1 == 0, ELSE
+	<code for ifblock>
+	goto END
+	ELSE:
+	<code for elseblock>
+	END:
+	*/
+	m1_reg cond;
+	int endlabel  = gen_label(comp),
+		elselabel = gen_label(comp) ;
+
+	
+    cond = gencode_expr(comp, i->cond);
+	
+	fprintf(OUT, "goto_if\tL_IF_%d\n", elselabel);
+	
+    gencode_expr(comp, i->ifblock);
+	fprintf(OUT, "goto L%d\n", endlabel);
+	fprintf(OUT, "L_IF_%d\n", elselabel);
+	
+    if (i->elseblock) {    	
+        gencode_expr(comp, i->elseblock);
+    }
+    fprintf(OUT, "L_IF_%d\n", endlabel);
+    return cond;       
+}
+
+static m1_reg
+gencode_deref(M1_compiler *comp, m1_object *o) {
+	m1_reg reg;
+/*    fprintf(OUT, "*");*/
+    reg = gencode_obj(comp, o);
+    return reg;
+}
+
+static m1_reg
+gencode_address(M1_compiler *comp, m1_object *o) {
+	m1_reg reg;
+/*    fprintf(OUT, "&"); */
+    reg = gencode_obj(comp, o);   
+    return reg;
+}
+
+static m1_reg
+gencode_return(M1_compiler *comp, m1_expression *e) {
+	m1_reg reg;
+    reg = gencode_expr(comp, e);
+    return reg;
+}
+
+static m1_reg
+gencode_or(M1_compiler *comp, m1_binexpr *b) {
+	/*
+	result1 = <evaluate left>
+	goto_if result1 != 0, END
+	result2 = <evaluate right>
+	END:
+	*/
+	m1_reg left, right;
+	int endlabel;
+	
+	endlabel = gen_label(comp);
+	left     = gencode_expr(comp, b->left);
+	
+	fprintf(OUT, "goto_if L%d\n", endlabel);
+	
+	right = gencode_expr(comp, b->right);
+	
+	fprintf(OUT, "L%d\n", endlabel);
+	return left;	
+}
+
+static m1_reg
+gencode_and(M1_compiler *comp, m1_binexpr *b) {
+	/*
+	result1 = <evaluate left>
+	goto_if result1 == 0, END
+	result2 = <evaluate right>
+	END:
+	*/
+	m1_reg left, right;
+	int endlabel = gen_label(comp);
+	
+	left = gencode_expr(comp, b->left);
+	fprintf(OUT, "goto_if\tL%d\n", endlabel);	
+	right = gencode_expr(comp, b->right);
+	
+	fprintf(OUT, "L%d\n", endlabel);
+	return right;
+}
+
+static m1_reg
+gencode_binary(M1_compiler *comp, m1_binexpr *b) {
+    char  *op = NULL;
+    m1_reg left, 
+    	   right,
+    	   target;
     
     switch(b->op) {
         case OP_PLUS:
@@ -189,32 +331,32 @@ gencode_binary(m1_binexpr *b) {
             op = "mod";
             break;
         case OP_EXP:
-            op = "^";
+/*            op = "^";*/
             break;
         case OP_GT:
-            op = ">";
+/*            op = ">";*/
             break;
         case OP_GE:
-            op = ">=";
+/*            op = ">=";*/
             break;
         case OP_LT:
-            op = "<";
+/*            op = "<";*/
             break;
         case OP_LE:
-            op = "<=";
+/*            op = "<=";*/
             break;
         case OP_EQ:
-            op = "==";
+/*            op = "==";*/
             break;
         case OP_NE:
-            op = "!=";
+/*            op = "!=";*/
             break;
-        case OP_AND:
-            op = "&&";
-            break;
-        case OP_OR:
-            op = "||";
-            break;
+        case OP_AND: /* a && b */
+            return gencode_and(comp, b);
+
+        case OP_OR: /* a || b */
+            return gencode_or(comp, b);
+
         case OP_BAND:
             op = "and";
             break;
@@ -226,72 +368,82 @@ gencode_binary(m1_binexpr *b) {
             break;   
     }
     
-    left  = gencode_expr(b->left);
-    right = gencode_expr(b->right);  
-    target.no = gen_reg(left.type);  
-    target.type = left.type;
-    fprintf(OUT, "%s\t%c%d, %c%d, %c%d\n", op, target.type, target.no, left.type, left.no, right.type, right.no);
+    left        = gencode_expr(comp, b->left);
+    right       = gencode_expr(comp, b->right);  
+    target      = gen_reg(comp, left.type);  
+    
+    fprintf(OUT, "%s\t%c%d, %c%d, %c%d\n", op, target.type, target.no, 
+           left.type, left.no, right.type, right.no);
     return target;
 }
 
+
+
 static m1_reg
-gencode_unary(m1_unexpr *u) {
-    char *op;
-    int postfix = 0;
+gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
+    char  *op;
+    int    postfix = 0;
     m1_reg reg;
-    int target = gen_reg(TYPE_INT);
-    int one    = gen_reg(TYPE_INT);
+    m1_reg target = gen_reg(comp, 'I'); /* for final value */
+    m1_reg one    = gen_reg(comp, 'I'); /* to store "1" */
     
     switch (u->op) {
         case UNOP_POSTINC:
-            postfix = 1;
-            op = "++";
-            break;
-        case UNOP_PREINC:
-            postfix = 0;
-            op = "++";
-            break;
         case UNOP_POSTDEC:
             postfix = 1;
-            op = "--";
             break;
+        case UNOP_PREINC:
         case UNOP_PREDEC:
             postfix = 0; 
-            op = "--";
             break;
         case UNOP_MINUS:
             postfix = 0;
-            op = "-";
+            op = "-"; /* TODO */
             break;    
         default:
             op = "unknown op";
             break;   
-    }    
-    reg = gencode_expr(u->expr);
-    fprintf(OUT, "set_imm\tI%d, 0, 1\n", one);
-    fprintf(OUT, "add_i\tI%d, I%d, I%d\n", target, reg.no, one);
-    return reg;	    
-}
-
-static void
-gencode_break(void) {
-    fprintf(OUT, "goto\t??\n");
-}
-
-static void
-gencode_funcall(m1_funcall *f) {
-    fprintf(OUT, "%s();", f->name);   
-}
-
-static void
-gencode_print(m1_expression *expr) {
-    m1_reg reg;
-    reg = gencode_expr(expr);
-	fprintf(OUT, "print_%c\tI0, %c%d, x\n", reg.type, reg.type, reg.no);
+    }   
+    /* generate code for the expression */ 
+    reg = gencode_expr(comp, u->expr);
+    
+    fprintf(OUT, "set_imm\tI%d, 0, 1\n", one.no);
+    fprintf(OUT, "add_i\tI%d, I%d, I%d\n", target.no, reg.no, one.no);
+    
+    if (postfix == 0) { 
+        /* prefix; return reg containing value before adding 1 */
+    	reg.no = target.no; 
+    }	
+    
+   	return reg;	    
+    
 }
 
 static m1_reg
-gencode_expr(m1_expression *e) {
+gencode_break(M1_compiler *comp) {
+	m1_reg reg;
+    fprintf(OUT, "goto\tL??\n");
+    return reg;
+}
+
+static m1_reg
+gencode_funcall(M1_compiler *comp, m1_funcall *f) {
+	m1_reg reg;
+    /*fprintf(OUT, "%s();", f->name);   */
+    fprintf(OUT, "goto_chunk\n");
+    return reg;
+}
+
+static m1_reg
+gencode_print(M1_compiler *comp, m1_expression *expr) {
+    m1_reg reg;
+    reg = gencode_expr(comp, expr);
+	fprintf(OUT, "print_%c\tI0, %c%d, x\n", reg.type, reg.type, reg.no);
+	return reg;
+}
+
+static m1_reg
+gencode_expr(M1_compiler *comp, m1_expression *e) {
 
     m1_reg reg;
     if (e == NULL) {
@@ -301,61 +453,62 @@ gencode_expr(m1_expression *e) {
         
     switch (e->type) {
         case EXPR_NUMBER:
-            reg = gencode_number(e->expr.floatval);
+            reg = gencode_number(comp, e->expr.floatval);
             break;
         case EXPR_INT:
-            reg = gencode_int(e->expr.intval);
+            reg = gencode_int(comp, e->expr.intval);
             break;
         case EXPR_STRING:
-            reg = gencode_string(e->expr.str);     
+            reg = gencode_string(comp, e->expr.str);     
             break;
         case EXPR_BINARY:
-            reg = gencode_binary(e->expr.b);
+            reg = gencode_binary(comp, e->expr.b);
             break;
         case EXPR_UNARY:
-            reg = gencode_unary(e->expr.u);
+            reg = gencode_unary(comp, e->expr.u);
             break;
         case EXPR_FUNCALL:
-            gencode_funcall(e->expr.f);
+            reg = gencode_funcall(comp, e->expr.f);
             break;
         case EXPR_ASSIGN:
-            gencode_assign(e->expr.a);
+            reg = gencode_assign(comp, e->expr.a);
             break;
         case EXPR_IF:   
-            gencode_if(e->expr.i);
+            reg = gencode_if(comp, e->expr.i);
             break;
         case EXPR_WHILE:
-            gencode_while(e->expr.w);
+            reg = gencode_while(comp, e->expr.w);
             break;
         case EXPR_DOWHILE:
-            gencode_dowhile(e->expr.w);
+            reg = gencode_dowhile(comp, e->expr.w);
             break;
         case EXPR_FOR:
-            gencode_for(e->expr.o);
+            reg = gencode_for(comp, e->expr.o);
             break;
         case EXPR_RETURN:
-            gencode_return(e->expr.e);
+            reg = gencode_return(comp, e->expr.e);
             break;
         case EXPR_NULL:
-            gencode_null();
+            reg = gencode_null(comp);
             break;
         case EXPR_DEREF:
-            gencode_deref(e->expr.t);
+            reg = gencode_deref(comp, e->expr.t);
             break;
         case EXPR_ADDRESS:
-            gencode_address(e->expr.t);
+            reg = gencode_address(comp, e->expr.t);
             break;
         case EXPR_OBJECT:
-            gencode_obj(e->expr.t);
+            reg = gencode_obj(comp, e->expr.t);
             break;
         case EXPR_BREAK:
-            gencode_break();
+            reg = gencode_break(comp);
             break;
         case EXPR_CONSTDECL:
+        	break;
         case EXPR_VARDECL:
             break;
         case EXPR_PRINT:
-            gencode_print(e->expr.e);   
+            gencode_print(comp, e->expr.e);   
             break; 
         default:
             fprintf(stderr, "unknown expr type");   
@@ -365,7 +518,7 @@ gencode_expr(m1_expression *e) {
 }
 
 static void
-print_consts(m1_symboltable *table) {
+print_consts(NOTNULL(m1_symboltable *table)) {
 	m1_symbol *iter;
 	iter = table->syms;
 	while (iter != NULL) {
@@ -383,13 +536,12 @@ print_consts(m1_symboltable *table) {
 			default:
 				fprintf(stderr, "unknown symbol type");
 				exit(EXIT_FAILURE);
-				break;
 		}
 		iter = iter->next;	
 	}
 }
 static void
-gencode_consts(void) {
+gencode_consts(M1_compiler *comp) {
 	fprintf(OUT, ".constants\n");
 	print_consts(&strings);	
 	print_consts(&floats);	
@@ -397,31 +549,36 @@ gencode_consts(void) {
 }
 
 static void
-gencode_metadata(void) {
+gencode_metadata(M1_compiler *comp) {
 	fprintf(OUT, ".metadata\n");	
 }
 
 static void 
-gencode_chunk(m1_chunk *c) {
-    m1_expression *iter = c->block;
+gencode_chunk(M1_compiler *comp, m1_chunk *c) {
+    m1_expression *iter;
+    
     fprintf(OUT, ".chunk \"%s\"\n", c->name);
     
-    gencode_consts();
-    gencode_metadata();
+    gencode_consts(comp);
+    gencode_metadata(comp);
+    
     fprintf(OUT, ".bytecode\n");
     
+    /* generate code for statements */
+    iter = c->block;
     while (iter != NULL) {
-        gencode_expr(iter);
+        (void)gencode_expr(comp, iter);
         iter = iter->next;
     }
 }
 
 void 
-gencode(m1_chunk *ast) {
+gencode(M1_compiler *comp, m1_chunk *ast) {
     m1_chunk *iter = ast;
      
+    fprintf(OUT, ".version 0\n");
     while (iter != NULL) {        
-        gencode_chunk(iter);
+        gencode_chunk(comp, iter);
         iter = iter->next;   
     }
 }
