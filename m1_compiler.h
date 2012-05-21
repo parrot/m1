@@ -6,6 +6,9 @@
 typedef struct M1_compiler {
 	unsigned         errors;
 	struct m1_chunk *ast;	
+	int				 constindex;
+	int              label;
+	int				 regs[4];
 	
 } M1_compiler;
 
