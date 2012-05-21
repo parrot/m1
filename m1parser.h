@@ -146,7 +146,6 @@ typedef union YYSTYPE
     struct m1_chunk         *chunk;
     struct m1_expression    *expr;
     struct m1_statement     *stat;
-    struct m1_funcall       *fun;
     struct m1_object        *obj;
     struct m1_struct        *strct;
     struct m1_structfield   *sfld;
@@ -154,7 +153,7 @@ typedef union YYSTYPE
     struct m0_instr         *instr;
 }
 /* Line 1529 of yacc.c.  */
-#line 158 "m1parser.h"
+#line 157 "m1parser.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
