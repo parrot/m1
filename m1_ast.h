@@ -82,6 +82,7 @@ typedef enum m1_expr_type {
 
 
 typedef enum m1_binop {
+	OP_ASSIGN,
     OP_PLUS,
     OP_MINUS,
     OP_MUL,
@@ -252,7 +253,7 @@ extern void expr_set_expr(m1_expression *node, m1_expression *expr);
 extern void expr_set_obj(m1_expression *node, m1_object *obj);
 
 extern void expr_set_assign(m1_expression *node, 
-                            m1_expression *lhs, m1_expression *rhs);
+                            m1_expression *lhs, int assignop, m1_expression *rhs);
 
 extern void obj_set_ident(m1_object *node, char *ident);
 extern void obj_set_index(m1_object *node, m1_expression *index);
@@ -273,7 +274,7 @@ extern m1_expression *forexpr(m1_expression *init, m1_expression *cond, m1_expre
 
 extern m1_expression *inc_or_dec(m1_expression *obj, m1_unop optype);
 extern m1_expression *returnexpr(m1_expression *retexp);
-extern m1_expression *assignexpr(m1_expression *lhs, m1_expression *rhs);
+extern m1_expression *assignexpr(m1_expression *lhs, int assignop, m1_expression *rhs);
 extern m1_expression *objectexpr(m1_object *obj, m1_expr_type type);
 
 extern m1_expression *binexpr(m1_expression *e1, m1_binop op, m1_expression *e2);
