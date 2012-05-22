@@ -198,9 +198,9 @@ inc_or_dec(m1_expression *obj, m1_unop optype) {
 }
 
 m1_expression *
-assignexpr(m1_expression *lhs, m1_expression *rhs) {
+assignexpr(m1_expression *lhs, int assignop, m1_expression *rhs) {
 	m1_expression *expr = expression(EXPR_ASSIGN); 
-	expr_set_assign(expr, lhs, rhs);
+	expr_set_assign(expr, lhs, assignop, rhs);
     return expr;
 }
 
@@ -246,10 +246,26 @@ expr_set_obj(m1_expression *node, m1_object *obj) {
 }
 
 void 
-expr_set_assign(m1_expression *node, m1_expression *lhs, m1_expression *rhs) {
+expr_set_assign(m1_expression *node, m1_expression *lhs, int assignop, m1_expression *rhs) {
+	/*
+	a = b  => normal case
+	a += b => a = a + b
+	*/
     node->expr.a      = (m1_assignment *)m1_malloc(sizeof(m1_assignment));
     node->expr.a->lhs = lhs;
-    node->expr.a->rhs = rhs;        
+    
+    switch (assignop) {
+    	case OP_ASSIGN: /* normal case */
+    		node->expr.a->rhs = rhs;        
+    		break;
+    	default: /* all other cases, such as: 
+    	            a +=b => a = a + b; 
+    	            make a new binary expression node for a + b 
+    	          */
+    		node->expr.a->rhs = binexpr(lhs, assignop, rhs);
+    		break;
+    }
+
 }
 
 void 
