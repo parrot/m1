@@ -68,7 +68,7 @@
      TK_EQ = 284,
      TK_NE = 285,
      KW_NAMESPACE = 286,
-     TK_NS_SEP = 287,
+     TK_SCOPE = 287,
      TK_LSH = 288,
      TK_RSH = 289,
      TK_STRING_CONST = 290,
@@ -116,7 +116,7 @@
 #define TK_EQ 284
 #define TK_NE 285
 #define KW_NAMESPACE 286
-#define TK_NS_SEP 287
+#define TK_SCOPE 287
 #define TK_LSH 288
 #define TK_RSH 289
 #define TK_STRING_CONST 290
@@ -138,7 +138,7 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 81 "m1.y"
+#line 84 "m1.y"
 {
     char                    *sval;
     int                      ival;
