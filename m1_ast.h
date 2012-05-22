@@ -88,7 +88,7 @@ typedef enum m1_binop {
     OP_MUL,
     OP_DIV,
     OP_MOD,
-    OP_EXP,
+    OP_XOR,
     OP_GT,
     OP_GE,
     OP_LT,
