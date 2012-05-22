@@ -317,7 +317,7 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
     
     switch(b->op) {
     	case OP_ASSIGN:
-    		op = "set";
+    		op = "set"; /* in case of a = b = c; then b = c part is a binary expression */
     		break;
         case OP_PLUS:
             op = "add";
@@ -334,8 +334,8 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
         case OP_MOD:
             op = "mod";
             break;
-        case OP_EXP:
-/*            op = "^";*/
+        case OP_XOR:
+            op = "xor";
             break;
         case OP_GT:
 /*            op = ">";*/
