@@ -93,6 +93,8 @@ main(int argc, char *argv[]) {
     struct m1_structfield   *sfld;
     struct m1_var           *var;
     struct m0_instr         *instr;
+    struct m1_case			*cse;
+    struct m1_switch		*swtch;
 }
 
 
@@ -137,6 +139,10 @@ main(int argc, char *argv[]) {
         KW_DEFAULT      "default"
         KW_SWITCH       "switch"
         KW_PRINT        "print"
+        KW_PMC			"pmc"
+        KW_EXTENDS		"extends"
+        KW_VTABLE		"vtable"
+        KW_METHOD		"method"
         
 %type <sval> TK_IDENT
              TK_STRING_CONST
@@ -153,6 +159,8 @@ main(int argc, char *argv[]) {
              TK_INT
              m0_op
              m0_arg
+             opt_vtable
+             opt_method
 
 %type <fval> TK_NUMBER
 
@@ -188,19 +196,25 @@ main(int argc, char *argv[]) {
              unexpr
              m0_block
              print_stat
+             default_case
              
 %type <instr> m0_instructions
               m0_instr
        
 
 %type <var>  var
-%type <sfld> struct_members struct_member
+             var_list
+%type <sfld> struct_members 
+             struct_member
 %type <strct> struct_definition
              
 %type <obj> field_access             
             lhs_obj
         
+%type <cse> case 
+            cases
 
+//%type <swtch>
         
 %token  KW_M0		"M0"
         TK_NL   
@@ -259,13 +273,39 @@ chunk   : function_definition
            { $$ = NULL; /* where to store structs? */}
         | namespace_definition
            { $$ = NULL; }
+        | pmc_definition
+           { $$ = NULL; }
         ;        
         
 namespace_definition: "namespace" TK_IDENT ';'
                          { /* store this in the compiler object */ 
                            /* TODO */
                          }        
-        
+
+pmc_definition	: "pmc" TK_IDENT extends_clause '{' pmc_attributes pmc_methods '}' ';'
+                ;
+                
+extends_clause	: "extends" id_list
+                ;
+                
+id_list			: TK_IDENT
+                | id_list ',' TK_IDENT
+                ;                
+                
+pmc_attributes  : type TK_IDENT ';'
+                ;
+                
+pmc_methods     : opt_vtable opt_method TK_IDENT '(' parameters ')' block
+				;
+
+opt_vtable		: /* empty */ { $$ = 0; }
+                | "vtable"    { $$ = 1; }
+                ;                      
+                
+opt_method		: /* empty */ { $$ = 0; }
+				| "method"    { $$ = 1; }       
+				;
+                        
 function_definition : return_type TK_IDENT '(' parameters ')' block
                         { $$ = chunk($1, $2, $6); }
                     ;
@@ -379,11 +419,11 @@ m0_instr    : m0_op m0_arg ',' m0_arg ',' m0_arg
                 { $$ = instr($1, 0, 0, 0); }
             ;                            
             
-m0_arg      : M0_NUMBER  {$$=0;}
+m0_arg      : M0_NUMBER  { $$=0; }
             /* add other argument types for M0 instructions */
             ;
             
-m0_op       : KW_ADD_I   {$$=0;}         
+m0_op       : "add_i"   { $$=0; }         
             /* add other M0 ops */
             ;
                   
@@ -391,14 +431,15 @@ const_declaration   : "const" type TK_IDENT '=' constexpr ';'
                         { $$ = constdecl($2, $3, $5); }
                     ;                  
                         
-var_declaration: type var ';'  
+var_declaration: type var_list ';'  
                     { $$ = vardecl($1, $2); }            
                ;         
-/*                              
-var_list    : var
-            | var_list ',' var
+                              
+var_list    : var 				{ $$ = $1; }
+            | var_list ',' var	
+                { $$ = $1; /* FIX */}
             ;               
-*/            
+            
 var         : TK_IDENT opt_init
                 { $$ = var($1); }
             | TK_IDENT '[' TK_INT ']'
@@ -416,13 +457,13 @@ assign_stat : assign_expr ';'
             ;
             
 assign_expr : lhs assignop rhs
-                { $$ = assignexpr($1, $3); }
-            
+                { $$ = assignexpr($1, $3); }            
             ;
             
 assignop    : '='
             | "+="
             | "-="
+    /* implement other assign operators like *=, /=, %=, >>=, <<=. */
             ;            
             
 if_stat     : "if" '(' expression ')' statement %prec LOWER_THAN_ELSE 
@@ -441,18 +482,27 @@ do_stat     : "do" block "while" '(' expression ')' ';'
             ;
             
 switch_stat : "switch" '(' expression ')' '{' cases default_case '}'
-                { $$ = NULL; }
+                { $$ = switchexpr($3, $6, $7); }
             ;
             
 cases       : /* empty */
+				{ $$ = NULL; }
             | cases case 
+            	{
+            		/* link them in reverse order as order doesn't matter. */
+            		$2->next = $1;
+            		$$ = $2; 
+            	}
             ;
             
 case        : "case" TK_INT ':' statements                       
+				{ $$ = switchcase($2, $4); }
             ;
             
 default_case: /* empty */
+				{ $$ = NULL; }
             | "default" ':' statements
+            	{ $$ = $3; }
             ;
                         
 function_call_expr  : TK_IDENT '(' arguments ')' 
@@ -469,8 +519,8 @@ arguments   : /* empty */
                 { $$ = NULL; }
             ;
             
-expr_list   : expression
-            | expr_list ',' expression
+expr_list   : expression 
+            | expr_list ',' expression /* TODO */
             ;                                                    
             
 for_stat    : "for" '(' for_init ';' for_cond ';' for_step ')' statement
