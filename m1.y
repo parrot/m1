@@ -69,7 +69,10 @@ main(int argc, char *argv[]) {
     init_symtab(comp.strings);
     yyparse(yyscanner, &comp);
     
-    gencode(&comp, comp.ast);
+    if (comp.errors == 0) {
+    	check(&comp, comp.ast);
+	    gencode(&comp, comp.ast);
+    }
     
     fclose(fp);
     return 0;
