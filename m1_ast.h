@@ -23,8 +23,10 @@ typedef struct m1_chunk {
 } m1_chunk;
 
 typedef struct m1_structfield {
-    char     *name;
-    data_type type;    
+    char     *name; 
+    data_type type;     
+    unsigned  offset;
+    
     struct m1_structfield *next;
     
 } m1_structfield;
@@ -32,6 +34,8 @@ typedef struct m1_structfield {
 typedef struct m1_struct {
     char    *name;
     unsigned numfields;
+    unsigned size; /* can calculate from fields but better keep a "cached" value */
+    
     struct m1_structfield *fields;
     
 } m1_struct;
@@ -72,7 +76,7 @@ typedef enum m1_expr_type {
     EXPR_CONSTDECL,
     EXPR_VARDECL,
     EXPR_M0BLOCK,
-    EXPR_PRINT
+    EXPR_PRINT   /* temporary? */
 } m1_expr_type;
 
 
@@ -110,7 +114,7 @@ typedef enum m1_unop {
     UNOP_PREINC,   /* ++a */
     UNOP_PREDEC,   /* --a */
     UNOP_MINUS,    /* -a */ 
-    UNOP_NOT
+    UNOP_NOT       /* !a */
 } m1_unop;
 
 typedef struct m1_unexpr {
@@ -123,7 +127,8 @@ typedef enum m1_object_type {
     OBJECT_MAIN,  /* a in a.b  */
     OBJECT_FIELD, /* b in a.b  */
     OBJECT_INDEX, /* b in a[b] */
-    OBJECT_DEREF  /* b in a->b */
+    OBJECT_DEREF, /* b in a->b */
+    OBJECT_SCOPE  /* b in a::b */
 } m1_object_type;
 
 typedef struct m1_object {
@@ -160,15 +165,17 @@ typedef struct m1_forexpr {
     struct m1_expression *block;    
 } m1_forexpr;
 
+/* const declarations */
 typedef struct m1_const {
-    data_type type;
-    char *name;
+    data_type             type;
+    char                 *name;
     struct m1_expression *value;
 } m1_const;
 
+/* variable declarations */
 typedef struct m1_var {
     data_type type;
-    char *name;
+    char     *name;
     
 } m1_var;
 
@@ -221,7 +228,7 @@ extern void expr_set_unexpr(m1_expression *node, m1_expression *exp, m1_unop op)
        
 extern m1_expression *funcall(char *name);
 
-extern void expr_set_funcall(m1_expression *node, m1_funcall *f);
+//extern void expr_set_funcall(m1_expression *node, m1_funcall *f);
 
 
 
@@ -266,5 +273,8 @@ extern m1_expression *constdecl(data_type type, char *name, m1_expression *expr)
 extern m1_expression *vardecl(data_type type, m1_var *v);
 
 extern m1_var *var(char *name);
+
+extern unsigned field_size(struct m1_structfield *field);
+
 #endif
 
