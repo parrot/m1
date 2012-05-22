@@ -3,8 +3,8 @@ LEX=flex
 YACC=bison
 CFLAGS=-c -Wall
 
-m1: m1parser.o m1lexer.o m1_ast.o m1_eval.o m1_symtab.o m1_instr.o m1_gencode.o
-	$(CC) -o m1 m1parser.o m1lexer.o m1_ast.o m1_eval.o m1_symtab.o m1_instr.o m1_gencode.o
+m1: m1parser.o m1lexer.o m1_ast.o m1_eval.o m1_symtab.o m1_instr.o m1_gencode.o m1_semcheck.o
+	$(CC) -o m1 m1parser.o m1lexer.o m1_ast.o m1_eval.o m1_symtab.o m1_instr.o m1_gencode.o m1_semcheck.o
 
 m1lexer.o: m1lexer.c
 	$(CC) $(CFLAGS) m1lexer.c
@@ -32,6 +32,9 @@ m1_instr.o: m1_instr.c m1_instr.h
 
 m1_gencode.o: m1_gencode.c m1_gencode.h
 	$(CC) $(CFLAGS) m1_gencode.c
+
+m1_semcheck.o: m1_semcheck.c m1_semcheck.h
+	$(CC) $(CFLAGS) m1_semcheck.c
 
 clean:
 	$(RM) -rf m1parser.c \
