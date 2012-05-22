@@ -216,24 +216,13 @@ extern m1_expression *expression(m1_expr_type type);
 extern void expr_set_num(m1_expression *e, double v);
 extern void expr_set_int(m1_expression *e, int v);
 
-extern void expr_set_binexpr(m1_expression *node, 
-                             m1_expression *e1, 
-                             m1_binop op, 
-                             m1_expression *e2);
 
 extern void expr_set_unexpr(m1_expression *node, m1_expression *exp, m1_unop op);             
        
-extern m1_funcall *funcall(char *name);
-extern void expr_set_funcall(m1_expression *node, m1_funcall *f);
-extern void expr_set_for(m1_expression *node, 
-                         m1_expression *init,
-                         m1_expression *cond,
-                         m1_expression *step,
-                         m1_expression *stat);
+extern m1_expression *funcall(char *name);
 
-extern void expr_set_while(m1_expression *node,
-                           m1_expression *cond,
-                           m1_expression *block);
+extern void expr_set_funcall(m1_expression *node, m1_funcall *f);
+
 
 
 extern void expr_set_expr(m1_expression *node, m1_expression *expr);
@@ -245,8 +234,6 @@ extern void expr_set_assign(m1_expression *node,
 extern void obj_set_ident(m1_object *node, char *ident);
 extern void obj_set_index(m1_object *node, m1_expression *index);
 
-extern void expr_set_if(m1_expression *node, m1_expression *cond, 
-            m1_expression *ifblock, m1_expression *elseblock);
             
 extern m1_object *object(m1_object_type type);            
 
@@ -256,11 +243,27 @@ extern m1_struct *newstruct(char *name, m1_structfield *fields);
 
 extern void expr_set_string(m1_expression *node, char *str);
 
+extern m1_expression *ifexpr(m1_expression *cond, m1_expression *ifblock, m1_expression *elseblock);
+extern m1_expression *whileexpr(m1_expression *cond, m1_expression *block);
+extern m1_expression *dowhileexpr(m1_expression *cond, m1_expression *block);
+extern m1_expression *forexpr(m1_expression *init, m1_expression *cond, m1_expression *step, m1_expression *stat);
 
-extern void expr_set_const_decl(m1_expression *node, data_type type, 
-                    char *name, m1_expression *expr); 
+extern m1_expression *inc_or_dec(m1_expression *obj, m1_unop optype);
+extern m1_expression *returnexpr(m1_expression *retexp);
+extern m1_expression *assignexpr(m1_expression *lhs, m1_expression *rhs);
+extern m1_expression *objectexpr(m1_object *obj, m1_expr_type type);
 
-extern void expr_set_var_decl(m1_expression *node, data_type type, m1_var *decl);
+extern m1_expression *binexpr(m1_expression *e1, m1_binop op, m1_expression *e2);
+extern m1_expression *number(double value);
+extern m1_expression *integer(int value);
+extern m1_expression *string(char *str);
+extern m1_expression *unaryexpr(m1_unop op, m1_expression *e);
+extern m1_object *arrayindex(m1_expression *index);
+extern m1_object *objectfield(char *field);
+extern m1_object *objectderef(char *field);
+extern m1_expression *printexpr(m1_expression *e);
+extern m1_expression *constdecl(data_type type, char *name, m1_expression *expr);
+extern m1_expression *vardecl(data_type type, m1_var *v);
 
 extern m1_var *var(char *name);
 #endif
