@@ -37,13 +37,13 @@ extern m1_symboltable strings;
 extern m1_symboltable ints;
 
 
-extern void init_symtabs(void);
+extern void init_symtab(m1_symboltable *table);
 extern m1_symbol *sym_enter_str(m1_symboltable *table, char *name, int scope);
 extern m1_symbol *sym_enter_num(m1_symboltable *table, double val);
 extern m1_symbol *sym_enter_int(m1_symboltable *table, int val);
 
 extern m1_symbol *sym_find_str(m1_symboltable *table, char *name);
-extern m1_symbol *sym_find_numt(m1_symboltable *table, double val);
+extern m1_symbol *sym_find_num(m1_symboltable *table, double val);
 extern m1_symbol *sym_find_int(m1_symboltable *table, int val);
 
 #endif
