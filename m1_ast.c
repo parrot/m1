@@ -348,3 +348,29 @@ field_size(struct m1_structfield *field) {
 			return 4; /* fix this */	
 	}	
 }
+
+static void
+expr_set_switch(m1_expression *node, m1_expression *selector, m1_case *cases, m1_expression *defaultstat) {
+	node->expr.s = (m1_switch *)m1_malloc(sizeof(m1_switch));
+	node->expr.s->selector    = selector; 
+	node->expr.s->cases       = cases;
+	node->expr.s->defaultstat = defaultstat;
+	
+}
+
+m1_expression *
+switchexpr(m1_expression *selector, m1_case *cases, m1_expression *defaultstat) {
+	m1_expression *node = expression(EXPR_SWITCH);
+	expr_set_switch(node, selector, cases, defaultstat); 
+	return node;
+}
+
+m1_case *
+switchcase(int selector, m1_expression *block) {
+	m1_case *c  = (m1_case *)m1_malloc(sizeof(m1_case));
+	c->selector = selector;
+	c->block    = block;
+	c->next     = NULL;
+	return c;
+}
+
