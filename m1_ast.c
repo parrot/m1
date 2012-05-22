@@ -332,3 +332,19 @@ dowhileexpr(m1_expression *cond, m1_expression *block) {
 	expr_set_while(expr, cond, block);
 	return expr;	
 }
+
+unsigned 
+field_size(struct m1_structfield *field) {
+	switch (field->type) {
+		case TYPE_INT:
+			return 4;
+		case TYPE_NUM:
+			return 8;
+		case TYPE_STRING: /* pointer? */
+			return 4;
+		case TYPE_PMC: /* pointer */
+			return 4;
+		default: /* look up size of type. XXX */
+			return 4; /* fix this */	
+	}	
+}
