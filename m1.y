@@ -70,7 +70,8 @@ main(int argc, char *argv[]) {
     yyparse(yyscanner, &comp);
     
     if (comp.errors == 0) {
-    	check(&comp, comp.ast);
+//    	check(&comp, comp.ast); /*  need to finish */
+    	fprintf(stderr, "generating code...\n");
 	    gencode(&comp, comp.ast);
     }
     
@@ -94,7 +95,6 @@ main(int argc, char *argv[]) {
     struct m1_var           *var;
     struct m0_instr         *instr;
     struct m1_case			*cse;
-    struct m1_switch		*swtch;
 }
 
 
@@ -161,6 +161,7 @@ main(int argc, char *argv[]) {
              m0_arg
              opt_vtable
              opt_method
+             assignop
 
 %type <fval> TK_NUMBER
 
@@ -214,7 +215,6 @@ main(int argc, char *argv[]) {
 %type <cse> case 
             cases
 
-//%type <swtch>
         
 %token  KW_M0		"M0"
         TK_NL   
@@ -237,7 +237,7 @@ main(int argc, char *argv[]) {
 %nonassoc TK_AND TK_OR
 %left TK_LE TK_GE TK_LT TK_GT TK_EQ TK_NE
 %left TK_LSH TK_RSH
-%left '+' '-'
+%left '+' '-' '='
 %left '*' '/' '&' '|' '%' '?' ':' '!'
 %right '^'
 %left TK_INC TK_DEC
@@ -334,9 +334,7 @@ struct_members      : struct_member
                         }
                     | struct_members struct_member
                         { 
-                          /* fields are linked in reverse order,
-                             but that's ok. 
-                          */
+                          /* fields are linked in reverse order, but that's ok. */
                           
                           /* calculate offset of this field */
                           $2->offset = $1->offset + field_size($1);
@@ -453,16 +451,16 @@ opt_init    : /* empty */
             ;
                         
 assign_stat : assign_expr ';'
-                { $$ = $1; }
+                { $$ = $1; fprintf(stderr, "assign stat"); }
             ;
             
 assign_expr : lhs assignop rhs
-                { $$ = assignexpr($1, $3); }            
+                { $$ = assignexpr($1, $2, $3); }            
             ;
             
-assignop    : '='
-            | "+="
-            | "-="
+assignop    : '='  { $$ = OP_ASSIGN; }
+            | "+=" { $$ = OP_PLUS; }
+            | "-=" { $$ = OP_MINUS; }
     /* implement other assign operators like *=, /=, %=, >>=, <<=. */
             ;            
             
@@ -634,7 +632,9 @@ tertexpr    : expression '?' expression ':' expression
                 { $$ = ifexpr($1, $3, $5); }
             ;
                    
-binexpr     : expression '+' expression
+binexpr     : expression '=' expression /* to allow writing: a = b = c; */
+				{ $$ = binexpr($1, OP_ASSIGN, $3); }
+            | expression '+' expression
                 { $$ = binexpr($1, OP_PLUS, $3); }
             | expression '-' expression
                 { $$ = binexpr($1, OP_MINUS, $3); }
