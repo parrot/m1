@@ -154,7 +154,7 @@ eval_binary(m1_binexpr *b) {
         case OP_MOD:
             op = "%";
             break;
-        case OP_EXP:
+        case OP_XOR:
             op = "^";
             break;
         case OP_GT:
