@@ -131,6 +131,7 @@ main(int argc, char *argv[]) {
         KW_EXTENDS		"extends"
         KW_VTABLE		"vtable"
         KW_METHOD		"method"
+        KW_NEW			"new"
         
 %type <sval> TK_IDENT
              TK_STRING_CONST
@@ -612,6 +613,8 @@ expression  : constexpr
             | function_call_expr                
             | "null"
                 { $$ = expression(EXPR_NULL); }
+            | "new" TK_IDENT '(' arguments ')'
+                { $$ = NULL; /* TODO; for allocating memory for PMCs */}
             ;
             
 unexpr  : '-' expression
