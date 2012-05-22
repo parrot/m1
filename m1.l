@@ -3,10 +3,17 @@
 #include "m1parser.h"
 #include <string.h>
 
+#define YY_EXTRA_TYPE  struct M1_compiler *
+
 %}
 
 
 %option nounput
+%option reentrant
+%option yylineno
+%option bison-bridge
+%option warn
+%option noyywrap
 %option outfile="m1lexer.c"
 %option header-file="m1lexer.h"
 
@@ -74,6 +81,7 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "namespace"             { return KW_NAMESPACE; }
 "null"                  { return KW_NULL; }
 "num"                   { return KW_NUM; }
+
 "print"                 { return KW_PRINT; }
 "return"                { return KW_RETURN; }
 "string"                { return KW_STRING; }
@@ -83,22 +91,22 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "while"                 { return KW_WHILE; }
 
 {DQ_STRING}             {
-                          yylval.sval = strdup(yytext);
+                          yylval->sval = strdup(yytext);
                           return TK_STRING_CONST;
                         }
 
 {DIGITS}                { 
-                           yylval.ival = atoi(yytext); 
+                           yylval->ival = atoi(yytext); 
                            return TK_INT; 
                         }
                         
 {FLOATNUM}              {
-                           yylval.fval = atof(yytext);
+                           yylval->fval = atof(yytext);
                            return TK_NUMBER;
                         }
                         
 [a-zA-Z_][a-zA-Z0-9]*   { 
-                           yylval.sval = strdup(yytext);
+                           yylval->sval = strdup(yytext);
                            return TK_IDENT; 
                         }
 
@@ -106,7 +114,7 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 <M0_PARSING>{EOL}[\t\r\n ]*         {  }
 <M0_PARSING>[{,]         { return yytext[0]; }
 <M0_PARSING>[}]         { BEGIN INITIAL; return yytext[0]; }
-<M0_PARSING>[0-9]+      { yylval.ival = atoi(yytext); return M0_NUMBER; }
+<M0_PARSING>[0-9]+      { yylval->ival = atoi(yytext); return M0_NUMBER; }
 
 %{
 /*   
