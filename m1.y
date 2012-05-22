@@ -18,24 +18,12 @@
 #include "m1_compiler.h"
 #include "m1_semcheck.h"
 
-/* Just to make sure that yscan_t can be used as a type in this file.
-*/
-/*
-#ifndef YY_TYPEDEF_YY_SCANNER_T
-# define YY_TYPEDEF_YY_SCANNER_T
-
-typedef void * yyscan_t;
-
-#endif
-*/
-
-#ifndef YYLTYPE_IS_TRIVIAL
-# define YYLTYPE_IS_TRIVIAL 0
-#endif
 
 extern m0_instr *instr(char op, char arg1, char arg2, char arg3);
 extern int yyparse(yyscan_t yyscanner, struct M1_compiler * const comp);
 extern int yylex(YYSTYPE *yylval, yyscan_t yyscanner);
+
+
 
 int 
 yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
@@ -158,9 +146,7 @@ main(int argc, char *argv[]) {
              user_type
              TK_INT
              m0_op
-             m0_arg
-             opt_vtable
-             opt_method
+             m0_arg                       
              assignop
 
 %type <fval> TK_NUMBER
@@ -233,13 +219,12 @@ main(int argc, char *argv[]) {
 
 %start TOP
 
-%nonassoc TK_INC_ASSIGN
-%nonassoc TK_AND TK_OR
+%nonassoc TK_INC_ASSIGN '='
+%left TK_AND TK_OR
 %left TK_LE TK_GE TK_LT TK_GT TK_EQ TK_NE
 %left TK_LSH TK_RSH
-%left '+' '-' '='
-%left '*' '/' '&' '|' '%' '?' ':' '!'
-%right '^'
+%left '+' '-' 
+%left '*' '/' '&' '|' '%' '?' ':' '!' '^'
 %left TK_INC TK_DEC
 
 /* for dangling else conflict in the grammar; don't
@@ -270,46 +255,49 @@ chunks  : chunk
         
 chunk   : function_definition            
         | struct_definition
-           { $$ = NULL; /* where to store structs? */}
+           { $$ = NULL; /* structs are PMCs with all fields public and no methods */}
         | namespace_definition
-           { $$ = NULL; }
+           { $$ = NULL; /* do we want namespaces? */ }
         | pmc_definition
-           { $$ = NULL; }
+           { $$ = NULL; /* TODO */ }
         ;        
         
 namespace_definition: "namespace" TK_IDENT ';'
-                         { /* store this in the compiler object */ 
+                         { 
                            /* TODO */
                          }        
 
-pmc_definition	: "pmc" TK_IDENT extends_clause '{' pmc_attributes pmc_methods '}' ';'
+/* TODO: PMC handling */
+pmc_definition	: "pmc" TK_IDENT extends_clause '{'  pmc_items '}' ';'
                 ;
-                
-extends_clause	: "extends" id_list
+                                
+extends_clause	: /* empty */
+                | "extends" id_list
                 ;
                 
 id_list			: TK_IDENT
                 | id_list ',' TK_IDENT
                 ;                
-                
-pmc_attributes  : type TK_IDENT ';'
+
+pmc_items		: /* empty */
+                | pmc_items pmc_item
                 ;
                 
-pmc_methods     : opt_vtable opt_method TK_IDENT '(' parameters ')' block
+pmc_item		: pmc_attr
+				| pmc_method
 				;
 
-opt_vtable		: /* empty */ { $$ = 0; }
-                | "vtable"    { $$ = 1; }
-                ;                      
-                
-opt_method		: /* empty */ { $$ = 0; }
-				| "method"    { $$ = 1; }       
+pmc_attr		: var_declaration
+                ;
+
+pmc_method		: "method" function_definition
 				;
-                        
+                                        
 function_definition : return_type TK_IDENT '(' parameters ')' block
                         { $$ = chunk($1, $2, $6); }
                     ;
-        
+
+/* TODO: parameter handling. */        
 parameters  : /* empty */
             | param_list
             ;
@@ -361,7 +349,7 @@ statements  : /* empty */
                         $$ = $2;
                         $$->next = NULL;                        
                     }
-                    else {
+                    else { /* add $2 to end of list. */
                         m1_expression *iter = $1;
                         while (iter->next != NULL)
                             iter = iter->next;
@@ -387,19 +375,20 @@ statement   : assign_stat
             | break_stat  
             | switch_stat 
             | print_stat
+   /* do we want a try_stat? "try" block ["catch" '(' TK_IDENT ')' block]+ */
             | m0_block                                      
             ;
             
 print_stat  : "print" '(' expression ')' ';'
                 { $$ = printexpr($3); }
             ;
-                        
+
+/* TODO: handle M0 instructions */                        
 m0_block    : "M0" '{' m0_instructions '}'
                 { $$ = expression(EXPR_M0BLOCK); }
             ;            
             
 m0_instructions : m0_instr
-
                 | m0_instructions m0_instr
                     { 
                       $1->next = $2; 
@@ -451,7 +440,7 @@ opt_init    : /* empty */
             ;
                         
 assign_stat : assign_expr ';'
-                { $$ = $1; fprintf(stderr, "assign stat"); }
+                { $$ = $1; }
             ;
             
 assign_expr : lhs assignop rhs
@@ -461,7 +450,9 @@ assign_expr : lhs assignop rhs
 assignop    : '='  { $$ = OP_ASSIGN; }
             | "+=" { $$ = OP_PLUS; }
             | "-=" { $$ = OP_MINUS; }
-    /* implement other assign operators like *=, /=, %=, >>=, <<=. */
+    /* TODO: implement other assign operators like *=, /=, %=, >>=, <<=. 
+    Contributions welcome! see ast.h for list of ops.
+    */
             ;            
             
 if_stat     : "if" '(' expression ')' statement %prec LOWER_THAN_ELSE 
@@ -486,8 +477,7 @@ switch_stat : "switch" '(' expression ')' '{' cases default_case '}'
 cases       : /* empty */
 				{ $$ = NULL; }
             | cases case 
-            	{
-            		/* link them in reverse order as order doesn't matter. */
+            	{   /* link them in reverse order as order doesn't matter. */
             		$2->next = $1;
             		$$ = $2; 
             	}
@@ -502,7 +492,8 @@ default_case: /* empty */
             | "default" ':' statements
             	{ $$ = $3; }
             ;
-                        
+             
+/* TODO: at some point we want x.y(); replace TK_IDENT with "lhs". Get this working first though*/           
 function_call_expr  : TK_IDENT '(' arguments ')' 
                          { $$ = funcall($1); }
                     ;
@@ -510,7 +501,8 @@ function_call_expr  : TK_IDENT '(' arguments ')'
 function_call_stat  : function_call_expr ';'
                          { $$ = $1; }
                     ;
-                
+
+/* TODO: argument handling  */                
 arguments   : /* empty */
                 { $$ = NULL; }
             | expr_list
@@ -595,7 +587,7 @@ field_access: '[' expression ']'
             | "->" TK_IDENT
                 { $$ = objectderef($2); }                
             | "::" TK_IDENT
-                { $$ = NULL; }
+                { $$ = NULL; /* do we want this scope operator? */}
             ;        
 
 rhs     : expression
@@ -645,7 +637,7 @@ binexpr     : expression '=' expression /* to allow writing: a = b = c; */
             | expression '%' expression
                 { $$ = binexpr($1, OP_MOD, $3); }
             | expression '^' expression
-                { $$ = binexpr($1, OP_EXP, $3); }
+                { $$ = binexpr($1, OP_XOR, $3); }
             | expression '&' expression
                 { $$ = binexpr($1, OP_BAND, $3); }
             | expression '|' expression
@@ -684,6 +676,7 @@ type    : native_type
 native_type : "int"     { $$ = TYPE_INT; }
             | "num"     { $$ = TYPE_NUM; }
             | "string"  { $$ = TYPE_STRING; }
+      /* TODO: what about "pmc" ? */
             ;
             
 user_type   : TK_IDENT { $$ = TYPE_USERDEFINED; }
@@ -694,7 +687,7 @@ user_type   : TK_IDENT { $$ = TYPE_USERDEFINED; }
 %%
 
 /*
-grammar specification:
+grammar specification: (OUTDATED!)
 
 program: chunk*
 
