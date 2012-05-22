@@ -16,7 +16,7 @@
 #include "m1_instr.h"
 #include "m1_symtab.h"
 #include "m1_compiler.h"
-
+#include "m1_semcheck.h"
 
 /* Just to make sure that yscan_t can be used as a type in this file.
 */
@@ -124,7 +124,7 @@ main(int argc, char *argv[]) {
         TK_EQ           "=="
         TK_NE           "!="
         KW_NAMESPACE    "namespace"
-        TK_NS_SEP       "::"
+        TK_SCOPE        "::"
         TK_LSH          "<<"
         TK_RSH          ">>"
         TK_STRING_CONST
@@ -285,18 +285,26 @@ struct_definition   : "struct" TK_IDENT '{' struct_members '}' ';'
                     ;         
                     
 struct_members      : struct_member
+                        { 
+                          $1->offset = 0; /* first field, no offset */
+                          $$ = $1;
+                        }
                     | struct_members struct_member
                         { 
                           /* fields are linked in reverse order,
                              but that's ok. 
                           */
+                          
+                          /* calculate offset of this field */
+                          $2->offset = $1->offset + field_size($1);
+                           
                           $$ = $2;
-                          $2->next = $1;  
+                          $2->next = $1;                            
                         }
                           
                     ;
                     
-struct_member       : type TK_IDENT ';'
+struct_member       : return_type TK_IDENT ';'
                         { $$ = structfield ($2, $1); }
                     ;                                        
         
@@ -535,6 +543,8 @@ field_access: '[' expression ']'
                 { $$ = objectfield($2); }           
             | "->" TK_IDENT
                 { $$ = objectderef($2); }                
+            | "::" TK_IDENT
+                { $$ = NULL; }
             ;        
 
 rhs     : expression
