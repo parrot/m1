@@ -78,12 +78,16 @@
      KW_DEFAULT = 294,
      KW_SWITCH = 295,
      KW_PRINT = 296,
-     KW_M0 = 297,
-     TK_NL = 298,
-     M0_NUMBER = 299,
-     KW_ADD_I = 300,
-     KW_ADD_N = 301,
-     LOWER_THAN_ELSE = 302
+     KW_PMC = 297,
+     KW_EXTENDS = 298,
+     KW_VTABLE = 299,
+     KW_METHOD = 300,
+     KW_M0 = 301,
+     TK_NL = 302,
+     M0_NUMBER = 303,
+     KW_ADD_I = 304,
+     KW_ADD_N = 305,
+     LOWER_THAN_ELSE = 306
    };
 #endif
 /* Tokens.  */
@@ -126,19 +130,23 @@
 #define KW_DEFAULT 294
 #define KW_SWITCH 295
 #define KW_PRINT 296
-#define KW_M0 297
-#define TK_NL 298
-#define M0_NUMBER 299
-#define KW_ADD_I 300
-#define KW_ADD_N 301
-#define LOWER_THAN_ELSE 302
+#define KW_PMC 297
+#define KW_EXTENDS 298
+#define KW_VTABLE 299
+#define KW_METHOD 300
+#define KW_M0 301
+#define TK_NL 302
+#define M0_NUMBER 303
+#define KW_ADD_I 304
+#define KW_ADD_N 305
+#define LOWER_THAN_ELSE 306
 
 
 
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 84 "m1.y"
+#line 73 "m1.y"
 {
     char                    *sval;
     int                      ival;
@@ -151,9 +159,10 @@ typedef union YYSTYPE
     struct m1_structfield   *sfld;
     struct m1_var           *var;
     struct m0_instr         *instr;
+    struct m1_case			*cse;
 }
 /* Line 1529 of yacc.c.  */
-#line 157 "m1parser.h"
+#line 166 "m1parser.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
