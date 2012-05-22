@@ -42,7 +42,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 
     fprintf(stderr, "%s: unexpected token '%s' (line %d)\n\n", 
             str, yyget_text(yyscanner), yyget_lineno(yyscanner) );
-           
+    ++comp->errors;        
     return 0;
 }
 
@@ -58,13 +58,15 @@ main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
    
-   
+   	memset(&comp, 0, sizeof(M1_compiler));
     yylex_init(&yyscanner);
     yyset_extra(&comp, yyscanner);
     
     yyset_in(fp, yyscanner);
 
-    init_symtabs();
+    init_symtab(comp.ints);
+    init_symtab(comp.floats);
+    init_symtab(comp.strings);
     yyparse(yyscanner, &comp);
     
     gencode(&comp, comp.ast);
@@ -215,8 +217,9 @@ main(int argc, char *argv[]) {
 %start TOP
 
 %nonassoc TK_INC_ASSIGN
+%nonassoc TK_AND TK_OR
 %left TK_LE TK_GE TK_LT TK_GT TK_EQ TK_NE
-%left TK_AND TK_OR TK_LSH TK_RSH
+%left TK_LSH TK_RSH
 %left '+' '-'
 %left '*' '/' '&' '|' '%' '?' ':' '!'
 %right '^'
