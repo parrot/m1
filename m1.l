@@ -72,22 +72,26 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "default"               { return KW_DEFAULT; }
 "do"                    { return KW_DO; }
 "else"                  { return KW_ELSE; }
+"extends"				{ return KW_EXTENDS; }
 "for"                   { return KW_FOR; }
 "if"                    { return KW_IF; }
 "int"                   { return KW_INT; }
 
 "M0"                    { BEGIN(M0_PARSING); return KW_M0; }
 
+"method"				{ return KW_METHOD; }
 "namespace"             { return KW_NAMESPACE; }
 "null"                  { return KW_NULL; }
 "num"                   { return KW_NUM; }
 
+"pmc"					{ return KW_PMC; }
 "print"                 { return KW_PRINT; }
 "return"                { return KW_RETURN; }
 "string"                { return KW_STRING; }
 "struct"                { return KW_STRUCT; }
 "switch"                { return KW_SWITCH; }
 "void"                  { return KW_VOID; }
+"vtable"				{ return KW_VTABLE; }
 "while"                 { return KW_WHILE; }
 
 {DQ_STRING}             {
