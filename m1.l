@@ -59,7 +59,7 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "<<"                    { return TK_LSH; }
 ">>"                    { return TK_RSH; }
 
-"::"                    { return TK_NS_SEP; }
+"::"                    { return TK_SCOPE; }
 "+="                    { return TK_INC_ASSIGN; }
 "-="                    { return TK_DEC_ASSIGN; }
 
