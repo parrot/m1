@@ -95,34 +95,35 @@ gencode_null(M1_compiler *comp) {
 
 static m1_reg
 gencode_obj(M1_compiler *comp, m1_object *obj) {
-	m1_reg reg;
-	reg = gen_reg(comp, 'I');
-
-	return reg;
-	/*
+	m1_reg reg, oreg;
+	
+	reg  = gen_reg(comp, 'I');
+	oreg = gen_reg(comp, 'I');
+	
+	
     switch (obj->type) {
         case OBJECT_MAIN:
-            fprintf(OUT, "%s", obj->obj.field);
+        	
+            fprintf(OUT, "\tset\tI%d, I%d\n", 1000, 2000);
             break;
         case OBJECT_FIELD:
-            fprintf(OUT, ".%s", obj->obj.field);
+            fprintf(OUT, "\tset_imm\tI%d, %d\n", 1000, 4);
             break;
         case OBJECT_DEREF:
-            fprintf(OUT, "->%s", obj->obj.field);
+	/* todo */
             break;
-        case OBJECT_INDEX:
-            fprintf(OUT, "[");
-            gencode_expr(obj->obj.index);
-            fprintf(OUT, "]");
+        case OBJECT_INDEX:         
+            reg = gencode_expr(comp, obj->obj.index);
             break;            
         default:
             break;
     }      
     
     if (obj->next) {
-        gencode_obj(obj->next);   
+        reg = gencode_obj(comp, obj->next);   
     }
-    */
+    
+    return reg;
 }
 
 static m1_reg
