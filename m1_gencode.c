@@ -316,6 +316,9 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
     	   target;
     
     switch(b->op) {
+    	case OP_ASSIGN:
+    		op = "set";
+    		break;
         case OP_PLUS:
             op = "add";
             break;
