@@ -76,6 +76,7 @@ typedef enum m1_expr_type {
     EXPR_CONSTDECL,
     EXPR_VARDECL,
     EXPR_M0BLOCK,
+    EXPR_SWITCH,
     EXPR_PRINT   /* temporary? */
 } m1_expr_type;
 
@@ -180,6 +181,20 @@ typedef struct m1_var {
 } m1_var;
 
 
+typedef struct m1_case {
+	int selector;
+	struct m1_expression *block;
+	
+	struct m1_case *next;
+	
+} m1_case;
+
+typedef struct m1_switch {
+	struct m1_expression *selector;
+	struct m1_case       *cases;
+	struct m1_expression *defaultstat;
+	
+} m1_switch;
 
 
 typedef struct m0_block {
@@ -205,6 +220,7 @@ typedef struct m1_expression {
         struct m1_const      *c;
         struct m1_var        *v;
         struct m0_block      *m0;
+        struct m1_switch     *s;
     } expr;
     
     m1_expr_type      type;
@@ -275,6 +291,9 @@ extern m1_expression *vardecl(data_type type, m1_var *v);
 extern m1_var *var(char *name);
 
 extern unsigned field_size(struct m1_structfield *field);
+
+extern m1_expression *switchexpr(m1_expression *expr, m1_case *cases, m1_expression *defaultstat);
+extern m1_case *switchcase(int selector, m1_expression *block);
 
 #endif
 
