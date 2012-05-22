@@ -81,6 +81,7 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 
 "method"				{ return KW_METHOD; }
 "namespace"             { return KW_NAMESPACE; }
+"new"					{ return KW_NEW; }
 "null"                  { return KW_NULL; }
 "num"                   { return KW_NUM; }
 
