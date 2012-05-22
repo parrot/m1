@@ -12,7 +12,7 @@ m1lexer.o: m1lexer.c
 m1parser.o: m1parser.c
 	$(CC) $(CFLAGS) m1parser.c	
 
-m1parser.c: m1.y
+m1parser.c: m1.y m1lexer.c
 	$(YACC) m1.y
 
 m1lexer.c: m1.l
