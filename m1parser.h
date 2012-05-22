@@ -82,12 +82,13 @@
      KW_EXTENDS = 298,
      KW_VTABLE = 299,
      KW_METHOD = 300,
-     KW_M0 = 301,
-     TK_NL = 302,
-     M0_NUMBER = 303,
-     KW_ADD_I = 304,
-     KW_ADD_N = 305,
-     LOWER_THAN_ELSE = 306
+     KW_NEW = 301,
+     KW_M0 = 302,
+     TK_NL = 303,
+     M0_NUMBER = 304,
+     KW_ADD_I = 305,
+     KW_ADD_N = 306,
+     LOWER_THAN_ELSE = 307
    };
 #endif
 /* Tokens.  */
@@ -134,12 +135,13 @@
 #define KW_EXTENDS 298
 #define KW_VTABLE 299
 #define KW_METHOD 300
-#define KW_M0 301
-#define TK_NL 302
-#define M0_NUMBER 303
-#define KW_ADD_I 304
-#define KW_ADD_N 305
-#define LOWER_THAN_ELSE 306
+#define KW_NEW 301
+#define KW_M0 302
+#define TK_NL 303
+#define M0_NUMBER 304
+#define KW_ADD_I 305
+#define KW_ADD_N 306
+#define LOWER_THAN_ELSE 307
 
 
 
@@ -162,7 +164,7 @@ typedef union YYSTYPE
     struct m1_case			*cse;
 }
 /* Line 1529 of yacc.c.  */
-#line 166 "m1parser.h"
+#line 168 "m1parser.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
