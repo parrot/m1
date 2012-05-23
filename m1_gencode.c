@@ -18,6 +18,8 @@ code generation skeleton.
 
 static m1_reg gencode_expr(M1_compiler *comp, m1_expression *e);
 
+static const char type_chars[4] = {'i', 'n', 's', 'p'};
+static const char reg_chars[4] = {'I', 'N', 'S', 'P'};
 /*
 
 Allocate new registers as needed.
@@ -26,9 +28,12 @@ Allocate new registers as needed.
 static m1_reg
 gen_reg(M1_compiler *comp, data_type type) {
     /* int, num, string, pmc */
+    static int regs[4] = {1,1,1,1};
     m1_reg reg;
     reg.type = type;
-	reg.no   = comp->regs[type]++;   
+//	reg.no   = comp->regs[type]++;   
+
+    reg.no = regs[type]++;
     return reg;
 }
 
@@ -49,7 +54,7 @@ gencode_number(M1_compiler *comp, double value) {
 	/*
 	deref Nx, CONSTS, <const_id>
 	*/
-    m1_reg     reg = gen_reg(comp, 'N');
+    m1_reg     reg = gen_reg(comp, TYPE_NUM);
     m1_symbol *sym = sym_find_num(&floats, value);
 
 
@@ -62,7 +67,7 @@ gencode_int(M1_compiler *comp, int value) {
 	/*
 	deref Ix, CONSTS, <const_id>
 	*/
-    m1_reg     reg = gen_reg(comp, 'I');
+    m1_reg     reg = gen_reg(comp, TYPE_INT);
     m1_symbol *sym = sym_find_int(&ints, value);
 
     fprintf(OUT, "\tderef\tI%d, CONSTS, %d\n", reg.no, sym->constindex);
@@ -71,11 +76,12 @@ gencode_int(M1_compiler *comp, int value) {
 
 static m1_reg
 gencode_string(M1_compiler *comp, NOTNULL(char *value)) {
-    m1_reg     reg = gen_reg(comp, 'S');
-
+    m1_reg     reg = gen_reg(comp, TYPE_STRING);
+    m1_reg     one = gen_reg(comp, TYPE_INT);
+    
     m1_symbol *sym = sym_find_str(&strings, value); /* find index of value in CONSTS */
-    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", 0, sym->constindex);
-    fprintf(OUT, "\tderef\tS%d, CONSTS, %d\n", reg.no, 0);
+    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", one.no, sym->constindex);
+    fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", reg.no, one.no);
     return reg;
 }
 
@@ -392,8 +398,8 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     char  *op;
     int    postfix = 0;
     m1_reg reg;
-    m1_reg target = gen_reg(comp, 'I'); /* for final value */
-    m1_reg one    = gen_reg(comp, 'I'); /* to store "1" */
+    m1_reg target = gen_reg(comp, TYPE_INT); /* for final value */
+    m1_reg one    = gen_reg(comp, TYPE_INT); /* to store "1" */
     
     switch (u->op) {
         case UNOP_POSTINC:
@@ -444,23 +450,24 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
 
 
 
+
 static m1_reg
 gencode_print(M1_compiler *comp, m1_expression *expr) {
 
     m1_reg reg;
     m1_reg one;
     reg = gencode_expr(comp, expr);
-    one = gen_reg(comp, 'I');
+    one = gen_reg(comp, TYPE_INT);
     
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n",  one.no);
-	fprintf(OUT, "\tprint_%c\tI0, %c%d, x\n", tolower(reg.type), reg.type, reg.no);
+	fprintf(OUT, "\tprint_%c\tI%d, %c%d, x\n", type_chars[(int)reg.type], one.no, reg_chars[(int)reg.type], reg.no);
 	return reg;
 }
 
 static m1_reg
 gencode_new(M1_compiler *comp, m1_newexpr *expr) {
-	m1_reg reg     = gen_reg(comp, 'I');
-	m1_reg sizereg = gen_reg(comp, 'I');
+	m1_reg reg     = gen_reg(comp, TYPE_INT);
+	m1_reg sizereg = gen_reg(comp, TYPE_INT);
 	unsigned size  = 128; /* fix; should be size of object requested */
 	fprintf(OUT, "\tset_imm I%d, 0, %d\n", sizereg.no, size);
 	fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", reg.no, sizereg.no);
