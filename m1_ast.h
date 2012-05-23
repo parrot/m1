@@ -62,29 +62,30 @@ typedef struct m1_newexpr {
 
 
 typedef enum m1_expr_type {
-    EXPR_NUMBER,
-    EXPR_INT,
-    EXPR_BINARY,
-    EXPR_UNARY,
-    EXPR_FUNCALL,
+    EXPR_ADDRESS,   /* &x */
     EXPR_ASSIGN,
-    EXPR_IF,
-    EXPR_WHILE,
+    EXPR_BINARY,
+    EXPR_BREAK,    
+    EXPR_CONSTDECL,
+    EXPR_DEREF,     /* *x */
     EXPR_DOWHILE,
     EXPR_FOR,
-    EXPR_RETURN,
-    EXPR_NULL,
-    EXPR_DEREF,
-    EXPR_ADDRESS,
-    EXPR_OBJECT,
-    EXPR_BREAK,
-    EXPR_STRING,
-    EXPR_CONSTDECL,
-    EXPR_VARDECL,
+    EXPR_FUNCALL,
+    EXPR_IF,
+    EXPR_INT,
     EXPR_M0BLOCK,
-    EXPR_SWITCH,
     EXPR_NEW,
-    EXPR_PRINT   /* temporary? */
+    EXPR_NULL,
+    EXPR_NUMBER,
+    EXPR_OBJECT,
+    EXPR_PRINT,   /* temporary? */    
+    EXPR_RETURN,
+    EXPR_STRING,
+    EXPR_SWITCH,
+    EXPR_UNARY,
+    EXPR_VARDECL,
+    EXPR_WHILE
+
 } m1_expr_type;
 
 
@@ -242,69 +243,70 @@ typedef struct m1_expression {
 } m1_expression;
 
 
-extern m1_chunk *chunk(int rettype, char *name, m1_expression *block);
+extern m1_chunk *chunk(M1_compiler *comp, int rettype, char *name, m1_expression *block);
 
 
 
-extern m1_expression *expression(m1_expr_type type);
+extern m1_expression *expression(M1_compiler *comp, m1_expr_type type);
 extern void expr_set_num(M1_compiler *comp, m1_expression *e, double v);
 extern void expr_set_int(M1_compiler *comp, m1_expression *e, int v);
 
 
-extern void expr_set_unexpr(m1_expression *node, m1_expression *exp, m1_unop op);             
+extern void expr_set_unexpr(M1_compiler *comp, m1_expression *node, m1_expression *exp, m1_unop op);             
        
-extern m1_expression *funcall(char *name);
+extern m1_expression *funcall(M1_compiler *comp, char *name);
 
 
 extern void expr_set_expr(m1_expression *node, m1_expression *expr);
 extern void expr_set_obj(m1_expression *node, m1_object *obj);
 
-extern void expr_set_assign(m1_expression *node, 
+
+extern void expr_set_assign(M1_compiler *comp, m1_expression *node, 
                             m1_expression *lhs, int assignop, m1_expression *rhs);
 
 extern void obj_set_ident(m1_object *node, char *ident);
 extern void obj_set_index(m1_object *node, m1_expression *index);
 
             
-extern m1_object *object(m1_object_type type);            
+extern m1_object *object(M1_compiler *comp, m1_object_type type);            
 
-extern m1_structfield * structfield(char *name, data_type type);
+extern m1_structfield * structfield(M1_compiler *comp, char *name, data_type type);
 
-extern m1_struct *newstruct(char *name, m1_structfield *fields);
+extern m1_struct *newstruct(M1_compiler *comp, char *name, m1_structfield *fields);
 
 extern void expr_set_string(M1_compiler *comp, m1_expression *node, char *str);
 
-extern m1_expression *ifexpr(m1_expression *cond, m1_expression *ifblock, m1_expression *elseblock);
-extern m1_expression *whileexpr(m1_expression *cond, m1_expression *block);
-extern m1_expression *dowhileexpr(m1_expression *cond, m1_expression *block);
-extern m1_expression *forexpr(m1_expression *init, m1_expression *cond, m1_expression *step, m1_expression *stat);
+extern m1_expression *ifexpr(M1_compiler *comp, m1_expression *cond, m1_expression *ifblock, m1_expression *elseblock);
+extern m1_expression *whileexpr(M1_compiler *comp, m1_expression *cond, m1_expression *block);
+extern m1_expression *dowhileexpr(M1_compiler *comp, m1_expression *cond, m1_expression *block);
+extern m1_expression *forexpr(M1_compiler *comp, m1_expression *init, m1_expression *cond, m1_expression *step, m1_expression *stat);
 
-extern m1_expression *inc_or_dec(m1_expression *obj, m1_unop optype);
-extern m1_expression *returnexpr(m1_expression *retexp);
-extern m1_expression *assignexpr(m1_expression *lhs, int assignop, m1_expression *rhs);
-extern m1_expression *objectexpr(m1_object *obj, m1_expr_type type);
+extern m1_expression *inc_or_dec(M1_compiler *comp, m1_expression *obj, m1_unop optype);
+extern m1_expression *returnexpr(M1_compiler *comp, m1_expression *retexp);
+extern m1_expression *assignexpr(M1_compiler *comp, m1_expression *lhs, int assignop, m1_expression *rhs);
+extern m1_expression *objectexpr(M1_compiler *comp, m1_object *obj, m1_expr_type type);
 
-extern m1_expression *binexpr(m1_expression *e1, m1_binop op, m1_expression *e2);
+extern m1_expression *binexpr(M1_compiler *comp, m1_expression *e1, m1_binop op, m1_expression *e2);
 extern m1_expression *number(M1_compiler *comp, double value);
 extern m1_expression *integer(M1_compiler *comp, int value);
 extern m1_expression *string(M1_compiler *comp, char *str);
-extern m1_expression *unaryexpr(m1_unop op, m1_expression *e);
-extern m1_object *arrayindex(m1_expression *index);
-extern m1_object *objectfield(char *field);
-extern m1_object *objectderef(char *field);
-extern m1_expression *printexpr(m1_expression *e);
-extern m1_expression *constdecl(data_type type, char *name, m1_expression *expr);
-extern m1_expression *vardecl(data_type type, m1_var *v);
+extern m1_expression *unaryexpr(M1_compiler *comp, m1_unop op, m1_expression *e);
+extern m1_object *arrayindex(M1_compiler *comp, m1_expression *index);
+extern m1_object *objectfield(M1_compiler *comp, char *field);
+extern m1_object *objectderef(M1_compiler *comp, char *field);
+extern m1_expression *printexpr(M1_compiler *comp, m1_expression *e);
+extern m1_expression *constdecl(M1_compiler *comp, data_type type, char *name, m1_expression *expr);
+extern m1_expression *vardecl(M1_compiler *comp, data_type type, m1_var *v);
 
-extern m1_var *var(char *name, m1_expression *init);
-extern m1_var *array(char *name, unsigned size);
+extern m1_var *var(M1_compiler *comp, char *name, m1_expression *init);
+extern m1_var *array(M1_compiler *comp, char *name, unsigned size);
 
 extern unsigned field_size(struct m1_structfield *field);
 
-extern m1_expression *switchexpr(m1_expression *expr, m1_case *cases, m1_expression *defaultstat);
-extern m1_case *switchcase(int selector, m1_expression *block);
+extern m1_expression *switchexpr(M1_compiler *comp, m1_expression *expr, m1_case *cases, m1_expression *defaultstat);
+extern m1_case *switchcase(M1_compiler *comp, int selector, m1_expression *block);
 
-extern m1_expression *newexpr(char *type);
+extern m1_expression *newexpr(M1_compiler *copm, char *type);
 
 #endif
 

@@ -306,7 +306,7 @@ pmc_method		: "method" function_definition
 function_definition : return_type TK_IDENT '(' parameters ')' block
                         { 
                           M1_compiler *comp = yyget_extra(yyscanner);                          
-                          $$ = chunk($1, $2, $6); 
+                          $$ = chunk(comp, $1, $2, $6); 
                         
                           sym_enter_chunk(comp->globals, $2);
                         }
@@ -327,7 +327,7 @@ param   : type TK_IDENT
         ;
                                              
 struct_definition   : "struct" TK_IDENT '{' struct_members '}' ';'
-                        { $$ = newstruct($2, $4); }
+                        { $$ = newstruct(yyget_extra(yyscanner), $2, $4); }
                     ;         
                     
 struct_members      : struct_member
@@ -349,7 +349,7 @@ struct_members      : struct_member
                     ;
                     
 struct_member       : return_type TK_IDENT ';'
-                        { $$ = structfield ($2, $1); }
+                        { $$ = structfield(yyget_extra(yyscanner), $2, $1); }
                     ;                                        
         
 block   : '{' statements '}'
@@ -395,12 +395,12 @@ statement   : assign_stat
             ;
             
 print_stat  : "print" '(' expression ')' ';'
-                { $$ = printexpr($3); }
+                { $$ = printexpr(yyget_extra(yyscanner), $3); }
             ;
 
 /* TODO: handle M0 instructions */                        
 m0_block    : "M0" '{' m0_instructions '}'
-                { $$ = expression(EXPR_M0BLOCK); }
+                { $$ = expression(yyget_extra(yyscanner), EXPR_M0BLOCK); }
             ;            
             
 m0_instructions : m0_instr
@@ -430,11 +430,11 @@ m0_op       : "add_i"   { $$=0; }
             ;
                   
 const_declaration   : "const" type TK_IDENT '=' constexpr ';'
-                        { $$ = constdecl($2, $3, $5); }
+                        { $$ = constdecl(yyget_extra(yyscanner), $2, $3, $5); }
                     ;                  
                         
 var_declaration: type var_list ';'  
-                    { $$ = vardecl($1, $2); }            
+                    { $$ = vardecl(yyget_extra(yyscanner), $1, $2); }            
                ;         
                               
 var_list    : var 				{ $$ = $1; }
@@ -443,9 +443,9 @@ var_list    : var 				{ $$ = $1; }
             ;               
             
 var         : TK_IDENT opt_init
-                { $$ = var($1, $2); }
+                { $$ = var(yyget_extra(yyscanner), $1, $2); }
             | TK_IDENT '[' TK_INT ']'
-                { $$ = array($1, $3); }
+                { $$ = array(yyget_extra(yyscanner), $1, $3); }
             ;           
             
 opt_init    : /* empty */
@@ -459,7 +459,7 @@ assign_stat : assign_expr ';'
             ;
             
 assign_expr : lhs assignop rhs
-                { $$ = assignexpr($1, $2, $3); }            
+                { $$ = assignexpr(yyget_extra(yyscanner), $1, $2, $3); }            
             ;
             
 assignop    : '='  { $$ = OP_ASSIGN; }
@@ -471,22 +471,22 @@ assignop    : '='  { $$ = OP_ASSIGN; }
             ;            
             
 if_stat     : "if" '(' expression ')' statement %prec LOWER_THAN_ELSE 
-                { $$ = ifexpr($3, $5, NULL); }
+                { $$ = ifexpr(yyget_extra(yyscanner), $3, $5, NULL); }
             | "if" '(' expression ')' statement "else" statement 
-                { $$ = ifexpr($3, $5, $7); }
+                { $$ = ifexpr(yyget_extra(yyscanner), $3, $5, $7); }
             ;
             
             
 while_stat  : "while" '(' expression ')' statement
-                { $$ = whileexpr($3, $5); }
+                { $$ = whileexpr(yyget_extra(yyscanner), $3, $5); }
             ;
             
 do_stat     : "do" block "while" '(' expression ')' ';'
-                { $$ = dowhileexpr($5, $2); }
+                { $$ = dowhileexpr(yyget_extra(yyscanner), $5, $2); }
             ;
             
 switch_stat : "switch" '(' expression ')' '{' cases default_case '}'
-                { $$ = switchexpr($3, $6, $7); }
+                { $$ = switchexpr(yyget_extra(yyscanner), $3, $6, $7); }
             ;
             
 cases       : /* empty */
@@ -499,7 +499,7 @@ cases       : /* empty */
             ;
             
 case        : "case" TK_INT ':' statements                       
-				{ $$ = switchcase($2, $4); }
+				{ $$ = switchcase(yyget_extra(yyscanner), $2, $4); }
             ;
             
 default_case: /* empty */
@@ -510,7 +510,7 @@ default_case: /* empty */
              
 /* TODO: at some point we want x.y(); replace TK_IDENT with "lhs". Get this working first though*/           
 function_call_expr  : TK_IDENT '(' arguments ')' 
-                         { $$ = funcall($1); }
+                         { $$ = funcall(yyget_extra(yyscanner), $1); }
                     ;
                     
 function_call_stat  : function_call_expr ';'
@@ -529,7 +529,7 @@ expr_list   : expression
             ;                                                    
             
 for_stat    : "for" '(' for_init ';' for_cond ';' for_step ')' statement
-                { $$ = forexpr($3, $5, $7, $9); }
+                { $$ = forexpr(yyget_extra(yyscanner), $3, $5, $7, $9); }
             ;  
             
 for_init    : /* empty */
@@ -549,13 +549,13 @@ for_step    : /* empty */
             
 
 inc_or_dec_expr : lhs "++"
-                    { $$ = inc_or_dec($1, UNOP_POSTINC); }
+                    { $$ = inc_or_dec(yyget_extra(yyscanner), $1, UNOP_POSTINC); }
                 | lhs "--"
-                    { $$ = inc_or_dec($1, UNOP_POSTDEC); }
+                    { $$ = inc_or_dec(yyget_extra(yyscanner), $1, UNOP_POSTDEC); }
                 | "++" lhs
-                    { $$ = inc_or_dec($2, UNOP_PREINC); }
+                    { $$ = inc_or_dec(yyget_extra(yyscanner), $2, UNOP_PREINC); }
                 | "--" lhs
-                    { $$ = inc_or_dec($2, UNOP_PREDEC); }                    
+                    { $$ = inc_or_dec(yyget_extra(yyscanner), $2, UNOP_PREDEC); }                    
                 ;
                 
 inc_or_dec_stat : inc_or_dec_expr ';'
@@ -563,23 +563,23 @@ inc_or_dec_stat : inc_or_dec_expr ';'
                 ;
 
 break_stat  : "break" ';'
-                { $$ = expression(EXPR_BREAK); }                
+                { $$ = expression(yyget_extra(yyscanner), EXPR_BREAK); }                
                 
 return_stat : "return" expression ';'
-                { $$ = returnexpr($2); }
+                { $$ = returnexpr(yyget_extra(yyscanner), $2); }
             ;                
                             
 lhs     : lhs_obj
-           { $$ = objectexpr($1, EXPR_OBJECT); }           
+           { $$ = objectexpr(yyget_extra(yyscanner), $1, EXPR_OBJECT); }           
         | '*' lhs_obj
-           { $$ = objectexpr($2, EXPR_DEREF); }
+           { $$ = objectexpr(yyget_extra(yyscanner), $2, EXPR_DEREF); }
         | '&' lhs_obj
-           { $$ = objectexpr($2, EXPR_ADDRESS); }
+           { $$ = objectexpr(yyget_extra(yyscanner), $2, EXPR_ADDRESS); }
         ;
         
 lhs_obj : TK_IDENT
             { 
-              $$ = object(OBJECT_MAIN); 
+              $$ = object(yyget_extra(yyscanner), OBJECT_MAIN); 
               obj_set_ident($$, $1);
             }            
         | lhs_obj field_access
@@ -600,11 +600,11 @@ lhs_obj : TK_IDENT
         ;        
         
 field_access: '[' expression ']'
-                { $$ = arrayindex($2); }                
+                { $$ = arrayindex(yyget_extra(yyscanner), $2); }                
             | '.' TK_IDENT
-                { $$ = objectfield($2); }           
+                { $$ = objectfield(yyget_extra(yyscanner), $2); }           
             | "->" TK_IDENT
-                { $$ = objectderef($2); }                
+                { $$ = objectderef(yyget_extra(yyscanner), $2); }                
             | "::" TK_IDENT
                 { $$ = NULL; /* do we want this scope operator? */}
             ;        
@@ -630,63 +630,63 @@ expression  : constexpr
             | lhs                
             | function_call_expr                
             | "null"
-                { $$ = expression(EXPR_NULL); }
+                { $$ = expression(yyget_extra(yyscanner), EXPR_NULL); }
             | "new" TK_IDENT '(' arguments ')'
-                { $$ = newexpr($2); }
+                { $$ = newexpr(yyget_extra(yyscanner), $2); }
             ;
             
 unexpr  : '-' expression
-                { $$ = unaryexpr(UNOP_MINUS, $2); }                
+                { $$ = unaryexpr(yyget_extra(yyscanner), UNOP_MINUS, $2); }                
         | '!' expression
-                { $$ = unaryexpr(UNOP_NOT, $2); }                            
+                { $$ = unaryexpr(yyget_extra(yyscanner), UNOP_NOT, $2); }                            
         ;            
        
 tertexpr    : expression '?' expression ':' expression
-                { $$ = ifexpr($1, $3, $5); }
+                { $$ = ifexpr(yyget_extra(yyscanner), $1, $3, $5); }
             ;
                    
 binexpr     : expression '=' expression /* to allow writing: a = b = c; */
-				{ $$ = binexpr($1, OP_ASSIGN, $3); }
+				{ $$ = binexpr(yyget_extra(yyscanner), $1, OP_ASSIGN, $3); }
             | expression '+' expression
-                { $$ = binexpr($1, OP_PLUS, $3); }
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_PLUS, $3); }
             | expression '-' expression
-                { $$ = binexpr($1, OP_MINUS, $3); }
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_MINUS, $3); }
             | expression '*' expression
-                { $$ = binexpr($1, OP_MUL, $3); }
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_MUL, $3); }
             | expression '/' expression
-                { $$ = binexpr($1, OP_DIV, $3); }
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_DIV, $3); }
             | expression '%' expression
-                { $$ = binexpr($1, OP_MOD, $3); }
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_MOD, $3); }
             | expression '^' expression
-                { $$ = binexpr($1, OP_XOR, $3); }
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_XOR, $3); }
             | expression '&' expression
-                { $$ = binexpr($1, OP_BAND, $3); }
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_BAND, $3); }
             | expression '|' expression
-                { $$ = binexpr($1, OP_BOR, $3); }
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_BOR, $3); }
             | expression "==" expression
-                { $$ = binexpr($1, OP_EQ, $3); }
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_EQ, $3); }
             | expression "!=" expression
-                { $$ = binexpr($1, OP_NE, $3); }
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_NE, $3); }
             | expression ">" expression
-                { $$ = binexpr($1, OP_GT, $3); }
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_GT, $3); }
             | expression "<" expression
-                { $$ = binexpr($1, OP_LT, $3); }
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_LT, $3); }
             | expression "<=" expression
-                { $$ = binexpr($1, OP_LE, $3); }
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_LE, $3); }
             | expression ">=" expression
-                { $$ = binexpr($1, OP_GE, $3); }
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_GE, $3); }
             | expression "&&" expression
-                { $$ = binexpr($1, OP_AND, $3); }
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_AND, $3); }
             | expression "||" expression
-                { $$ = binexpr($1, OP_OR, $3); }
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_OR, $3); }
             | expression "<<" expression
-                { $$ = binexpr($1, OP_LSH, $3); }
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_LSH, $3); }
             | expression ">>" expression
-                { $$ = binexpr($1, OP_RSH, $3); }
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_RSH, $3); }
                 
             ;
            
-return_type : type     { $$ = $1; }
+return_type : type    { $$ = $1; }
             | "void"  { $$ = TYPE_VOID; }
             ;
             
