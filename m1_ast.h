@@ -2,6 +2,7 @@
 #define __M1_AST_H__
 
 #include "m1_instr.h"
+#include "m1_compiler.h"
 
 typedef enum data_types {
     TYPE_INT    = 0,
@@ -246,8 +247,8 @@ extern m1_chunk *chunk(int rettype, char *name, m1_expression *block);
 
 
 extern m1_expression *expression(m1_expr_type type);
-extern void expr_set_num(m1_expression *e, double v);
-extern void expr_set_int(m1_expression *e, int v);
+extern void expr_set_num(M1_compiler *comp, m1_expression *e, double v);
+extern void expr_set_int(M1_compiler *comp, m1_expression *e, int v);
 
 
 extern void expr_set_unexpr(m1_expression *node, m1_expression *exp, m1_unop op);             
@@ -271,7 +272,7 @@ extern m1_structfield * structfield(char *name, data_type type);
 
 extern m1_struct *newstruct(char *name, m1_structfield *fields);
 
-extern void expr_set_string(m1_expression *node, char *str);
+extern void expr_set_string(M1_compiler *comp, m1_expression *node, char *str);
 
 extern m1_expression *ifexpr(m1_expression *cond, m1_expression *ifblock, m1_expression *elseblock);
 extern m1_expression *whileexpr(m1_expression *cond, m1_expression *block);
@@ -284,9 +285,9 @@ extern m1_expression *assignexpr(m1_expression *lhs, int assignop, m1_expression
 extern m1_expression *objectexpr(m1_object *obj, m1_expr_type type);
 
 extern m1_expression *binexpr(m1_expression *e1, m1_binop op, m1_expression *e2);
-extern m1_expression *number(double value);
-extern m1_expression *integer(int value);
-extern m1_expression *string(char *str);
+extern m1_expression *number(M1_compiler *comp, double value);
+extern m1_expression *integer(M1_compiler *comp, int value);
+extern m1_expression *string(M1_compiler *comp, char *str);
 extern m1_expression *unaryexpr(m1_unop op, m1_expression *e);
 extern m1_object *arrayindex(m1_expression *index);
 extern m1_object *objectfield(char *field);

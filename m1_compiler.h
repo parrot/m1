@@ -12,6 +12,7 @@ typedef struct M1_compiler {
 	struct m1_symboltable  *floats;
 	struct m1_symboltable  *ints;
 	struct m1_symboltable  *strings;
+	struct m1_symboltable  *globals;
 	
 } M1_compiler;
 

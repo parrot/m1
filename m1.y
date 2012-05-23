@@ -57,9 +57,11 @@ main(int argc, char *argv[]) {
     
     yyset_in(fp, yyscanner);
 
-    init_symtab(comp.ints);
-    init_symtab(comp.floats);
-    init_symtab(comp.strings);
+    comp.ints = new_symtab();
+    comp.floats = new_symtab();
+    comp.globals = new_symtab();
+    comp.strings = new_symtab();
+    
     yyparse(yyscanner, &comp);
     
     if (comp.errors == 0) {
@@ -302,7 +304,12 @@ pmc_method		: "method" function_definition
 				;
                                         
 function_definition : return_type TK_IDENT '(' parameters ')' block
-                        { $$ = chunk($1, $2, $6); }
+                        { 
+                          M1_compiler *comp = yyget_extra(yyscanner);                          
+                          $$ = chunk($1, $2, $6); 
+                        
+                          sym_enter_chunk(comp->globals, $2);
+                        }
                     ;
 
 /* TODO: parameter handling. */        
@@ -606,11 +613,11 @@ rhs     : expression
         ;
         
 constexpr   : TK_NUMBER    
-                { $$ = number($1); }    
+                { $$ = number(yyget_extra(yyscanner), $1); }    
             | TK_INT
-                { $$ = integer($1); }  
+                { $$ = integer(yyget_extra(yyscanner), $1); }  
             | TK_STRING_CONST
-                { $$ = string($1); }
+                {  $$ = string(yyget_extra(yyscanner), $1); }
             ;
             
 expression  : constexpr 

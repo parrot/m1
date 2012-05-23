@@ -9,6 +9,7 @@ AST node constructors
 #include <assert.h>
 #include "m1_ast.h"
 #include "m1_symtab.h"
+#include "m1_compiler.h"
 
 #include "m1_ann.h"
 
@@ -43,36 +44,36 @@ expression(m1_expr_type type) {
 
 
 void 
-expr_set_num(m1_expression *e, double v) {
+expr_set_num(M1_compiler *comp, m1_expression *e, double v) {
     assert(e->type == EXPR_NUMBER); 
     e->expr.floatval = v;
-    e->sym           = sym_enter_num(&floats, v);  
+    e->sym           = sym_enter_num(comp->floats, v);  
 }
 
 void 
-expr_set_int(m1_expression *e, int v) {
+expr_set_int(M1_compiler *comp, m1_expression *e, int v) {
     assert(e->type == EXPR_INT);
     e->expr.intval = v;
-    e->sym         = sym_enter_int(&ints, v);
+    e->sym         = sym_enter_int(comp->ints, v);
 }
 
 m1_expression *
-number(double value) {
+number(M1_compiler *comp, double value) {
 	m1_expression *expr = expression(EXPR_NUMBER);
-	expr_set_num(expr, value);
+	expr_set_num(comp, expr, value);
 	return expr;	
 }
 
 m1_expression *
-integer(int value) {
+integer(M1_compiler *comp, int value) {
 	m1_expression *expr = expression(EXPR_INT);
-	expr_set_int(expr, value);
+	expr_set_int(comp, expr, value);
 	return expr;	
 }
 m1_expression *
-string(char *str) {
+string(M1_compiler *comp, char *str) {
 	m1_expression *expr = expression(EXPR_STRING);
-	expr_set_string(expr, str);
+	expr_set_string(comp, expr, str);
 	return expr;	
 }
 
@@ -269,9 +270,9 @@ expr_set_assign(m1_expression *node, m1_expression *lhs, int assignop, m1_expres
 }
 
 void 
-expr_set_string(m1_expression *node, char *str) {
+expr_set_string(M1_compiler *comp, m1_expression *node, char *str) {
     node->expr.str = str;
-    node->sym      = sym_enter_str(&strings, str, 0);
+    node->sym      = sym_enter_str(comp->strings, str, 0);
 }
 
 void 

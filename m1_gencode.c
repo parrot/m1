@@ -55,7 +55,7 @@ gencode_number(M1_compiler *comp, double value) {
 	deref Nx, CONSTS, <const_id>
 	*/
     m1_reg     reg = gen_reg(comp, TYPE_NUM);
-    m1_symbol *sym = sym_find_num(&floats, value);
+    m1_symbol *sym = sym_find_num(comp->floats, value);
 
 
     fprintf(OUT, "\tderef\tN%d, CONSTS, %d\n", reg.no, sym->constindex);
@@ -68,7 +68,7 @@ gencode_int(M1_compiler *comp, int value) {
 	deref Ix, CONSTS, <const_id>
 	*/
     m1_reg     reg = gen_reg(comp, TYPE_INT);
-    m1_symbol *sym = sym_find_int(&ints, value);
+    m1_symbol *sym = sym_find_int(comp->ints, value);
 
     fprintf(OUT, "\tderef\tI%d, CONSTS, %d\n", reg.no, sym->constindex);
     return reg;
@@ -79,7 +79,7 @@ gencode_string(M1_compiler *comp, NOTNULL(char *value)) {
     m1_reg     reg = gen_reg(comp, TYPE_STRING);
     m1_reg     one = gen_reg(comp, TYPE_INT);
     
-    m1_symbol *sym = sym_find_str(&strings, value); /* find index of value in CONSTS */
+    m1_symbol *sym = sym_find_str(comp->strings, value); /* find index of value in CONSTS */
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", one.no, sym->constindex);
     fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", reg.no, one.no);
     return reg;
@@ -443,12 +443,24 @@ gencode_break(M1_compiler *comp) {
 static m1_reg
 gencode_funcall(M1_compiler *comp, m1_funcall *f) {
 	m1_reg reg;
+	m1_reg pmcreg;
+	m1_reg offsetreg;
     /*fprintf(OUT, "%s();", f->name);   */
-    fprintf(OUT, "\tgoto_chunk\n");
+    m1_symbol *fun = sym_find_chunk(comp->globals, f->name);
+    
+    if (fun == NULL) {
+        fprintf(stderr, "Cant find function %s\n", f->name);   
+        return reg;
+    }
+    reg = gen_reg(comp, TYPE_INT);
+    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", reg.no, fun->constindex);
+    pmcreg = gen_reg(comp, TYPE_PMC);
+    offsetreg = gen_reg(comp, TYPE_INT);
+    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", offsetreg.no, 0);
+    fprintf(OUT, "\tderef\tP%d, CONSTS, I%d\n", pmcreg.no, reg.no);
+    fprintf(OUT, "\tgoto_chunk\tP%d, I%d, x\n", pmcreg.no, offsetreg.no);
     return reg;
 }
-
-
 
 
 static m1_reg
@@ -570,6 +582,9 @@ print_consts(NOTNULL(m1_symboltable *table)) {
 			case VAL_INT:
 				fprintf(OUT, "%d %d\n", iter->constindex, iter->value.ival);
 				break;
+	        case VAL_CHUNK:
+	            fprintf(OUT, "%d &%s\n", iter->constindex, iter->value.str);
+	            break;
 			default:
 				fprintf(stderr, "unknown symbol type");
 				exit(EXIT_FAILURE);
@@ -580,9 +595,10 @@ print_consts(NOTNULL(m1_symboltable *table)) {
 static void
 gencode_consts(M1_compiler *comp) {
 	fprintf(OUT, ".constants\n");
-	print_consts(&strings);	
-	print_consts(&floats);	
-	print_consts(&ints);	
+	print_consts(comp->strings);	
+	print_consts(comp->floats);	
+	print_consts(comp->ints);	
+	print_consts(comp->globals);
 }
 
 static void
