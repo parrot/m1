@@ -429,9 +429,9 @@ var_list    : var 				{ $$ = $1; }
             ;               
             
 var         : TK_IDENT opt_init
-                { $$ = var($1); }
+                { $$ = var($1, $2); }
             | TK_IDENT '[' TK_INT ']'
-                { $$ = var($1); }
+                { $$ = array($1, $3); }
             ;           
             
 opt_init    : /* empty */
@@ -614,7 +614,7 @@ expression  : constexpr
             | "null"
                 { $$ = expression(EXPR_NULL); }
             | "new" TK_IDENT '(' arguments ')'
-                { $$ = NULL; /* TODO; for allocating memory for PMCs */}
+                { $$ = newexpr($2); }
             ;
             
 unexpr  : '-' expression
