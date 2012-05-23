@@ -321,11 +321,23 @@ vardecl(data_type type, m1_var *v) {
 	return expr;	
 }
 
-m1_var *
-var(char *name) {
+static m1_var *
+make_var(char *name, m1_expression *init, unsigned size) {
     m1_var *v = (m1_var *)m1_malloc(sizeof(m1_var));
     v->name   = name;
-    return v;    
+    v->init   = init;
+    v->size   = size;
+    return v;    	
+}
+
+m1_var *
+var(char *name, m1_expression *init) {
+	return make_var(name, init, 1);
+}
+
+m1_var *
+array(char *name, unsigned size) {
+	return make_var(name, NULL, size);
 }
 
 m1_expression *
@@ -388,5 +400,13 @@ switchcase(int selector, m1_expression *block) {
 	c->block    = block;
 	c->next     = NULL;
 	return c;
+}
+
+m1_expression *
+newexpr(char *type) {
+	m1_expression *expr = expression(EXPR_NEW);
+	expr->expr.n        = (m1_newexpr *)m1_malloc(sizeof(m1_newexpr));
+	expr->expr.n->type  = type;
+	return expr;	
 }
 
