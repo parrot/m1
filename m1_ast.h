@@ -53,6 +53,11 @@ typedef struct m1_funcall {
     
 } m1_funcall;
 
+typedef struct m1_newexpr {
+	char *type;
+	/* TODO handle args */
+	
+} m1_newexpr;
 
 
 typedef enum m1_expr_type {
@@ -77,6 +82,7 @@ typedef enum m1_expr_type {
     EXPR_VARDECL,
     EXPR_M0BLOCK,
     EXPR_SWITCH,
+    EXPR_NEW,
     EXPR_PRINT   /* temporary? */
 } m1_expr_type;
 
@@ -176,8 +182,10 @@ typedef struct m1_const {
 
 /* variable declarations */
 typedef struct m1_var {
-    data_type type;
-    char     *name;
+    data_type             type;
+    char                 *name;
+    struct m1_expression *init;
+    unsigned              size; /* 1 for non-arrays, larger for arrays */
     
 } m1_var;
 
@@ -222,6 +230,7 @@ typedef struct m1_expression {
         struct m1_var        *v;
         struct m0_block      *m0;
         struct m1_switch     *s;
+        struct m1_newexpr    *n;
     } expr;
     
     m1_expr_type      type;
@@ -244,9 +253,6 @@ extern void expr_set_int(m1_expression *e, int v);
 extern void expr_set_unexpr(m1_expression *node, m1_expression *exp, m1_unop op);             
        
 extern m1_expression *funcall(char *name);
-
-//extern void expr_set_funcall(m1_expression *node, m1_funcall *f);
-
 
 
 extern void expr_set_expr(m1_expression *node, m1_expression *expr);
@@ -289,12 +295,15 @@ extern m1_expression *printexpr(m1_expression *e);
 extern m1_expression *constdecl(data_type type, char *name, m1_expression *expr);
 extern m1_expression *vardecl(data_type type, m1_var *v);
 
-extern m1_var *var(char *name);
+extern m1_var *var(char *name, m1_expression *init);
+extern m1_var *array(char *name, unsigned size);
 
 extern unsigned field_size(struct m1_structfield *field);
 
 extern m1_expression *switchexpr(m1_expression *expr, m1_case *cases, m1_expression *defaultstat);
 extern m1_case *switchcase(int selector, m1_expression *block);
+
+extern m1_expression *newexpr(char *type);
 
 #endif
 
