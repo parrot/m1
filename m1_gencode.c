@@ -44,8 +44,7 @@ Generate label identifiers.
 */
 static int
 gen_label(M1_compiler *comp) {
-	static int label = 0;
-	return label++;	
+	return comp->label++;	
 }
 
 
@@ -98,8 +97,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
 static m1_reg
 gencode_null(M1_compiler *comp) {
 	m1_reg reg;
-/*    fprintf(OUT, "null");    
-*/
+
     return reg;
 }   
 
@@ -257,7 +255,7 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
 static m1_reg
 gencode_deref(M1_compiler *comp, m1_object *o) {
 	m1_reg reg;
-/*    fprintf(OUT, "*");*/
+
     reg = gencode_obj(comp, o);
     return reg;
 }
@@ -265,7 +263,7 @@ gencode_deref(M1_compiler *comp, m1_object *o) {
 static m1_reg
 gencode_address(M1_compiler *comp, m1_object *o) {
 	m1_reg reg;
-/*    fprintf(OUT, "&"); */
+
     reg = gencode_obj(comp, o);   
     return reg;
 }
@@ -319,6 +317,13 @@ gencode_and(M1_compiler *comp, m1_binexpr *b) {
 }
 
 static m1_reg
+gencode_eq(M1_compiler *comp, m1_binexpr *b) {
+    m1_reg reg;
+    
+    return reg;   
+}
+
+static m1_reg
 gencode_binary(M1_compiler *comp, m1_binexpr *b) {
     char  *op = NULL;
     m1_reg left, 
@@ -360,7 +365,7 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
 /*            op = "<=";*/
             break;
         case OP_EQ:
-/*            op = "==";*/
+            return gencode_eq(comp, b);
             break;
         case OP_NE:
 /*            op = "!=";*/
@@ -392,6 +397,56 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
 }
 
 
+static m1_reg
+gencode_not(M1_compiler *comp, m1_unexpr *u) {
+    m1_reg reg, temp;
+    int label1, label2;
+    
+    reg  = gencode_expr(comp, u->expr);
+    temp = gen_reg(comp, TYPE_INT);
+    
+    /* if reg is zero, make it nonzero (false->true).
+    If it's non-zero, make it zero. (true->false). 
+    */
+    /*
+      goto_if reg, L1 #non-zero, make it zero.
+      set_imm Ix, 0, 0
+      goto L2
+    L1: # zero, make it non-zero
+      set_imm Ix, 0, 1
+    L2:
+      set reg, Ix
+    #done
+    
+    */
+    label1 = gen_label(comp);
+    label2 = gen_label(comp);
+    
+    fprintf(OUT, "\tgoto_if\t%c%d, L%d, x\n", reg_chars[(int)reg.type], reg.no, label1);
+    fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", temp.no);
+    fprintf(OUT, "\tgoto L%d, x, x\n", label2);
+    fprintf(OUT, "L%d:\n", label1);
+    fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", temp.no);
+    fprintf(OUT, "L%d:\n", label2);
+    fprintf(OUT, "\tset\t%c%d, I%d\n", reg_chars[(int)reg.type], reg.no, temp.no);
+    
+    return reg;
+}
+
+static m1_reg
+gencode_uminus(M1_compiler *comp, m1_unexpr *u) {
+    m1_reg reg;
+    
+    reg = gencode_expr(comp, u->expr);
+    
+    /* let's say u is 42. Then substracting 42 should be 0.
+    If not, it was a negative number to begin with. For a positive 
+    number, substract the value twice to get the negative value. 
+    For a negative number, add the value to itself twice. 
+    */
+    
+    return reg;    
+}
 
 static m1_reg
 gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
@@ -411,14 +466,15 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
             postfix = 0; 
             break;
         case UNOP_MINUS:
-            postfix = 0;
-            op = "-"; /* TODO */
-            break;    
+            return gencode_uminus(comp, u);
+        case UNOP_NOT:
+            return gencode_not(comp, u);
         default:
             op = "unknown op";
             break;   
     }   
-    /* generate code for the expression */ 
+    
+    /* generate code for the pre/post ++ expression */ 
     reg = gencode_expr(comp, u->expr);
     
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", one.no);
@@ -436,6 +492,7 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
 static m1_reg
 gencode_break(M1_compiler *comp) {
 	m1_reg reg;
+	/* pop label from compiler's label stack (todo!) and jump there. */
     fprintf(OUT, "\tgoto\tL??\n");
     return reg;
 }
@@ -445,7 +502,6 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
 	m1_reg reg;
 	m1_reg pmcreg;
 	m1_reg offsetreg;
-    /*fprintf(OUT, "%s();", f->name);   */
     m1_symbol *fun = sym_find_chunk(comp->globals, f->name);
     
     if (fun == NULL) {
