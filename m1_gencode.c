@@ -5,13 +5,15 @@ code generation skeleton.
 *****************************************/
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "m1_gencode.h"
 #include "m1_ast.h"
 #include "m1_compiler.h"
 
 #include "m1_ann.h"
 
-#define OUT	stderr
+#define OUT	stdout
+
 
 
 static m1_reg gencode_expr(M1_compiler *comp, m1_expression *e);
@@ -70,8 +72,10 @@ gencode_int(M1_compiler *comp, int value) {
 static m1_reg
 gencode_string(M1_compiler *comp, NOTNULL(char *value)) {
     m1_reg     reg = gen_reg(comp, 'S');
+
     m1_symbol *sym = sym_find_str(&strings, value); /* find index of value in CONSTS */
-    fprintf(OUT, "\tderef\tS%d, CONSTS, %d\n", reg.no, sym->constindex);
+    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", 0, sym->constindex);
+    fprintf(OUT, "\tderef\tS%d, CONSTS, %d\n", reg.no, 0);
     return reg;
 }
 
@@ -81,7 +85,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
 	m1_reg lhs, rhs;
     rhs = gencode_expr(comp, a->rhs);
     lhs = gencode_expr(comp, a->lhs);
-    fprintf(OUT, "\tset %c%d, %c%d, x\n", lhs.type, lhs.no, rhs.type, rhs.no);
+    fprintf(OUT, "\tset\t%c%d, %c%d, x\n", lhs.type, lhs.no, rhs.type, rhs.no);
 	return lhs;
 }
 
@@ -438,12 +442,29 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     return reg;
 }
 
+
+
 static m1_reg
 gencode_print(M1_compiler *comp, m1_expression *expr) {
+
     m1_reg reg;
+    m1_reg one;
     reg = gencode_expr(comp, expr);
-	fprintf(OUT, "\tprint_%c\tI0, %c%d, x\n", reg.type, reg.type, reg.no);
+    one = gen_reg(comp, 'I');
+    
+    fprintf(OUT, "\tset_imm\tI%d, 0, 1\n",  one.no);
+	fprintf(OUT, "\tprint_%c\tI0, %c%d, x\n", tolower(reg.type), reg.type, reg.no);
 	return reg;
+}
+
+static m1_reg
+gencode_new(M1_compiler *comp, m1_newexpr *expr) {
+	m1_reg reg     = gen_reg(comp, 'I');
+	m1_reg sizereg = gen_reg(comp, 'I');
+	unsigned size  = 128; /* fix; should be size of object requested */
+	fprintf(OUT, "\tset_imm I%d, 0, %d\n", sizereg.no, size);
+	fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", reg.no, sizereg.no);
+	return reg;	
 }
 
 static m1_reg
@@ -511,6 +532,11 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
         	break;
         case EXPR_VARDECL:
             break;
+        case EXPR_SWITCH:
+        	break;
+        case EXPR_NEW:
+        	reg = gencode_new(comp, e->expr.n);
+        	break;
         case EXPR_PRINT:
             gencode_print(comp, e->expr.e);   
             break; 

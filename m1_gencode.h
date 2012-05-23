@@ -7,7 +7,7 @@
 
 /* to pass registers; I42 -> no=42, type='I' */
 typedef struct m1_reg {
-    unsigned char no;
+    int           no;
     char          type;
 } m1_reg;
 

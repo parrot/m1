@@ -39,6 +39,7 @@ main(int argc, char *argv[]) {
     FILE        *fp;
     yyscan_t     yyscanner;
     M1_compiler  comp;
+    int i;
     
     fp = fopen(argv[1], "r");
     if (fp == NULL) {
@@ -47,6 +48,10 @@ main(int argc, char *argv[]) {
     }
    
    	memset(&comp, 0, sizeof(M1_compiler));
+   	
+    for(i = 0; i < 4; ++i)
+       	comp.regs[i] = 1;
+       	
     yylex_init(&yyscanner);
     yyset_extra(&comp, yyscanner);
     
@@ -132,6 +137,8 @@ main(int argc, char *argv[]) {
         KW_VTABLE		"vtable"
         KW_METHOD		"method"
         KW_NEW			"new"
+        KW_SUPER		"super"
+        KW_SELF			"self"
         
 %type <sval> TK_IDENT
              TK_STRING_CONST
@@ -579,6 +586,10 @@ lhs_obj : TK_IDENT
               /* always return head of the list */
               $$ = $1;
             }
+        | "self"
+        	{ $$ = NULL; }
+        | "super"
+        	{ $$ = NULL; }
         ;        
         
 field_access: '[' expression ']'

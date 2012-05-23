@@ -88,8 +88,10 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "pmc"					{ return KW_PMC; }
 "print"                 { return KW_PRINT; }
 "return"                { return KW_RETURN; }
+"self"					{ return KW_SELF; }
 "string"                { return KW_STRING; }
 "struct"                { return KW_STRUCT; }
+"super"					{ return KW_SUPER; }
 "switch"                { return KW_SWITCH; }
 "void"                  { return KW_VOID; }
 "vtable"				{ return KW_VTABLE; }
