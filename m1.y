@@ -19,7 +19,7 @@
 #include "m1_semcheck.h"
 
 
-extern m0_instr *instr(char op, char arg1, char arg2, char arg3);
+
 extern int yyparse(yyscan_t yyscanner, struct M1_compiler * const comp);
 extern int yylex(YYSTYPE *yylval, yyscan_t yyscanner);
 
@@ -412,16 +412,17 @@ m0_instructions : m0_instr
                 ;
                 
 m0_instr    : m0_op m0_arg ',' m0_arg ',' m0_arg
-                { $$ = instr($1, $2, $4, $6); }
+                { $$ = NULL; /* instr($1, $2, $4, $6); */}
             | m0_op m0_arg ',' m0_arg ',' 'x'
-                { $$ = instr($1, $2, $4, 0); }
+                { $$ = NULL; /* instr($1, $2, $4, 0); */}
             | m0_op m0_arg ',' 'x' ',' 'x'
-                { $$ = instr($1, $2, 0, 0); }
+                { $$ = NULL; /*instr($1, $2, 0, 0); */}
             | m0_op 'x' ',' 'x' ',' 'x'
-                { $$ = instr($1, 0, 0, 0); }
+                { $$ = NULL; /*instr($1, 0, 0, 0); */}
             ;                            
             
 m0_arg      : M0_NUMBER  { $$=0; }
+            
             /* add other argument types for M0 instructions */
             ;
             

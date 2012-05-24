@@ -1,8 +1,18 @@
-/*****************************************
+/*
 
-code generation skeleton.
+Code generator.
 
-*****************************************/
+Visit each node, and generate instructions as appropriate.
+See m1_ast.h for an overview of the AST node types. For most
+nodes/functions, a m1_reg structure is returned, that holds the
+type and number of the register that will hold the result of
+the expression for which code was generated.
+
+Example: a node representing a floating point number will load
+the number in an N register, and return that register. This happens
+in gencode_number().
+
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>

@@ -49,14 +49,19 @@ typedef enum m0_instr_code {
 
 extern char const * const m0_instr_names[];
 
+typedef struct m0_operand {
+    char value;
+    char type;    
+} m0_operand;
+
 typedef struct m0_instr {
     char opcode;
-    char operands[3];
+    struct m0_operand operands[3];
     
     struct m0_instr *next;
 } m0_instr;
 
-extern m0_instr *instr(char op, char arg1, char arg2, char arg3);
+extern m0_instr *instr(char op, char arg1, char type1, char arg2, char type2, char arg3, char type3);
 
 #endif
 

@@ -71,8 +71,58 @@ write_goto_chunk(m0_instr *i) {
     fprintf(OUT, "goto_chunk");   
 }
 
-/* XX other write functions go here. */
+static void
+write_add_i(m0_instr *i) {
+    
+}
 
+static void
+write_add_n(m0_instr *i) {
+    
+}
+
+static void
+write_sub_i(m0_instr *i) {
+    
+}
+
+static void
+write_sub_n(m0_instr *i) {
+    
+}
+
+static void
+write_mult_i(m0_instr *i) {
+    
+}
+
+static void
+write_mult_n(m0_instr *i) {
+    
+}
+
+static void
+write_div_i(m0_instr *i) {
+    
+}
+
+static void
+write_div_n(m0_instr *i) {
+    
+}
+
+static void
+write_mod_i(m0_instr *i) {
+    
+}
+
+static void
+write_mod_n(m0_instr *i) {
+    
+}
+
+
+/* XX other write functions go here. */
 
 void
 write_instructions(m0_instr *i) {
@@ -83,18 +133,18 @@ write_instructions(m0_instr *i) {
             case M0_GOTO: write_goto(i); break;
             case M0_GOTO_IF: write_goto_if(i); break;
             case M0_GOTO_CHUNK: write_goto_chunk(i); break;
-            
-            /* XXX todo: implement all functions to write. Also, fix operands at some point. 
-    M0_ADD_I,
-    M0_ADD_N,
-    M0_SUB_I,
-    M0_SUB_N,
-    M0_MULT_I,
-    M0_MULT_N,
-    M0_DIV_I,
-    M0_DIV_N,
-    M0_MOD_I,
-    M0_MOD_N,
+            case M0_ADD_I: write_add_i(i); break;
+            case M0_ADD_N: write_add_n(i); break;
+            case M0_SUB_I: write_sub_i(i); break;            
+            case M0_SUB_N: write_sub_n(i); break;
+            case M0_MULT_I: write_mult_i(i); break;
+            case M0_MULT_N: write_mult_n(i); break;
+            case M0_DIV_I: write_div_i(i); break;
+            case M0_DIV_N: write_div_n(i); break;
+            case M0_MOD_I: write_mod_i(i); break;
+            case M0_MOD_N: write_mod_n(i); break;
+  /* XXX todo: implement all functions to write. Also, fix operands at some point. */                    
+            /*
     M0_ITON,
     M0_NTOI,
     M0_ASHR,
@@ -134,7 +184,7 @@ write_instructions(m0_instr *i) {
 }
 
 m0_instr *
-instr(char op, char arg1, char arg2, char arg3) {
+instr(char op, char arg1, char type1, char arg2, char type2, char arg3, char type3) {
     
     m0_instr *i = (m0_instr *)calloc(1, sizeof (m0_instr));
     if (i == NULL) {
@@ -142,11 +192,16 @@ instr(char op, char arg1, char arg2, char arg3) {
         exit(EXIT_FAILURE);
     }
     
-    i->opcode      = op;
-    i->operands[0] = arg1;
-    i->operands[1] = arg2;
-    i->operands[2] = arg3;
-    i->next        = NULL;
+    i->opcode = op;
+    i->next   = NULL;
+    
+    i->operands[0].value = arg1;
+    i->operands[0].type  = type1;
+    i->operands[1].value = arg2;
+    i->operands[1].type  = type2;
+    i->operands[2].value = arg3;
+    i->operands[2].type  = type3;
+
     
     return i;    
 }
