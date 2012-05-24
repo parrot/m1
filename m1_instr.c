@@ -121,8 +121,137 @@ write_mod_n(m0_instr *i) {
     
 }
 
+static void
+write_iton(m0_instr *i) {
+    
+}
+static void
+write_ntoi(m0_instr *i) {
+    
+}
+static void
+write_ashr(m0_instr *i) {
+    
+}
+static void
+write_lshr(m0_instr *i) {
+    
+}
+static void
+write_shl(m0_instr *i) {
+    
+}
 
-/* XX other write functions go here. */
+static void
+write_and(m0_instr *i) {
+    
+}
+
+static void
+write_or(m0_instr *i) {
+    
+}
+
+static void
+write_xor(m0_instr *i) {
+    
+}
+
+static void
+write_gc_alloc(m0_instr *i) {
+    
+}
+
+static void
+write_sys_alloc(m0_instr *i) {
+    
+}
+static void
+write_sys_free(m0_instr *i) {
+    
+}
+
+static void
+write_copy_mem(m0_instr *i) {
+    
+}
+
+static void
+write_set(m0_instr *i) {
+    
+}
+
+static void
+write_set_imm(m0_instr *i) {
+    
+}
+
+static void
+write_deref(m0_instr *i) {
+    
+}
+
+static void
+write_set_ref(m0_instr *i) {
+    
+}
+
+static void
+write_set_byte(m0_instr *i) {
+    
+}
+static void
+write_get_byte(m0_instr *i) {
+    
+}
+static void
+write_set_word(m0_instr *i) {
+    
+}
+static void
+write_get_word(m0_instr *i) {
+    
+}
+static void
+write_csym(m0_instr *i) {
+    
+}
+
+
+static void
+write_ccall_arg(m0_instr *i) {
+    
+}
+
+static void
+write_ccall_ret(m0_instr *i) {
+    
+}
+
+static void
+write_ccall(m0_instr *i) {
+    
+}
+
+static void
+write_print_s(m0_instr *i) {
+    
+}
+static void
+write_print_i(m0_instr *i) {
+    
+}
+
+static void
+write_print_n(m0_instr *i) {
+    
+}
+
+static void
+write_exit(m0_instr *i) {
+    
+}
+
 
 void
 write_instructions(m0_instr *i) {
@@ -143,37 +272,35 @@ write_instructions(m0_instr *i) {
             case M0_DIV_N: write_div_n(i); break;
             case M0_MOD_I: write_mod_i(i); break;
             case M0_MOD_N: write_mod_n(i); break;
-  /* XXX todo: implement all functions to write. Also, fix operands at some point. */                    
-            /*
-    M0_ITON,
-    M0_NTOI,
-    M0_ASHR,
-    M0_LSHR,
-    M0_SHL,
-    M0_AND,
-    M0_OR,
-    M0_XOR,
-    M0_GC_ALLOC,
-    M0_SYS_ALLOC,
-    M0_SYS_FREE,
-    M0_COPY_MEM,
-    M0_SET,
-    M0_SET_IMM,
-    M0_DEREF,
-    M0_SET_REF,
-    M0_SET_BYTE,
-    M0_GET_BYTE,
-    M0_SET_WORD,
-    M0_GET_WORD,
-    M0_CSYM,
-    M0_CCALL_ARG,
-    M0_CCALL_RET,
-    M0_CCALL,
-    M0_PRINT_S,
-    M0_PRINT_I,
-    M0_PRINT_N,
-    M0_EXIT
-    */
+            case M0_ITON: write_iton(i); break;
+            case M0_NTOI: write_ntoi(i); break;
+            case M0_ASHR: write_ashr(i); break;
+            case M0_LSHR: write_lshr(i); break;
+            case M0_SHL: write_shl(i); break;
+            case M0_AND: write_and(i); break;
+            case M0_OR: write_or(i); break;
+            case M0_XOR: write_xor(i); break;
+            case M0_GC_ALLOC: write_gc_alloc(i); break;
+            case M0_SYS_ALLOC: write_sys_alloc(i); break;
+            case M0_SYS_FREE: write_sys_free(i); break;
+            case M0_COPY_MEM: write_copy_mem(i); break;
+            case M0_SET: write_set(i); break;
+            case M0_SET_IMM: write_set_imm(i); break;
+            case M0_DEREF: write_deref(i); break;
+            case M0_SET_REF: write_set_ref(i); break;
+            case M0_SET_BYTE: write_set_byte(i); break;
+            case M0_GET_BYTE: write_get_byte(i); break;
+            case M0_SET_WORD: write_set_word(i); break;
+            case M0_GET_WORD: write_get_word(i); break;
+            case M0_CSYM: write_csym(i); break;
+            case M0_CCALL_ARG: write_ccall_arg(i); break;
+            case M0_CCALL_RET: write_ccall_ret(i); break;
+            case M0_CCALL: write_ccall(i); break;
+            case M0_PRINT_S: write_print_s(i); break;
+            case M0_PRINT_I: write_print_i(i); break;
+            case M0_PRINT_N: write_print_n(i); break;
+            case M0_EXIT: write_exit(i); break;
+    
             default:
                 fprintf(OUT, "unknown op!");
                 exit(EXIT_FAILURE);
