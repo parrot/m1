@@ -557,16 +557,15 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     
 }
 
-static m1_reg
+static void
 gencode_break(M1_compiler *comp) {
-	m1_reg reg;
+	
 	/* get label to jump to */
 	int breaklabel = top(comp->breakstack);
 	
 	/* pop label from compiler
 	's label stack (todo!) and jump there. */
     fprintf(OUT, "\tgoto\tL%d\n", breaklabel);
-    return reg;
 }
 
 static m1_reg
@@ -612,6 +611,16 @@ gencode_new(M1_compiler *comp, m1_newexpr *expr) {
 	fprintf(OUT, "\tset_imm I%d, 0, %d\n", sizereg.no, size);
 	fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", reg.no, sizereg.no);
 	return reg;	
+}
+
+static m1_reg
+gencode_switch(M1_compiler *comp, m1_switch *expr) {
+    m1_reg reg;
+    reg = gencode_expr(comp, expr->selector);
+    
+    /* XXX implement cases */
+    
+    return reg;   
 }
 
 static m1_reg
@@ -673,13 +682,16 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             reg = gencode_obj(comp, e->expr.t);
             break;
         case EXPR_BREAK:
-            reg = gencode_break(comp);
+            gencode_break(comp);
             break;
         case EXPR_CONSTDECL:
+            /* do nothing. constants are compiled away */
         	break;
         case EXPR_VARDECL:
+            /* do nothing. variables are not visible at M0. */
             break;
         case EXPR_SWITCH:
+            reg = gencode_switch(comp, e->expr.s);
         	break;
         case EXPR_NEW:
         	reg = gencode_new(comp, e->expr.n);
