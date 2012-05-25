@@ -1,8 +1,10 @@
 #ifndef __M1_AST_H__
 #define __M1_AST_H__
 
+#include "m1_symtab.h"
 #include "m1_instr.h"
 #include "m1_compiler.h"
+
 
 typedef enum data_types {
     TYPE_INT    = 0,
@@ -15,11 +17,13 @@ typedef enum data_types {
 } data_type;
 
 typedef struct m1_chunk {
-    data_type rettype;
-    char *name;
-    struct m1_chunk *next;
+    data_type             rettype;
+    char                 *name;
+    struct m1_chunk      *next;
     struct m1_expression *block;
     /* TODO: add parameters */
+    
+    struct m1_symboltable symbols;
         
 } m1_chunk;
 
