@@ -73,6 +73,7 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "do"                    { return KW_DO; }
 "else"                  { return KW_ELSE; }
 "extends"				{ return KW_EXTENDS; }
+"false"                 { return KW_FALSE; }
 "for"                   { return KW_FOR; }
 "if"                    { return KW_IF; }
 "int"                   { return KW_INT; }
@@ -93,6 +94,7 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "struct"                { return KW_STRUCT; }
 "super"					{ return KW_SUPER; }
 "switch"                { return KW_SWITCH; }
+"true"                  { return KW_TRUE; }
 "void"                  { return KW_VOID; }
 "vtable"				{ return KW_VTABLE; }
 "while"                 { return KW_WHILE; }

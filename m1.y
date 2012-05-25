@@ -97,6 +97,8 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
         KW_NEW			"new"
         KW_SUPER		"super"
         KW_SELF			"self"
+        KW_FALSE        "false"
+        KW_TRUE         "true"
         
 %type <sval> TK_IDENT
              TK_STRING_CONST
@@ -150,6 +152,11 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              m0_block
              print_stat
              default_case
+             arrayconstructor
+             boolexpr
+             nullexpr
+             subexpr
+             newexpr
              
 %type <instr> m0_instructions
               m0_instr
@@ -579,20 +586,59 @@ constexpr   : TK_NUMBER
             
 expression  : constexpr 
             | inc_or_dec_expr                
-            | '(' expression ')'
-                { $$ = $2; }
+            | subexpr
+            | boolexpr
             | unexpr             
             | binexpr
             | tertexpr
             | lhs                
             | function_call_expr                
-            | "null"
-                { $$ = expression(yyget_extra(yyscanner), EXPR_NULL); }
-            | "new" TK_IDENT '(' arguments ')'
-                { $$ = newexpr(yyget_extra(yyscanner), $2); }
-            | '{' int_list '}' 
-                { $$ = NULL; }
+            | nullexpr           
+            | newexpr
+            | arrayconstructor
             ;
+            
+subexpr     : '(' expression ')'
+                { $$ = $2; }           
+            ;
+            
+boolexpr    : "true"
+                { $$ = NULL; }
+            | "false"
+                { $$ = NULL; }
+            | expression "==" expression
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_EQ, $3); }
+            | expression "!=" expression
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_NE, $3); }
+            | expression ">" expression
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_GT, $3); }
+            | expression "<" expression
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_LT, $3); }
+            | expression "<=" expression
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_LE, $3); }
+            | expression ">=" expression
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_GE, $3); }
+            | expression "&&" expression
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_AND, $3); }
+            | expression "||" expression
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_OR, $3); }
+            | expression "<<" expression
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_LSH, $3); }
+            | expression ">>" expression
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_RSH, $3); }    
+            ;   
+            
+newexpr     : "new" TK_IDENT '(' arguments ')'
+                { $$ = newexpr(yyget_extra(yyscanner), $2); }
+            ;         
+            
+nullexpr    : "null"
+                { $$ = expression(yyget_extra(yyscanner), EXPR_NULL); }            
+            ;
+            
+arrayconstructor: '{' int_list '}' 
+                     { $$ = NULL; }
+                ;  
             
 int_list    : /* empty */
             | int_list ',' TK_INT            
@@ -626,27 +672,7 @@ binexpr     : expression '=' expression /* to allow writing: a = b = c; */
                 { $$ = binexpr(yyget_extra(yyscanner), $1, OP_BAND, $3); }
             | expression '|' expression
                 { $$ = binexpr(yyget_extra(yyscanner), $1, OP_BOR, $3); }
-            | expression "==" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_EQ, $3); }
-            | expression "!=" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_NE, $3); }
-            | expression ">" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_GT, $3); }
-            | expression "<" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_LT, $3); }
-            | expression "<=" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_LE, $3); }
-            | expression ">=" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_GE, $3); }
-            | expression "&&" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_AND, $3); }
-            | expression "||" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_OR, $3); }
-            | expression "<<" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_LSH, $3); }
-            | expression ">>" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_RSH, $3); }
-                
+                            
             ;
            
 return_type : type    { $$ = $1; }
