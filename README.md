@@ -58,3 +58,7 @@ functions in the code generator return a m1_reg structure, which represents a re
 the register number and register type. The m1_reg structure that is returned contains the register
 that will hold the result of the evaluation of the AST node. 
 
+License
+======
+
+[Artistic 2.0](https://github.com/parrot/m1/blob/master/LICENSE)
