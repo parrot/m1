@@ -11,16 +11,10 @@
 #include "m1lexer.h"
 
 #include "m1_ast.h"
-#include "m1_eval.h"
-#include "m1_gencode.h"
 #include "m1_instr.h"
-#include "m1_symtab.h"
 #include "m1_compiler.h"
-#include "m1_semcheck.h"
 
 
-
-extern int yyparse(yyscan_t yyscanner, struct M1_compiler * const comp);
 extern int yylex(YYSTYPE *yylval, yyscan_t yyscanner);
 
 
@@ -34,45 +28,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
     return 0;
 }
 
-int
-main(int argc, char *argv[]) {
-    FILE        *fp;
-    yyscan_t     yyscanner;
-    M1_compiler  comp;
-    int i;
-    
-    fp = fopen(argv[1], "r");
-    if (fp == NULL) {
-        fprintf(stderr, "Could not open file\n");
-        exit(EXIT_FAILURE);
-    }
-   
-   	memset(&comp, 0, sizeof(M1_compiler));
-   	
-    for(i = 0; i < 4; ++i)
-       	comp.regs[i] = 1;
-       	
-    yylex_init(&yyscanner);
-    yyset_extra(&comp, yyscanner);
-    
-    yyset_in(fp, yyscanner);
 
-    comp.ints = new_symtab();
-    comp.floats = new_symtab();
-    comp.globals = new_symtab();
-    comp.strings = new_symtab();
-    
-    yyparse(yyscanner, &comp);
-    
-    if (comp.errors == 0) {
-//    	check(&comp, comp.ast); /*  need to finish */
-    	fprintf(stderr, "generating code...\n");
-	    gencode(&comp, comp.ast);
-    }
-    
-    fclose(fp);
-    return 0;
-}
 
 
 %}
@@ -634,6 +590,12 @@ expression  : constexpr
                 { $$ = expression(yyget_extra(yyscanner), EXPR_NULL); }
             | "new" TK_IDENT '(' arguments ')'
                 { $$ = newexpr(yyget_extra(yyscanner), $2); }
+            | '{' int_list '}' 
+                { $$ = NULL; }
+            ;
+            
+int_list    : /* empty */
+            | int_list ',' TK_INT            
             ;
             
 unexpr  : '-' expression
