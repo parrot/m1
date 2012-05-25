@@ -1,6 +1,17 @@
 TODO
 ====
 
+short-term roadmap:
+* implement assignments (x=1). This includes symbol management (sym tables). HIGH PRIORITY
+* implement function calls properly (including returning from a function) HIGH PRIORITY
+* finish up control statements (if, while, dowhile, break)
+* implement "new" statement for allocating PMC and struct instances. This includes implementing pointers
+* implement field access (x.y = 1)
+* look into vtable implementation for PMCs for calling member functions x.y();
+* think about a module management system. No preprocessor please. Maybe similar to Java's import statement. This might include namespaces, and also private and public scopes for modules (keywords needed?)
+
+
+random list of items:
 * implement parameter and argument handling
 * implement namespaces and their handling
 * implement pointers properly in the parser
