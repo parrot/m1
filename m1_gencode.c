@@ -345,19 +345,19 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
     		op = "set"; /* in case of a = b = c; then b = c part is a binary expression */
     		break;
         case OP_PLUS:
-            op = "add";
+            op = "add_i";
             break;
         case OP_MINUS:
-            op = "sub";
+            op = "sub_i";
             break;
         case OP_MUL:
-            op = "mult";
+            op = "mult_i";
             break;
         case OP_DIV:
-            op = "div";
+            op = "div_i";
             break;
         case OP_MOD:
-            op = "mod";
+            op = "mod_i";
             break;
         case OP_XOR:
             op = "xor";
@@ -401,8 +401,8 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
     right       = gencode_expr(comp, b->right);  
     target      = gen_reg(comp, left.type);  
     
-    fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", op, target.type, target.no, 
-           left.type, left.no, right.type, right.no);
+    fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", op, reg_chars[(int)target.type], target.no, 
+           reg_chars[(int)left.type], left.no, reg_chars[(int)right.type], right.no);
     return target;
 }
 
