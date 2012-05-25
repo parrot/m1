@@ -10,6 +10,7 @@
 
 int constindex = 0;
 
+static int regallocator = 10;
 
 m1_symboltable *
 new_symtab(void) {
@@ -27,6 +28,32 @@ link_sym(m1_symboltable *table, m1_symbol *sym) {
 	sym->next       = table->syms;
     table->syms     = sym;
     sym->constindex = constindex++;
+}
+
+m1_symbol *
+sym_new_symbol(m1_symboltable *table, char *name, int regno) {
+    m1_symbol *sym = (m1_symbol *)calloc(1, sizeof(m1_symbol));
+    
+    if (sym == NULL) {
+        fprintf(stderr, "cant alloc mem for new sym");
+        exit(EXIT_FAILURE);   
+    }
+    sym->value.str = name;
+    sym->regno     = regallocator++; 
+    
+    link_sym(table, sym);
+    
+    return sym;   
+}
+
+void
+print_symboltable(m1_symboltable *table) {
+    m1_symbol *iter = table->syms;
+    fprintf(stderr, "SYMBOL TABLE\n");
+    while (iter != NULL) {
+        fprintf(stderr, "symbol '%s' has register %d\n", iter->value.str, iter->regno);
+        iter = iter->next;   
+    }   
 }
 
 m1_symbol *

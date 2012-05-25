@@ -32,6 +32,7 @@ chunk(M1_compiler *comp, int rettype, NOTNULL(char *name), m1_expression *block)
     c->name     = name;
     c->block    = block;
     c->next     = NULL;
+    
     return c;   
 }
 

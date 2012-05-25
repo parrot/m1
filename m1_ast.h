@@ -23,7 +23,7 @@ typedef struct m1_chunk {
     struct m1_expression *block;
     /* TODO: add parameters */
     
-    struct m1_symboltable symbols;
+    struct m1_symboltable locals;
         
 } m1_chunk;
 
@@ -142,7 +142,10 @@ typedef enum m1_object_type {
     OBJECT_FIELD, /* b in a.b  */
     OBJECT_INDEX, /* b in a[b] */
     OBJECT_DEREF, /* b in a->b */
-    OBJECT_SCOPE  /* b in a::b */
+    OBJECT_SCOPE, /* b in a::b */
+    OBJECT_SELF,  /* "self"    */
+    OBJECT_SUPER  /* "super"   */
+    
 } m1_object_type;
 
 typedef struct m1_object {
@@ -192,6 +195,7 @@ typedef struct m1_var {
     char                 *name;
     struct m1_expression *init;
     unsigned              size; /* 1 for non-arrays, larger for arrays */
+    struct m1_symbol     *sym; /* pointer to symbol in symboltable */
     
 } m1_var;
 

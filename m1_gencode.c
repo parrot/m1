@@ -103,7 +103,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
 	m1_reg lhs, rhs;
     rhs = gencode_expr(comp, a->rhs);
     lhs = gencode_expr(comp, a->lhs);
-    fprintf(OUT, "\tset\t%c%d, %c%d, x\n", lhs.type, lhs.no, rhs.type, rhs.no);
+    fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, reg_chars[(int)rhs.type], rhs.no);
 	return lhs;
 }
 
@@ -123,12 +123,19 @@ gencode_obj(M1_compiler *comp, m1_object *obj) {
 	
 	
     switch (obj->type) {
-        case OBJECT_MAIN:
+        case OBJECT_MAIN: {
+        	m1_symbol *sym = sym_find_str(&comp->currentchunk->locals, obj->obj.field);
         	
-            fprintf(OUT, "\tset\tI%d, I%d\n", 1000, 2000);
+        	if (sym == NULL) {
+        	// do this check in semcheck 
+        	   fprintf(stderr, "Cannot find variable '%s'\n", obj->obj.field);
+        	   return reg;   
+        	}
+        	reg.no = sym->regno;            
             break;
+        }
         case OBJECT_FIELD:
-            fprintf(OUT, "\tset_imm\tI%d, %d\n", 1000, 4);
+            //fprintf(OUT, "\tset_imm\tI%d, %d\n", 1000, 4);
             break;
         case OBJECT_DEREF:
 	/* todo */
@@ -739,6 +746,7 @@ gencode_consts(M1_compiler *comp) {
 	print_consts(comp->floats);	
 	print_consts(comp->ints);	
 	print_consts(comp->globals);
+
 }
 
 static void

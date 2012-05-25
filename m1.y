@@ -108,6 +108,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              TK_STRING_CONST
 
 %type <chunk> function_definition 
+              function_init
               chunks 
               chunk 
               TOP
@@ -279,14 +280,21 @@ pmc_attr		: var_declaration
 pmc_method		: "method" function_definition
 				;
                                         
-function_definition : return_type TK_IDENT '(' parameters ')' block
+function_definition : function_init '(' parameters ')' block
                         { 
-                          M1_compiler *comp = yyget_extra(yyscanner);                          
-                          $$ = chunk(comp, $1, $2, $6); 
-                        
-                          sym_enter_chunk(comp->globals, $2);
+                          $1->block = $5;  
+                          print_symboltable(&comp->currentchunk->locals);
                         }
                     ;
+
+function_init   : return_type TK_IDENT
+                        {
+                          M1_compiler *comp = yyget_extra(yyscanner);                          
+                          $$ = chunk(comp, $1, $2, NULL); 
+                          comp->currentchunk = $$;
+                          sym_enter_chunk(comp->globals, $2);
+                        }
+                ;
 
 /* TODO: parameter handling. */        
 parameters  : /* empty */
@@ -420,7 +428,11 @@ var_list    : var 				{ $$ = $1; }
             ;               
             
 var         : TK_IDENT opt_init
-                { $$ = var(yyget_extra(yyscanner), $1, $2); }
+                { 
+                    $$ = var(yyget_extra(yyscanner), $1, $2); 
+                    $$->sym = sym_new_symbol(&(comp->currentchunk->locals), $1, TYPE_INT);
+                  
+                }
             | TK_IDENT '[' TK_INT ']'
                 { $$ = array(yyget_extra(yyscanner), $1, $3); }
             ;           
@@ -516,7 +528,7 @@ for_init    : /* empty */
             
 for_cond    : /* empty */
                 { $$ = NULL; }
-            | expression
+            | boolexpr
             ;
             
 for_step    : /* empty */

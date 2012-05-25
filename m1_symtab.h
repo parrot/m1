@@ -19,10 +19,11 @@ typedef union m1_value {
 
 typedef struct m1_symbol {
     m1_value     value;
+    int          regno; /* allocated register */
     m1_valuetype type;
     int          scope;
     int          constindex;
-    
+    struct m1_var    *var;
     struct m1_symbol *next;    
     
 } m1_symbol;
@@ -45,6 +46,9 @@ extern m1_symbol *sym_find_str(m1_symboltable *table, char *name);
 extern m1_symbol *sym_find_num(m1_symboltable *table, double val);
 extern m1_symbol *sym_find_int(m1_symboltable *table, int val);
 extern m1_symbol *sym_find_chunk(m1_symboltable *table, char *name);
+
+extern m1_symbol *sym_new_symbol(m1_symboltable *table, char *name, int type);
+extern void print_symboltable(m1_symboltable *table);
 
 #endif
 
