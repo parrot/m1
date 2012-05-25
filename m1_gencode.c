@@ -63,8 +63,8 @@ gencode_number(M1_compiler *comp, double value) {
 	/*
 	deref Nx, CONSTS, <const_id>
 	*/
-    m1_reg     reg = gen_reg(comp, TYPE_NUM);
-    m1_symbol *sym = sym_find_num(comp->floats, value);
+    m1_reg     reg        = gen_reg(comp, TYPE_NUM);
+    m1_symbol *sym        = sym_find_num(comp->floats, value);
     m1_reg     constindex = gen_reg(comp, TYPE_INT);
 
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, sym->constindex);
@@ -88,10 +88,9 @@ gencode_int(M1_compiler *comp, int value) {
 
 static m1_reg
 gencode_string(M1_compiler *comp, NOTNULL(char *value)) {
-    m1_reg     reg = gen_reg(comp, TYPE_STRING);
+    m1_reg     reg        = gen_reg(comp, TYPE_STRING);
     m1_reg     constindex = gen_reg(comp, TYPE_INT);
-    
-    m1_symbol *sym = sym_find_str(comp->strings, value); /* find index of value in CONSTS */
+    m1_symbol *sym        = sym_find_str(comp->strings, value); /* find index of value in CONSTS */
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, sym->constindex);
     fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", reg.no, constindex.no);
     return reg;
@@ -118,8 +117,8 @@ static m1_reg
 gencode_obj(M1_compiler *comp, m1_object *obj) {
 	m1_reg reg, oreg;
 	
-	reg  = gen_reg(comp, 'I');
-	oreg = gen_reg(comp, 'I');
+	reg  = gen_reg(comp, TYPE_INT);
+	oreg = gen_reg(comp, TYPE_INT);
 	
 	
     switch (obj->type) {
@@ -343,24 +342,63 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
     	   right,
     	   target;
     
+    left = gencode_expr(comp, b->left);
+
     switch(b->op) {
     	case OP_ASSIGN:
     		op = "set"; /* in case of a = b = c; then b = c part is a binary expression */
     		break;
         case OP_PLUS:
-            op = "add_i";
+            if (left.type == TYPE_INT)
+                op = "add_i";
+            else if (left.type == TYPE_NUM)
+                op = "add_n";
+            else { /* should not happen */
+                fprintf(stderr, "wrong type for add");
+                exit(EXIT_FAILURE);
+            }
             break;
         case OP_MINUS:
-            op = "sub_i";
+             if (left.type == TYPE_INT)
+                op = "sub_i";
+            else if (left.type == TYPE_NUM)
+                op = "sub_n";
+            else { /* should not happen */
+                fprintf(stderr, "wrong type for sub");
+                exit(EXIT_FAILURE);
+            }
+
             break;
         case OP_MUL:
-            op = "mult_i";
+             if (left.type == TYPE_INT)
+                op = "mul_i";
+            else if (left.type == TYPE_NUM)
+                op = "mul_n";
+            else { /* should not happen */
+                fprintf(stderr, "wrong type for mul");
+                exit(EXIT_FAILURE);
+            }
+
             break;
         case OP_DIV:
-            op = "div_i";
+             if (left.type == TYPE_INT)
+                op = "div_i";
+            else if (left.type == TYPE_NUM)
+                op = "div_n";
+            else { /* should not happen */
+                fprintf(stderr, "wrong type for div");
+                exit(EXIT_FAILURE);
+            }
             break;
         case OP_MOD:
-            op = "mod_i";
+            if (left.type == TYPE_INT)
+                op = "mod_i";
+            else if (left.type == TYPE_NUM)
+                op = "mod_n";
+            else { /* should not happen */
+                fprintf(stderr, "wrong type for mod");
+                exit(EXIT_FAILURE);
+            }
             break;
         case OP_XOR:
             op = "xor";
@@ -400,8 +438,7 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
             break;   
     }
     
-    left        = gencode_expr(comp, b->left);
-    right       = gencode_expr(comp, b->right);  
+       right       = gencode_expr(comp, b->right);  
     target      = gen_reg(comp, left.type);  
     
     fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", op, reg_chars[(int)target.type], target.no, 
@@ -452,10 +489,9 @@ gencode_uminus(M1_compiler *comp, m1_unexpr *u) {
     
     reg = gencode_expr(comp, u->expr);
     
-    /* let's say u is 42. Then substracting 42 should be 0.
-    If not, it was a negative number to begin with. For a positive 
-    number, substract the value twice to get the negative value. 
-    For a negative number, add the value to itself twice. 
+    /* XXX M0 definitely needs a gt or lt opcode. 
+    a "neg" and "not" as well as bit-inverse opcode (a = ~a) would
+    be handy too.
     */
     
     return reg;    
