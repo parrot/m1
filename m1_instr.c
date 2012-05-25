@@ -73,183 +73,182 @@ write_goto_chunk(m0_instr *i) {
 
 static void
 write_add_i(m0_instr *i) {
-    
+    fprintf(OUT, "add_i");    
 }
 
 static void
 write_add_n(m0_instr *i) {
-    
+    fprintf(OUT, "add_n");    
 }
 
 static void
 write_sub_i(m0_instr *i) {
-    
+    fprintf(OUT, "sub_i");    
 }
 
 static void
 write_sub_n(m0_instr *i) {
-    
+    fprintf(OUT, "sub_n");    
 }
 
 static void
 write_mult_i(m0_instr *i) {
-    
+    fprintf(OUT, "mult_i");    
 }
 
 static void
 write_mult_n(m0_instr *i) {
-    
+    fprintf(OUT, "mult_n");    
 }
 
 static void
 write_div_i(m0_instr *i) {
-    
+    fprintf(OUT, "div_i");    
 }
 
 static void
 write_div_n(m0_instr *i) {
-    
+    fprintf(OUT, "div_n");    
 }
 
 static void
 write_mod_i(m0_instr *i) {
-    
+    fprintf(OUT, "mod_i");    
 }
 
 static void
 write_mod_n(m0_instr *i) {
-    
+    fprintf(OUT, "mod_n");    
 }
 
 static void
 write_iton(m0_instr *i) {
-    
+    fprintf(OUT, "iton");    
 }
 static void
 write_ntoi(m0_instr *i) {
-    
+    fprintf(OUT, "ntoi");    
 }
 static void
 write_ashr(m0_instr *i) {
-    
+    fprintf(OUT, "ashr");    
 }
 static void
 write_lshr(m0_instr *i) {
-    
+    fprintf(OUT, "lshr");    
 }
 static void
 write_shl(m0_instr *i) {
-    
+    fprintf(OUT, "shl");    
 }
 
 static void
 write_and(m0_instr *i) {
-    
+    fprintf(OUT, "and");    
 }
 
 static void
 write_or(m0_instr *i) {
-    
+    fprintf(OUT, "or");    
 }
 
 static void
 write_xor(m0_instr *i) {
-    
+    fprintf(OUT, "xor");    
 }
 
 static void
 write_gc_alloc(m0_instr *i) {
-    
+    fprintf(OUT, "gc_alloc");    
 }
 
 static void
 write_sys_alloc(m0_instr *i) {
-    
+    fprintf(OUT, "sys_alloc");    
 }
 static void
 write_sys_free(m0_instr *i) {
-    
+    fprintf(OUT, "sys_free");    
 }
 
 static void
 write_copy_mem(m0_instr *i) {
-    
+    fprintf(OUT, "copy_mem");    
 }
 
 static void
 write_set(m0_instr *i) {
-    
+    fprintf(OUT, "set");    
 }
 
 static void
 write_set_imm(m0_instr *i) {
-    
+    fprintf(OUT, "set_imm");    
 }
 
 static void
 write_deref(m0_instr *i) {
-    
+    fprintf(OUT, "deref");    
 }
 
 static void
 write_set_ref(m0_instr *i) {
-    
+    fprintf(OUT, "set_ref");    
 }
 
 static void
 write_set_byte(m0_instr *i) {
-    
+    fprintf(OUT, "set_byte");    
 }
 static void
 write_get_byte(m0_instr *i) {
-    
+    fprintf(OUT, "get_byte");    
 }
 static void
 write_set_word(m0_instr *i) {
-    
+    fprintf(OUT, "set_word");    
 }
 static void
 write_get_word(m0_instr *i) {
-    
+    fprintf(OUT, "get_word");    
 }
 static void
 write_csym(m0_instr *i) {
-    
+    fprintf(OUT, "csym");    
 }
-
 
 static void
 write_ccall_arg(m0_instr *i) {
-    
+    fprintf(OUT, "ccall_arg");    
 }
 
 static void
 write_ccall_ret(m0_instr *i) {
-    
+    fprintf(OUT, "ccall_ret");    
 }
 
 static void
 write_ccall(m0_instr *i) {
-    
+    fprintf(OUT, "ccall");    
 }
 
 static void
 write_print_s(m0_instr *i) {
-    
+    fprintf(OUT, "print_s");    
 }
 static void
 write_print_i(m0_instr *i) {
-    
+    fprintf(OUT, "print_i");   
 }
 
 static void
 write_print_n(m0_instr *i) {
-    
+    fprintf(OUT, "print_n");    
 }
 
 static void
 write_exit(m0_instr *i) {
-    
+    fprintf(OUT, "exit");    
 }
 
 

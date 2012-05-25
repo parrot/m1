@@ -1,3 +1,9 @@
+/*
+
+Simple stack implementation.
+Needed by code generator to store labels for break statements, etc.
+
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include "m1_stack.h"
@@ -12,7 +18,7 @@ new_stack(void) {
 
 void 
 delete_stack(m1_stack *stack) {
-    
+    free(stack);
 }
 
 void 
