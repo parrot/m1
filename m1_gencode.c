@@ -65,9 +65,10 @@ gencode_number(M1_compiler *comp, double value) {
 	*/
     m1_reg     reg = gen_reg(comp, TYPE_NUM);
     m1_symbol *sym = sym_find_num(comp->floats, value);
+    m1_reg     constindex = gen_reg(comp, TYPE_INT);
 
-
-    fprintf(OUT, "\tderef\tN%d, CONSTS, %d\n", reg.no, sym->constindex);
+    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, sym->constindex);
+    fprintf(OUT, "\tderef\tN%d, CONSTS, %d\n", reg.no, constindex.no);
     return reg;
 }   
 
@@ -76,21 +77,23 @@ gencode_int(M1_compiler *comp, int value) {
 	/*
 	deref Ix, CONSTS, <const_id>
 	*/
-    m1_reg     reg = gen_reg(comp, TYPE_INT);
-    m1_symbol *sym = sym_find_int(comp->ints, value);
+    m1_reg     reg        = gen_reg(comp, TYPE_INT);
+    m1_symbol *sym        = sym_find_int(comp->ints, value);
+    m1_reg     constindex = gen_reg(comp, TYPE_INT);
 
-    fprintf(OUT, "\tderef\tI%d, CONSTS, %d\n", reg.no, sym->constindex);
+    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, sym->constindex);
+    fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", reg.no, constindex.no);
     return reg;
 }
 
 static m1_reg
 gencode_string(M1_compiler *comp, NOTNULL(char *value)) {
     m1_reg     reg = gen_reg(comp, TYPE_STRING);
-    m1_reg     one = gen_reg(comp, TYPE_INT);
+    m1_reg     constindex = gen_reg(comp, TYPE_INT);
     
     m1_symbol *sym = sym_find_str(comp->strings, value); /* find index of value in CONSTS */
-    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", one.no, sym->constindex);
-    fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", reg.no, one.no);
+    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, sym->constindex);
+    fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", reg.no, constindex.no);
     return reg;
 }
 
