@@ -1,7 +1,7 @@
 M1
 ==
 
-low-level C-family language that spits out M0
+low-level C-family language that spits out [M0](https://github.com/parrot/parrot/tree/m0)
 
 Overview
 ========
