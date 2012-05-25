@@ -64,8 +64,10 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "-="                    { return TK_DEC_ASSIGN; }
 
 [\[\]{}();=+-/*^,\.]    { return yytext[0]; }
-[?%&!:]                 { return yytext[0]; }
+[%&:]                  { return yytext[0]; }
 
+"?"                     { return TK_ISTRUE; }
+"!"                     { return TK_NOT; }
 "break"                 { return KW_BREAK; }
 "case"                  { return KW_CASE; }
 "const"                 { return KW_CONST; }
@@ -73,9 +75,11 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "do"                    { return KW_DO; }
 "else"                  { return KW_ELSE; }
 "extends"				{ return KW_EXTENDS; }
+"extern"                { return KW_EXTERN; }
 "false"                 { return KW_FALSE; }
 "for"                   { return KW_FOR; }
 "if"                    { return KW_IF; }
+"import"                { return KW_IMPORT; }
 "int"                   { return KW_INT; }
 
 "M0"                    { BEGIN(M0_PARSING); return KW_M0; }

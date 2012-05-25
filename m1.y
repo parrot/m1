@@ -99,6 +99,10 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
         KW_SELF			"self"
         KW_FALSE        "false"
         KW_TRUE         "true"
+        TK_ISTRUE       "?"
+        TK_NOT          "!"
+        KW_EXTERN       "extern"
+        KW_IMPORT       "import"
         
 %type <sval> TK_IDENT
              TK_STRING_CONST
@@ -192,13 +196,14 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 
 %start TOP
 
+%left '?' ':' 
 %nonassoc TK_INC_ASSIGN '='
-%left TK_AND TK_OR
+%left TK_AND TK_OR 
 %left TK_LE TK_GE TK_LT TK_GT TK_EQ TK_NE
 %left TK_LSH TK_RSH
-%left '+' '-' 
-%left '*' '/' '&' '|' '%' '?' ':' '!' '^'
-%left TK_INC TK_DEC
+%left '+' '-' TK_NOT
+%left '*' '/' '&' '|' '%'  '^'
+%left TK_INC TK_DEC 
 
 /* for dangling else conflict in the grammar; don't
    extend the grammar with many rules to work around, just
@@ -206,16 +211,24 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
    solution in "Lex & Yacc", JR Levine et al., O'Reilly.
 */
 %nonassoc LOWER_THAN_ELSE
-%nonassoc KW_ELSE
+%nonassoc KW_ELSE TK_ISTRUE 
+
 
 %%
 
-TOP     : chunks
+TOP     : imports chunks
             { 
               M1_compiler *comp = yyget_extra(yyscanner);
-              comp->ast = $1; 
+              comp->ast = $2; 
             }
         ;
+        
+imports : /* empty */
+        | imports importstat
+        ;
+        
+importstat  : "import" TK_IDENT ';'       
+            ;
         
 chunks  : chunk
             { $$ = $1; }
@@ -434,18 +447,18 @@ assignop    : '='  { $$ = OP_ASSIGN; }
     */
             ;            
             
-if_stat     : "if" '(' expression ')' statement %prec LOWER_THAN_ELSE 
+if_stat     : "if" '(' boolexpr ')' statement %prec LOWER_THAN_ELSE 
                 { $$ = ifexpr(yyget_extra(yyscanner), $3, $5, NULL); }
-            | "if" '(' expression ')' statement "else" statement 
+            | "if" '(' boolexpr ')' statement "else" statement 
                 { $$ = ifexpr(yyget_extra(yyscanner), $3, $5, $7); }
             ;
             
             
-while_stat  : "while" '(' expression ')' statement
+while_stat  : "while" '(' boolexpr ')' statement
                 { $$ = whileexpr(yyget_extra(yyscanner), $3, $5); }
             ;
             
-do_stat     : "do" block "while" '(' expression ')' ';'
+do_stat     : "do" block "while" '(' boolexpr ')' ';'
                 { $$ = dowhileexpr(yyget_extra(yyscanner), $5, $2); }
             ;
             
@@ -558,9 +571,9 @@ lhs_obj : TK_IDENT
               $$ = $1;
             }
         | "self"
-        	{ $$ = NULL; }
+        	{ $$ = object(yyget_extra(yyscanner), OBJECT_SELF); }
         | "super"
-        	{ $$ = NULL; }
+        	{ $$ = object(yyget_extra(yyscanner), OBJECT_SUPER); }
         ;        
         
 field_access: '[' expression ']'
@@ -587,7 +600,7 @@ constexpr   : TK_NUMBER
 expression  : constexpr 
             | inc_or_dec_expr                
             | subexpr
-            | boolexpr
+            | boolexpr %prec LOWER_THAN_ELSE /* needed for current definition of tertexpr */
             | unexpr             
             | binexpr
             | tertexpr
@@ -625,7 +638,9 @@ boolexpr    : "true"
             | expression "<<" expression
                 { $$ = binexpr(yyget_extra(yyscanner), $1, OP_LSH, $3); }
             | expression ">>" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_RSH, $3); }    
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_RSH, $3); }   
+            | "!" expression
+                { $$ = unaryexpr(yyget_extra(yyscanner), UNOP_NOT, $2); }                                            
             ;   
             
 newexpr     : "new" TK_IDENT '(' arguments ')'
@@ -646,11 +661,10 @@ int_list    : /* empty */
             
 unexpr  : '-' expression
                 { $$ = unaryexpr(yyget_extra(yyscanner), UNOP_MINUS, $2); }                
-        | '!' expression
-                { $$ = unaryexpr(yyget_extra(yyscanner), UNOP_NOT, $2); }                            
+            
         ;            
        
-tertexpr    : expression '?' expression ':' expression
+tertexpr    : boolexpr '?' expression ':' expression
                 { $$ = ifexpr(yyget_extra(yyscanner), $1, $3, $5); }
             ;
                    
@@ -671,8 +685,7 @@ binexpr     : expression '=' expression /* to allow writing: a = b = c; */
             | expression '&' expression
                 { $$ = binexpr(yyget_extra(yyscanner), $1, OP_BAND, $3); }
             | expression '|' expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_BOR, $3); }
-                            
+                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_BOR, $3); }                            
             ;
            
 return_type : type    { $$ = $1; }
@@ -696,83 +709,5 @@ user_type   : TK_IDENT { $$ = TYPE_USERDEFINED; }
             
 %%
 
-/*
-grammar specification: (OUTDATED!)
 
-program: chunk*
-
-chunk: function-decl
-     | struct-decl
-     
-function-decl: type NAME ( parameters? ) block
-
-parameters: parameter [, parameter]*
-
-parameter: type NAME
-
-block: { statement* }
-
-statement: if-stat
-         | while-stat
-         | do-stat
-         | assign-stat
-         | function-call-stat
-         | return-stat
-         | block
-         | declaration
-         | inc-dec-stat
-         | for-stat
-         
-declaration: type NAME [= expression]? [, id [= expression]? ]*
-           | const type NAME = VALUE         
-           
-if-stat: if ( expression ) statement [else statement]?
-
-while-stat: while ( expression ) statement
-
-do-stat: do block while ( expression ) ;            
-
-assign-stat: lhs = rhs ;
-
-function-call: NAME ( arguments? )
-
-function-call-stat: function-call ;
-
-arguments: expression [, expression]*
-
-return-stat: return expression
-
-inc-dec-stat: inc-dec-expression ;
-
-for-stat: for ( [NAME = expression]? ; expression? ; expression? ) statement
-
-lhs: NAME
-   | lhs -> NAME
-   | lhs [ expression ]
-   | lhs . NAME
-   | * lhs
-   | & lhs
-
-rhs: expression
-
-expression: lhs
-          | VALUE
-          | function-call
-          | expression binop expression
-          | unop expression
-          | ( expression )
-          | inc-dec-expression
-          | null
-          | expression ? expression : expression
-          
-inc-dec-expression: ++ lhs
-                  | -- lhs
-                  | lhs ++
-                  | lhs --
-
-type: int
-    | num
-    | void
-    | NAME -- user types 
-        
-*/
+       
