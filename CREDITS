@@ -1,0 +1,34 @@
+=pod
+
+
+    Following in the steps of other open source projects that
+    eventually take over the world, here is the partial list
+    of people who have contributed to Parrot and its supporting
+    works.  It is sorted by name and formatted to allow easy
+    grepping and beautification by scripts.
+    The fields are: name (N), email (E), web-address (W),
+    description (D), main username (U), alias usernames (A)
+    and geographic location (S).
+
+        Thanks,
+
+        The M1 Team
+        PS: Yes, this looks remarkably like the Linux CREDITS format
+        PPS: This file is encoded in UTF-8
+
+----------
+
+N: Jonathan "Duke" Leto
+E: jonathan@leto.net
+W: http://dukeleto.pl
+U: dukeleto
+A: leto
+A: Duke Leto
+S: Portland, Oregon
+
+N: Klaas-Jan Stol
+U: kj, kjs
+E: parrotcode@gmail.com
+
+
+=cut
