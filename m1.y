@@ -228,7 +228,8 @@ imports : /* empty */
         | imports importstat
         ;
         
-importstat  : "import" TK_IDENT ';'       
+importstat  : "import" TK_IDENT ';' 
+                { fprintf(stderr, "'import' statement not implemented yet!\n"); }      
             ;
         
 chunks  : chunk
@@ -242,11 +243,17 @@ chunks  : chunk
         
 chunk   : function_definition            
         | struct_definition
-           { $$ = NULL; /* structs are PMCs with all fields public and no methods */}
+           { $$ = NULL; /* structs are PMCs with all fields public and no methods */
+           fprintf(stderr, "structs are not implemented yet!\n"); 
+           }
         | namespace_definition
-           { $$ = NULL; /* do we want namespaces? */ }
+           { $$ = NULL; /* do we want namespaces? */ 
+           fprintf(stderr, "namespaces are not implemented yet!\n");
+           }
         | pmc_definition
-           { $$ = NULL; /* TODO */ }
+           { $$ = NULL; /* TODO */ 
+           fprintf(stderr, "PMC definitions are not implemented yet!\n");
+           }
         ;        
         
 namespace_definition: "namespace" TK_IDENT ';'
@@ -292,7 +299,7 @@ function_init   : return_type TK_IDENT
                           M1_compiler *comp = yyget_extra(yyscanner);                          
                           $$ = chunk(comp, $1, $2, NULL); 
                           comp->currentchunk = $$;
-                          sym_enter_chunk(comp->globals, $2);
+                          sym_enter_chunk(comp->constants, $2);
                         }
                 ;
 
@@ -303,7 +310,7 @@ parameters  : /* empty */
             
 param_list  : param
             | param_list ',' param
-                { /* TODO */}
+                { /* TODO */ fprintf(stderr, "parameters are not implemented yet!\n"); }
             ;            
         
 param   : type TK_IDENT
@@ -430,7 +437,7 @@ var_list    : var 				{ $$ = $1; }
 var         : TK_IDENT opt_init
                 { 
                     $$ = var(yyget_extra(yyscanner), $1, $2); 
-                    $$->sym = sym_new_symbol(&(comp->currentchunk->locals), $1, TYPE_INT);
+                    $$->sym = sym_new_symbol(&(comp->currentchunk->locals), $1, comp->regs[TYPE_INT]++);
                   
                 }
             | TK_IDENT '[' TK_INT ']'

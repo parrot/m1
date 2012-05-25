@@ -38,13 +38,10 @@ Allocate new registers as needed.
 */
 static m1_reg
 gen_reg(M1_compiler *comp, data_type type) {
-    /* int, num, string, pmc */
-    static int regs[4] = {1,1,1,1};
     m1_reg reg;
     reg.type = type;
-//	reg.no   = comp->regs[type]++;   
+	reg.no   = comp->regs[type]++;   
 
-    reg.no = regs[type]++;
     return reg;
 }
 
@@ -65,7 +62,7 @@ gencode_number(M1_compiler *comp, double value) {
 	deref Nx, CONSTS, <const_id>
 	*/
     m1_reg     reg        = gen_reg(comp, TYPE_NUM);
-    m1_symbol *sym        = sym_find_num(comp->floats, value);
+    m1_symbol *sym        = sym_find_num(comp->constants, value);
     m1_reg     constindex = gen_reg(comp, TYPE_INT);
 
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, sym->constindex);
@@ -79,7 +76,7 @@ gencode_int(M1_compiler *comp, int value) {
 	deref Ix, CONSTS, <const_id>
 	*/
     m1_reg     reg        = gen_reg(comp, TYPE_INT);
-    m1_symbol *sym        = sym_find_int(comp->ints, value);
+    m1_symbol *sym        = sym_find_int(comp->constants, value);
     m1_reg     constindex = gen_reg(comp, TYPE_INT);
 
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, sym->constindex);
@@ -91,7 +88,7 @@ static m1_reg
 gencode_string(M1_compiler *comp, NOTNULL(char *value)) {
     m1_reg     reg        = gen_reg(comp, TYPE_STRING);
     m1_reg     constindex = gen_reg(comp, TYPE_INT);
-    m1_symbol *sym        = sym_find_str(comp->strings, value); /* find index of value in CONSTS */
+    m1_symbol *sym        = sym_find_str(comp->constants, value); /* find index of value in CONSTS */
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, sym->constindex);
     fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", reg.no, constindex.no);
     return reg;
@@ -103,6 +100,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
 	m1_reg lhs, rhs;
     rhs = gencode_expr(comp, a->rhs);
     lhs = gencode_expr(comp, a->lhs);
+    /* copy the value held in register for rhs to the register of lhs */
     fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, reg_chars[(int)rhs.type], rhs.no);
 	return lhs;
 }
@@ -118,7 +116,6 @@ static m1_reg
 gencode_obj(M1_compiler *comp, m1_object *obj) {
 	m1_reg reg, oreg;
 	
-	reg  = gen_reg(comp, TYPE_INT);
 	oreg = gen_reg(comp, TYPE_INT);
 	
 	
@@ -131,7 +128,9 @@ gencode_obj(M1_compiler *comp, m1_object *obj) {
         	   fprintf(stderr, "Cannot find variable '%s'\n", obj->obj.field);
         	   return reg;   
         	}
-        	reg.no = sym->regno;            
+        	/* return register with the symbol's allocated register number */
+        	reg.no   = sym->regno;   
+        	reg.type = sym->type;         
             break;
         }
         case OBJECT_FIELD:
@@ -580,7 +579,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
 	m1_reg reg;
 	m1_reg pmcreg;
 	m1_reg offsetreg;
-    m1_symbol *fun = sym_find_chunk(comp->globals, f->name);
+    m1_symbol *fun = sym_find_chunk(comp->constants, f->name);
     
     if (fun == NULL) {
         fprintf(stderr, "Cant find function %s\n", f->name);   
@@ -742,11 +741,7 @@ print_consts(NOTNULL(m1_symboltable *table)) {
 static void
 gencode_consts(M1_compiler *comp) {
 	fprintf(OUT, ".constants\n");
-	print_consts(comp->strings);	
-	print_consts(comp->floats);	
-	print_consts(comp->ints);	
-	print_consts(comp->globals);
-
+	print_consts(comp->constants);	
 }
 
 static void

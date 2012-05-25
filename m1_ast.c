@@ -48,14 +48,14 @@ void
 expr_set_num(M1_compiler *comp, m1_expression *e, double v) {
     assert(e->type == EXPR_NUMBER); 
     e->expr.floatval = v;
-    e->sym           = sym_enter_num(comp->floats, v);  
+    e->sym           = sym_enter_num(comp->constants, v);  
 }
 
 void 
 expr_set_int(M1_compiler *comp, m1_expression *e, int v) {
     assert(e->type == EXPR_INT);
     e->expr.intval = v;
-    e->sym         = sym_enter_int(comp->ints, v);
+    e->sym         = sym_enter_int(comp->constants, v);
 }
 
 m1_expression *
@@ -273,7 +273,7 @@ expr_set_assign(M1_compiler *comp, m1_expression *node, m1_expression *lhs, int 
 void 
 expr_set_string(M1_compiler *comp, m1_expression *node, char *str) {
     node->expr.str = str;
-    node->sym      = sym_enter_str(comp->strings, str, 0);
+    node->sym      = sym_enter_str(comp->constants, str, 0);
 }
 
 void 

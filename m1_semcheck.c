@@ -6,7 +6,9 @@
 static data_type
 check_object(M1_compiler *comp, m1_object *obj) {
 	switch (obj->type) {
-		case OBJECT_MAIN:
+		case OBJECT_MAIN: /* x in x.y */
+		  /* find obj in symbol table */
+		  break;
 		
 		case OBJECT_FIELD:
 		case OBJECT_INDEX:
@@ -16,6 +18,7 @@ check_object(M1_compiler *comp, m1_object *obj) {
 		default:
 			exit(EXIT_FAILURE);
 	}	
+	return 0;
 }
 
 static data_type

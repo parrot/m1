@@ -8,9 +8,9 @@
 #include "m1_symtab.h"
 
 
-int constindex = 0;
 
-static int regallocator = 10;
+
+int constindex = 0;
 
 m1_symboltable *
 new_symtab(void) {
@@ -25,8 +25,20 @@ new_symtab(void) {
 
 static void
 link_sym(m1_symboltable *table, m1_symbol *sym) {
-	sym->next       = table->syms;
-    table->syms     = sym;
+    m1_symbol *iter;
+    
+    iter = table->syms;
+    if (iter == NULL) {
+        table->syms = sym;
+    }
+    else {
+        while (iter->next != NULL) {
+            iter = iter->next;
+        }      
+        iter->next = sym;
+    }
+//	sym->next       = table->syms;
+//    table->syms     = sym;
     sym->constindex = constindex++;
 }
 
@@ -39,9 +51,11 @@ sym_new_symbol(m1_symboltable *table, char *name, int regno) {
         exit(EXIT_FAILURE);   
     }
     sym->value.str = name;
-    sym->regno     = regallocator++; 
+    sym->regno     = regno;
     
-    link_sym(table, sym);
+ 	sym->next       = table->syms;
+    table->syms     = sym;
+
     
     return sym;   
 }
@@ -60,6 +74,7 @@ m1_symbol *
 sym_enter_str(m1_symboltable *table, char *name, int scope) {
     m1_symbol *sym;
     
+    
     sym = sym_find_str(table, name);
     
     if (sym)
@@ -74,6 +89,7 @@ sym_enter_str(m1_symboltable *table, char *name, int scope) {
     sym->type       = VAL_STRING;
     sym->scope      = scope;
 
+    
     link_sym(table, sym);
     return sym;    
 }

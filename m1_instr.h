@@ -54,8 +54,22 @@ typedef struct m0_operand {
     char type;    
 } m0_operand;
 
+typedef enum m0_instr_flag {
+    I_TYPE_INT   = 0x0001,
+    I_TYPE_NUM   = 0x0002,
+    I_TYPE_STR   = 0x0004,
+    I_TYPE_PMC   = 0x0008,
+    I_0_OPERANDS = 0x0010,
+    I_1_OPERANDS = 0x0020,
+    I_2_OPERANDS = 0x0040,
+    I_3_OPERANDS = 0x0080
+    
+} m0_instr_flag;
+
 typedef struct m0_instr {
     char opcode;
+    char flags; /* maximum of 8 flags */
+    unsigned int label; /* most instructions won't have one */
     struct m0_operand operands[3];
     
     struct m0_instr *next;

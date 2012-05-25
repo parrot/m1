@@ -251,6 +251,29 @@ write_exit(m0_instr *i) {
     fprintf(OUT, "exit");    
 }
 
+static int
+numops(m0_instr *i) {
+    return 0;   
+}
+
+static void
+write_instr(m0_instr *i) {
+    switch (numops(i)) {
+        case 0:
+            break;
+        case 1:
+        
+            fprintf(OUT, "\t%s\t%c%d, x, x\n", m0_instr_names[i->opcode], i->operands[0].type, i->operands[0].value);   
+            break;
+            
+        case 2:
+        
+        case 3:
+        
+        default:
+            break;
+    }
+}
 
 void
 write_instructions(m0_instr *i) {

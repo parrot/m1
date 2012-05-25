@@ -42,10 +42,8 @@ main(int argc, char *argv[]) {
     
     yyset_in(fp, yyscanner);
 
-    comp.ints = new_symtab();
-    comp.floats = new_symtab();
-    comp.globals = new_symtab();
-    comp.strings = new_symtab();
+    comp.constants = new_symtab();
+
     
     yyparse(yyscanner, &comp);
     
