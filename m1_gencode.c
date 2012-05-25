@@ -19,6 +19,7 @@ in gencode_number().
 #include "m1_gencode.h"
 #include "m1_ast.h"
 #include "m1_compiler.h"
+#include "m1_stack.h"
 
 #include "m1_ann.h"
 
@@ -161,12 +162,22 @@ gencode_while(M1_compiler *comp, m1_whileexpr *w) {
 	int endlabel   = gen_label(comp), 
 	    startlabel = gen_label(comp);
 	
+	/* push break label onto stack so break statement knows where to go. */
+	push(comp->breakstack, endlabel);
+	
 	fprintf(OUT, "L%d:\n", startlabel);
+    
     reg = gencode_expr(comp, w->cond);
+	
 	fprintf(OUT, "\tgoto_if\n");
+    
     gencode_expr(comp, w->block);
+    
     fprintf(OUT, "\tgoto \tL%d\n", startlabel);
 	fprintf(OUT, "L%d:\n", endlabel);
+	
+	/* remove break label from stack. */
+	(void)pop(comp->breakstack);
 	
 	return reg;
 }
@@ -180,13 +191,21 @@ gencode_dowhile(M1_compiler *comp, m1_whileexpr *w) {
 	goto_if START
 	*/
     m1_reg reg;
-    int    startlabel = gen_label(comp);
     
+    int startlabel = gen_label(comp);
+    int endlabel   = gen_label(comp);
+    
+    push(comp->breakstack, endlabel);
+     
     fprintf(OUT, "L%d:\n", startlabel);
     gencode_expr(comp, w->block);
     
     reg = gencode_expr(comp, w->cond);
     fprintf(OUT, "\tgoto_if\tL%d\n", startlabel);
+
+    fprintf(OUT, "L%d:\n", endlabel);
+    
+    (void)pop(comp->breakstack);
     
     return reg;
 }
@@ -541,8 +560,12 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
 static m1_reg
 gencode_break(M1_compiler *comp) {
 	m1_reg reg;
-	/* pop label from compiler's label stack (todo!) and jump there. */
-    fprintf(OUT, "\tgoto\tL??\n");
+	/* get label to jump to */
+	int breaklabel = top(comp->breakstack);
+	
+	/* pop label from compiler
+	's label stack (todo!) and jump there. */
+    fprintf(OUT, "\tgoto\tL%d\n", breaklabel);
     return reg;
 }
 
