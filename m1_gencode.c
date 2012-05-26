@@ -28,6 +28,8 @@ in gencode_number().
 
 
 static m1_reg gencode_expr(M1_compiler *comp, m1_expression *e);
+static void gencode_block(M1_compiler *comp, m1_expression *block);
+
 
 static const char type_chars[4] = {'i', 'n', 's', 'p'};
 static const char reg_chars[4] = {'I', 'N', 'S', 'P'};
@@ -157,31 +159,32 @@ static m1_reg
 gencode_while(M1_compiler *comp, m1_whileexpr *w) {
 	/*
 	
-	START:
-	<code for cond>
-	goto_if END
-	<code for block>
-	goto START
-	END:
+	   ...
+	   goto L2
+	L1
+	  <block>
+	
+	L2:
+	   goto_if <cond>, L1
+	   ...
+	
 	*/
-	m1_reg reg;
-	int endlabel   = gen_label(comp), 
-	    startlabel = gen_label(comp);
+	m1_reg reg, testreg;
+	int startlabel = gen_label(comp), 
+	    endlabel   = gen_label(comp);
 	
 	/* push break label onto stack so break statement knows where to go. */
 	push(comp->breakstack, endlabel);
 	
+	fprintf(OUT, "\tgoto L%d\n", endlabel);
+	
 	fprintf(OUT, "L%d:\n", startlabel);
-    
-    reg = gencode_expr(comp, w->cond);
+	gencode_block(comp, w->block);
 	
-	fprintf(OUT, "\tgoto_if\n");
-    
-    gencode_expr(comp, w->block);
-    
-    fprintf(OUT, "\tgoto \tL%d\n", startlabel);
 	fprintf(OUT, "L%d:\n", endlabel);
-	
+	reg = gencode_expr(comp, w->cond);
+	fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", startlabel, reg_chars[reg.type], reg.no);
+			
 	/* remove break label from stack. */
 	(void)pop(comp->breakstack);
 	
@@ -532,11 +535,19 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     
     switch (u->op) {
         case UNOP_POSTINC:
+            postfix = 1;
+            op = "add_i";
+            break;
         case UNOP_POSTDEC:
+            op = "sub_i";
             postfix = 1;
             break;
         case UNOP_PREINC:
+            postfix = 0;
+            op = "add_i";
+            break;
         case UNOP_PREDEC:
+            op = "sub_i";
             postfix = 0; 
             break;
         case UNOP_MINUS:
@@ -552,14 +563,19 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     reg = gencode_expr(comp, u->expr);
     
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", one.no);
-    fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", target.no, reg.no, one.no);
+    fprintf(OUT, "\t%s\tI%d, I%d, I%d\n", op, target.no, reg.no, one.no);
     
     if (postfix == 0) { 
         /* prefix; return reg containing value before adding 1 */
     	reg.no = target.no; 
+    	fprintf(OUT, "\tset\tI%d, %Id, x\n", reg.no, target.no);
+
     }	
-    
-   	return reg;	    
+    else {
+        fprintf(OUT, "\tset\tI%d, I%d, x\n", reg.no, target.no);
+    }
+        
+    return reg;	    
     
 }
 
@@ -749,9 +765,19 @@ gencode_metadata(M1_compiler *comp) {
 	fprintf(OUT, ".metadata\n");	
 }
 
+static void
+gencode_block(M1_compiler *comp, m1_expression *block) {
+    m1_expression *iter = block;
+    while (iter != NULL) {
+        (void)gencode_expr(comp, iter);
+        iter = iter->next;
+    }
+}
+
 static void 
 gencode_chunk(M1_compiler *comp, m1_chunk *c) {
-    m1_expression *iter;
+    
+    m1_reg r0, r1;
     
     fprintf(OUT, ".chunk \"%s\"\n", c->name);
     
@@ -760,12 +786,19 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     
     fprintf(OUT, ".bytecode\n");
     
+    /* The numbers 0 and 1 are used quite a lot. Rather than
+       generating them as needed, pre-store them in registers
+       0 and 1. Small overhead for when it's not needed, but
+       saves quite a few instructions overall in more 
+       complex code. 
+     */
+    r0 = gen_reg(comp, TYPE_INT);
+    r1 = gen_reg(comp, TYPE_INT); 
+    fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", r0.no);
+    fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", r1.no); 
+    
     /* generate code for statements */
-    iter = c->block;
-    while (iter != NULL) {
-        (void)gencode_expr(comp, iter);
-        iter = iter->next;
-    }
+    gencode_block(comp, c->block);
 }
 
 void 
