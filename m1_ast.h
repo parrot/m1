@@ -24,6 +24,7 @@ typedef struct m1_chunk {
     /* TODO: add parameters */
     
     struct m1_symboltable locals;
+    struct m1_symboltable constants;
         
 } m1_chunk;
 
