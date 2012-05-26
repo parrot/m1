@@ -19,6 +19,9 @@ extern int yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str);
 %option noyywrap
 %option outfile="m1lexer.c"
 %option header-file="m1lexer.h"
+%option stack
+%option never-interactive
+%option pointer
 
 %x M0_PARSING
 %x MULTLINECOMMENT
@@ -46,8 +49,9 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 
 "//".*{EOL}{WS}*        { /* ignore line comments */ }
 
-"/*"                    { BEGIN(MULTLINECOMMENT); }
-<MULTLINECOMMENT>"*/"   { BEGIN(INITIAL); }
+"/*"                    { yy_push_state(MULTLINECOMMENT, yyscanner); }
+<MULTLINECOMMENT>"/*"   { yy_push_state(MULTLINECOMMENT, yyscanner); }
+<MULTLINECOMMENT>"*/"   { yy_pop_state(yyscanner); }
 <MULTLINECOMMENT>.      { /* ignore anything in multi line comments. */ }
 <MULTLINECOMMENT>{EOL}  { /* ignore newlines in multi line comments. */ }
 
