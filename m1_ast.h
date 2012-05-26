@@ -6,6 +6,7 @@
 #include "m1_compiler.h"
 
 
+
 typedef enum data_types {
     TYPE_INT    = 0,
     TYPE_NUM    = 1,
@@ -190,6 +191,7 @@ typedef struct m1_const {
     struct m1_expression *value;
 } m1_const;
 
+
 /* variable declarations */
 typedef struct m1_var {
     data_type             type;
@@ -216,6 +218,12 @@ typedef struct m1_switch {
 	
 } m1_switch;
 
+typedef struct m1_literal {
+    union m1_value value;
+    enum m1_valuetype type;
+    struct m1_symbol *sym;
+    
+} m1_literal;
 
 typedef struct m0_block {
     struct m0_instr *instr;
@@ -227,9 +235,9 @@ typedef struct m1_expression {
     union {
         struct m1_unexpr     *u;
         struct m1_binexpr    *b;
-        double               floatval;
-        int                  intval;
-        char                 *str;   
+//        double               floatval;
+//        int                  intval;
+//        char                 *str;   
         struct m1_funcall    *f;  
         struct m1_assignment *a; 
         struct m1_whileexpr  *w;  
@@ -242,10 +250,11 @@ typedef struct m1_expression {
         struct m0_block      *m0;
         struct m1_switch     *s;
         struct m1_newexpr    *n;
+        struct m1_literal    *l;
     } expr;
     
     m1_expr_type      type;
-    struct m1_symbol *sym;
+
     
     struct m1_expression *next;
     

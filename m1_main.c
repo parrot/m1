@@ -13,6 +13,8 @@
 #include "m1_stack.h"
 #include "m1_gencode.h"
 
+#include <assert.h>
+
 extern int yyparse(yyscan_t yyscanner, struct M1_compiler * const comp);
 
 int
@@ -20,7 +22,7 @@ main(int argc, char *argv[]) {
     FILE        *fp;
     yyscan_t     yyscanner;
     M1_compiler  comp;
-    int i;
+    
     
     fp = fopen(argv[1], "r");
     if (fp == NULL) {
@@ -29,13 +31,11 @@ main(int argc, char *argv[]) {
     }
    
     /* set up compiler */
-   	memset(&comp, 0, sizeof(M1_compiler));
-   	
-    for(i = 0; i < 4; ++i)
-       	comp.regs[i] = 1;
-    
+   	memset(&comp, 0, sizeof(M1_compiler)); 
     comp.breakstack = new_stack();   	
-       	
+    comp.expect_usertype = 0; /* when not parsing a function's body, 
+                                   then identifiers are types */   	
+                                   
     /* set up lexer and parser */   	
     yylex_init(&yyscanner);
     yyset_extra(&comp, yyscanner);
@@ -51,6 +51,7 @@ main(int argc, char *argv[]) {
     }
     
     fclose(fp);
+    fprintf(stderr, "compilation done\n");
     return 0;
 }
 

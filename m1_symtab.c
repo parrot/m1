@@ -9,9 +9,6 @@
 
 
 
-
-int constindex = 0;
-
 m1_symboltable *
 new_symtab(void) {
     m1_symboltable *table = (m1_symboltable *)calloc(1, sizeof (m1_symboltable));
@@ -23,6 +20,11 @@ new_symtab(void) {
     return table;   
 }
 
+/*
+
+Add symbol C<sym> to symboltable C<table>. 
+
+*/
 static void
 link_sym(m1_symboltable *table, m1_symbol *sym) {
     m1_symbol *iter;
@@ -32,14 +34,13 @@ link_sym(m1_symboltable *table, m1_symbol *sym) {
         table->syms = sym;
     }
     else {
+        /* go to end of list, and hook on symbol at the end */
         while (iter->next != NULL) {
             iter = iter->next;
         }      
         iter->next = sym;
     }
-//	sym->next       = table->syms;
-//    table->syms     = sym;
-    sym->constindex = constindex++;
+
 }
 
 m1_symbol *
@@ -50,8 +51,8 @@ sym_new_symbol(m1_symboltable *table, char *name, int regno) {
         fprintf(stderr, "cant alloc mem for new sym");
         exit(EXIT_FAILURE);   
     }
-    sym->value.str = name;
-    sym->regno     = regno;
+    sym->value.sval = name;
+    sym->regno      = regno;
     
  	sym->next       = table->syms;
     table->syms     = sym;
@@ -65,7 +66,7 @@ print_symboltable(m1_symboltable *table) {
     m1_symbol *iter = table->syms;
     fprintf(stderr, "SYMBOL TABLE\n");
     while (iter != NULL) {
-        fprintf(stderr, "symbol '%s' has register %d\n", iter->value.str, iter->regno);
+        fprintf(stderr, "symbol '%s' has register %d\n", iter->value.sval, iter->regno);
         iter = iter->next;   
     }   
 }
@@ -85,10 +86,10 @@ sym_enter_str(m1_symboltable *table, char *name, int scope) {
         fprintf(stderr, "cant alloc mem for sym");
         exit(EXIT_FAILURE);
     }
-    sym->value.str  = name;
+    sym->value.sval = name;
     sym->type       = VAL_STRING;
     sym->scope      = scope;
-
+    sym->constindex = table->constindex++;
     
     link_sym(table, sym);
     return sym;    
@@ -108,10 +109,9 @@ sym_enter_chunk(m1_symboltable *table, char *name) {
         fprintf(stderr, "cant alloc mem for sym");
         exit(EXIT_FAILURE);
     }
-    sym->value.str  = name;
+    sym->value.sval = name;
     sym->type       = VAL_CHUNK;
-
-
+    sym->constindex = table->constindex++;
     link_sym(table, sym);
     return sym;       
 }
@@ -132,7 +132,8 @@ sym_enter_num(m1_symboltable *table, double val) {
     
     sym->value.fval = val;
     sym->type       = VAL_FLOAT;
-
+    sym->constindex = table->constindex++;
+    
     link_sym(table, sym);
     
     return sym;    
@@ -154,7 +155,8 @@ sym_enter_int(m1_symboltable *table, int val) {
     
     sym->value.ival = val;
     sym->type       = VAL_INT;    
-
+    sym->constindex = table->constindex++;
+    
     link_sym(table, sym);
     return sym;    
 }
@@ -164,7 +166,7 @@ sym_find_str(m1_symboltable *table, char *name) {
     m1_symbol *sym = table->syms;
     
     while (sym != NULL) {
-        if (strcmp(sym->value.str, name) == 0)
+        if (strcmp(sym->value.sval, name) == 0)
             return sym;
             
         sym = sym->next;   
@@ -177,7 +179,7 @@ sym_find_chunk(m1_symboltable *table, char *name) {
     m1_symbol *sym = table->syms;
     
     while (sym != NULL) {
-        if (strcmp(sym->value.str, name) == 0)
+        if (strcmp(sym->value.sval, name) == 0)
             return sym;
             
         sym = sym->next;   
@@ -190,6 +192,7 @@ sym_find_num(m1_symboltable *table, double fval) {
     m1_symbol *sym = table->syms;
     
     while (sym != NULL) {
+        /* XXX shouldn't do comparisons on floats */
         if (sym->value.fval == fval) {        	
             return sym;            
         }

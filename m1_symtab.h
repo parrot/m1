@@ -11,7 +11,7 @@ typedef enum m1_valuetype {
 } m1_valuetype;
 
 typedef union m1_value {
-	char  *str;
+	char  *sval;
 	double fval;
 	int    ival;
 	
@@ -30,6 +30,8 @@ typedef struct m1_symbol {
 
 typedef struct m1_symboltable {
     struct m1_symbol *syms;
+    int    constindex; /* one symboltable per constants segment, therefore keep
+                           constindex local to the table. */
     
 } m1_symboltable;
 

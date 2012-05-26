@@ -103,6 +103,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
         TK_NOT          "!"
         KW_EXTERN       "extern"
         KW_IMPORT       "import"
+
         
 %type <sval> TK_IDENT
              TK_STRING_CONST

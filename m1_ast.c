@@ -44,19 +44,43 @@ expression(M1_compiler *comp, m1_expr_type type) {
 }
 
 
+static m1_literal *
+new_literal(m1_valuetype type) {
+    m1_literal *l = (m1_literal *)m1_malloc(sizeof(m1_literal));
+    l->type = type;
+    return l;    
+}
+
 void 
 expr_set_num(M1_compiler *comp, m1_expression *e, double v) {
     assert(e->type == EXPR_NUMBER); 
-    e->expr.floatval = v;
-    e->sym           = sym_enter_num(&comp->currentchunk->constants, v);  
+//    e->expr.floatval = v;
+//    e->sym           = sym_enter_num(&comp->currentchunk->constants, v);  
+    e->expr.l = new_literal(VAL_FLOAT);
+    e->expr.l->value.fval = v;
+    e->expr.l->sym = sym_enter_num(&comp->currentchunk->constants, v);   
 }
 
 void 
 expr_set_int(M1_compiler *comp, m1_expression *e, int v) {
     assert(e->type == EXPR_INT);
-    e->expr.intval = v;
-    e->sym         = sym_enter_int(&comp->currentchunk->constants, v);
+//    e->expr.intval = v;
+//    e->sym         = sym_enter_int(&comp->currentchunk->constants, v);
+    e->expr.l = new_literal(VAL_INT);
+    e->expr.l->value.ival = v;
+    e->expr.l->sym = sym_enter_int(&comp->currentchunk->constants, v);
+
 }
+
+void 
+expr_set_string(M1_compiler *comp, m1_expression *e, char *str) {
+    //node->expr.str = str;
+    //node->sym      = sym_enter_str(&comp->currentchunk->constants, str, 0);
+    e->expr.l = new_literal(VAL_STRING);
+    e->expr.l->value.sval = str;
+    e->expr.l->sym = sym_enter_str(&comp->currentchunk->constants, str, 0);    
+}
+
 
 m1_expression *
 number(M1_compiler *comp, double value) {
@@ -270,11 +294,6 @@ expr_set_assign(M1_compiler *comp, m1_expression *node, m1_expression *lhs, int 
 
 }
 
-void 
-expr_set_string(M1_compiler *comp, m1_expression *node, char *str) {
-    node->expr.str = str;
-    node->sym      = sym_enter_str(&comp->currentchunk->constants, str, 0);
-}
 
 void 
 obj_set_ident(m1_object *node, char *ident) {

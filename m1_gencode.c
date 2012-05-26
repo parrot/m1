@@ -16,6 +16,7 @@ in gencode_number().
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <assert.h>
 #include "m1_gencode.h"
 #include "m1_ast.h"
 #include "m1_compiler.h"
@@ -25,6 +26,7 @@ in gencode_number().
 
 #define OUT	stdout
 
+#define debug(x)    fprintf(stderr, x);
 
 
 static m1_reg gencode_expr(M1_compiler *comp, m1_expression *e);
@@ -41,6 +43,10 @@ Allocate new registers as needed.
 static m1_reg
 gen_reg(M1_compiler *comp, data_type type) {
     m1_reg reg;
+    
+    assert(comp != NULL);
+    assert((type >=0) && (type < 4));
+    
     reg.type = type;
 	reg.no   = comp->regs[type]++;   
 
@@ -54,44 +60,69 @@ Generate label identifiers.
 */
 static int
 gen_label(M1_compiler *comp) {
+    assert(comp != NULL);
 	return comp->label++;	
 }
 
 
 static m1_reg
-gencode_number(M1_compiler *comp, double value) {
+gencode_number(M1_compiler *comp, m1_literal *lit) {
 	/*
 	deref Nx, CONSTS, <const_id>
 	*/
-    m1_reg     reg        = gen_reg(comp, TYPE_NUM);
-    m1_symbol *sym        = sym_find_num(&comp->currentchunk->constants, value);
-    m1_reg     constindex = gen_reg(comp, TYPE_INT);
+    m1_reg     reg,
+               constindex;
 
-    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, sym->constindex);
+    
+    assert(comp != NULL);
+    assert(lit != NULL);
+    assert(lit->type = VAL_FLOAT);
+    assert(lit->sym != NULL);
+       
+    reg        = gen_reg(comp, TYPE_NUM);
+    constindex = gen_reg(comp, TYPE_INT);
+   
+        
+    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tN%d, CONSTS, %d\n", reg.no, constindex.no);
     return reg;
 }   
 
 static m1_reg
-gencode_int(M1_compiler *comp, int value) {
+gencode_int(M1_compiler *comp, m1_literal *lit) {
 	/*
 	deref Ix, CONSTS, <const_id>
 	*/
-    m1_reg     reg        = gen_reg(comp, TYPE_INT);
-    m1_symbol *sym        = sym_find_int(&comp->currentchunk->constants, value);
-    m1_reg     constindex = gen_reg(comp, TYPE_INT);
+    m1_reg     reg,
+               constindex;       
 
-    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, sym->constindex);
+    assert(comp != NULL);
+    assert(lit != NULL);
+    assert(lit->type == VAL_INT);
+    assert(lit->sym != NULL);
+   
+    reg        = gen_reg(comp, TYPE_INT);
+    constindex = gen_reg(comp, TYPE_INT);
+
+    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", reg.no, constindex.no);
     return reg;
 }
 
 static m1_reg
-gencode_string(M1_compiler *comp, NOTNULL(char *value)) {
-    m1_reg     reg        = gen_reg(comp, TYPE_STRING);
-    m1_reg     constindex = gen_reg(comp, TYPE_INT);
-    m1_symbol *sym        = sym_find_str(&comp->currentchunk->constants, value); /* find index of value in CONSTS */
-    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, sym->constindex);
+gencode_string(M1_compiler *comp, m1_literal *lit) {
+    m1_reg     reg,
+               constindex;
+    
+    assert(comp != NULL);
+    assert(lit != NULL);
+    assert(lit->sym != NULL);
+    assert(lit->type == VAL_STRING);
+   
+    reg        = gen_reg(comp, TYPE_STRING);
+    constindex = gen_reg(comp, TYPE_INT);
+      
+    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", reg.no, constindex.no);
     return reg;
 }
@@ -100,10 +131,21 @@ gencode_string(M1_compiler *comp, NOTNULL(char *value)) {
 static m1_reg
 gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
 	m1_reg lhs, rhs;
+	
+	debug("gencode_assign start...\n");
+	
+	assert(a != NULL);
+	
     rhs = gencode_expr(comp, a->rhs);
     lhs = gencode_expr(comp, a->lhs);
     /* copy the value held in register for rhs to the register of lhs */
+    assert((lhs.type >= 0) && (lhs.type < 4));
+    assert((rhs.type >= 0) && (rhs.type < 4));
+    
+    
     fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, reg_chars[(int)rhs.type], rhs.no);
+    
+    
 	return lhs;
 }
 
@@ -118,12 +160,21 @@ static m1_reg
 gencode_obj(M1_compiler *comp, m1_object *obj) {
 	m1_reg reg, oreg;
 	
+	debug("gencode_obj() start...\n");
+	assert(comp != NULL);
+	assert(comp->currentchunk != NULL);
+	assert(&comp->currentchunk->locals != NULL);
+	
+	
 	oreg = gen_reg(comp, TYPE_INT);
 	
 	
     switch (obj->type) {
         case OBJECT_MAIN: {
-        	m1_symbol *sym = sym_find_str(&comp->currentchunk->locals, obj->obj.field);
+        	m1_symbol *sym;
+        	
+        	assert(obj->obj.field != NULL);
+        	sym = sym_find_str(&comp->currentchunk->locals, obj->obj.field);
         	
         	if (sym == NULL) {
         	// do this check in semcheck 
@@ -286,7 +337,7 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
 	fprintf(OUT, "L_IF_%d:\n", elselabel);
 	
     if (i->elseblock) {    	
-        gencode_expr(comp, i->elseblock);
+        gencode_block(comp, i->elseblock);
     }
     fprintf(OUT, "L_IF_%d:\n", endlabel);
     return cond;       
@@ -649,20 +700,21 @@ static m1_reg
 gencode_expr(M1_compiler *comp, m1_expression *e) {
 
     m1_reg reg;
+    debug("gencode_expr start...\n");
     if (e == NULL) {
-    	
+    	debug("expr e is null in gencode_expr\n");
         return reg;
     }
         
     switch (e->type) {
         case EXPR_NUMBER:
-            reg = gencode_number(comp, e->expr.floatval);
+            reg = gencode_number(comp, e->expr.l);
             break;
         case EXPR_INT:
-            reg = gencode_int(comp, e->expr.intval);
+            reg = gencode_int(comp, e->expr.l);
             break;
         case EXPR_STRING:
-            reg = gencode_string(comp, e->expr.str);     
+            reg = gencode_string(comp, e->expr.l);     
             break;
         case EXPR_BINARY:
             reg = gencode_binary(comp, e->expr.b);
@@ -701,6 +753,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             reg = gencode_address(comp, e->expr.t);
             break;
         case EXPR_OBJECT:
+            debug("expr type is EXPR_OBJECT\n");
             reg = gencode_obj(comp, e->expr.t);
             break;
         case EXPR_BREAK:
@@ -734,14 +787,15 @@ gencode_consts(m1_symboltable *consttable) {
     m1_symbol *iter;
 	
 	fprintf(OUT, ".constants\n");
-
+	
+    assert(consttable != NULL);
 	iter = consttable->syms;
 	
 	while (iter != NULL) {
 		
 		switch (iter->type) {
 			case VAL_STRING:
-				fprintf(OUT, "%d %s\n", iter->constindex, iter->value.str);
+				fprintf(OUT, "%d %s\n", iter->constindex, iter->value.sval);
 				break;
 			case VAL_FLOAT:
 				fprintf(OUT, "%d %f\n", iter->constindex, iter->value.fval);
@@ -750,7 +804,7 @@ gencode_consts(m1_symboltable *consttable) {
 				fprintf(OUT, "%d %d\n", iter->constindex, iter->value.ival);
 				break;
 	        case VAL_CHUNK:
-	            fprintf(OUT, "%d &%s\n", iter->constindex, iter->value.str);
+	            fprintf(OUT, "%d &%s\n", iter->constindex, iter->value.sval);
 	            break;
 			default:
 				fprintf(stderr, "unknown symbol type");
@@ -762,7 +816,7 @@ gencode_consts(m1_symboltable *consttable) {
 }
 
 static void
-gencode_metadata(M1_compiler *comp) {
+gencode_metadata(m1_chunk *c) {
 	fprintf(OUT, ".metadata\n");	
 }
 
@@ -779,11 +833,15 @@ static void
 gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     
     m1_reg r0, r1;
-    
+    int i;
     fprintf(OUT, ".chunk \"%s\"\n", c->name);
     
+    /* for each chunk, reset the register allocator */
+    for (i = 0; i < NUM_TYPES; ++i)
+        comp->regs[i] = 0;
+        
     gencode_consts(&c->constants);
-    gencode_metadata(comp);
+    gencode_metadata(c);
     
     fprintf(OUT, ".bytecode\n");
     
@@ -795,8 +853,8 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
      */
     r0 = gen_reg(comp, TYPE_INT);
     r1 = gen_reg(comp, TYPE_INT); 
-    fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", r0.no);
-    fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", r1.no); 
+//    fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", r0.no);
+//    fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", r1.no); 
     
     /* generate code for statements */
     gencode_block(comp, c->block);
