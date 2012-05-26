@@ -21,6 +21,7 @@ extern int yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str);
 %option header-file="m1lexer.h"
 
 %x M0_PARSING
+%x MULTLINECOMMENT
 
 WS              [\t\f\r\x1a ]
 EOL             \r?\n
@@ -43,9 +44,14 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 
 {WS}                    { /* nothing */ }
 
-"//".*{EOL}{WS}*         { /* ignore line comments */ }
+"//".*{EOL}{WS}*        { /* ignore line comments */ }
 
-{EOL}[\t\r\n ]*         { /* */ }
+"/*"                    { BEGIN(MULTLINECOMMENT); }
+<MULTLINECOMMENT>"*/"   { BEGIN(INITIAL); }
+<MULTLINECOMMENT>.      { /* ignore anything in multi line comments. */ }
+<MULTLINECOMMENT>{EOL}  { /* ignore newlines in multi line comments. */ }
+
+{EOL}[\t\r\n ]*         { /* skip these characters */ }
 
 "->"                    { return TK_ARROW; }
 "||"                    { return TK_OR; }
