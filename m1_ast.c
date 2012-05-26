@@ -54,8 +54,7 @@ new_literal(m1_valuetype type) {
 void 
 expr_set_num(M1_compiler *comp, m1_expression *e, double v) {
     assert(e->type == EXPR_NUMBER); 
-//    e->expr.floatval = v;
-//    e->sym           = sym_enter_num(&comp->currentchunk->constants, v);  
+
     e->expr.l = new_literal(VAL_FLOAT);
     e->expr.l->value.fval = v;
     e->expr.l->sym = sym_enter_num(&comp->currentchunk->constants, v);   
@@ -64,8 +63,7 @@ expr_set_num(M1_compiler *comp, m1_expression *e, double v) {
 void 
 expr_set_int(M1_compiler *comp, m1_expression *e, int v) {
     assert(e->type == EXPR_INT);
-//    e->expr.intval = v;
-//    e->sym         = sym_enter_int(&comp->currentchunk->constants, v);
+
     e->expr.l = new_literal(VAL_INT);
     e->expr.l->value.ival = v;
     e->expr.l->sym = sym_enter_int(&comp->currentchunk->constants, v);
@@ -74,8 +72,7 @@ expr_set_int(M1_compiler *comp, m1_expression *e, int v) {
 
 void 
 expr_set_string(M1_compiler *comp, m1_expression *e, char *str) {
-    //node->expr.str = str;
-    //node->sym      = sym_enter_str(&comp->currentchunk->constants, str, 0);
+
     e->expr.l = new_literal(VAL_STRING);
     e->expr.l->value.sval = str;
     e->expr.l->sym = sym_enter_str(&comp->currentchunk->constants, str, 0);    
@@ -353,7 +350,11 @@ make_var(M1_compiler *comp, char *name, m1_expression *init, unsigned size) {
 
 m1_var *
 var(M1_compiler *comp, char *name, m1_expression *init) {
-	return make_var(comp, name, init, 1);
+	m1_var *v = make_var(comp, name, init, 1);
+	v->sym = sym_new_symbol(&(comp->currentchunk->locals), name, comp->regs[TYPE_INT]++);
+	fprintf(stderr, "allocated reg for %s is %d\n", v->name, v->sym->regno);
+	v->sym->var = v;
+	return v;
 }
 
 m1_var *

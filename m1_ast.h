@@ -158,6 +158,7 @@ typedef struct m1_object {
     } obj;
     
     enum m1_object_type type;
+    struct m1_symbol *sym;
     
     struct m1_object *next;  
       
@@ -218,10 +219,11 @@ typedef struct m1_switch {
 	
 } m1_switch;
 
+/* for representing literal constants, i.e., int, float and strings */
 typedef struct m1_literal {
-    union m1_value value;
-    enum m1_valuetype type;
-    struct m1_symbol *sym;
+    union m1_value     value; /* the value */
+    enum m1_valuetype  type; /* selector for the union value */
+    struct m1_symbol  *sym; /* pointer to a symboltable entry. */
     
 } m1_literal;
 
@@ -235,9 +237,6 @@ typedef struct m1_expression {
     union {
         struct m1_unexpr     *u;
         struct m1_binexpr    *b;
-//        double               floatval;
-//        int                  intval;
-//        char                 *str;   
         struct m1_funcall    *f;  
         struct m1_assignment *a; 
         struct m1_whileexpr  *w;  

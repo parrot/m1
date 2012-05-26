@@ -26,7 +26,11 @@ in gencode_number().
 
 #define OUT	stdout
 
-#define debug(x)    fprintf(stderr, x);
+#ifdef M1DEBUG
+    #define debug(x)    fprintf(stderr, x);
+#else
+    #define debug(x)
+#endif
 
 
 static m1_reg gencode_expr(M1_compiler *comp, m1_expression *e);
@@ -142,7 +146,6 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
     assert((lhs.type >= 0) && (lhs.type < 4));
     assert((rhs.type >= 0) && (rhs.type < 4));
     
-    
     fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, reg_chars[(int)rhs.type], rhs.no);
     
     
@@ -170,20 +173,13 @@ gencode_obj(M1_compiler *comp, m1_object *obj) {
 	
 	
     switch (obj->type) {
-        case OBJECT_MAIN: {
-        	m1_symbol *sym;
-        	
+        case OBJECT_MAIN: {        	
         	assert(obj->obj.field != NULL);
-        	sym = sym_find_str(&comp->currentchunk->locals, obj->obj.field);
-        	
-        	if (sym == NULL) {
-        	// do this check in semcheck 
-        	   fprintf(stderr, "Cannot find variable '%s'\n", obj->obj.field);
-        	   return reg;   
-        	}
+        	assert(obj->sym != NULL);
+
         	/* return register with the symbol's allocated register number */
-        	reg.no   = sym->regno;   
-        	reg.type = sym->type;         
+        	reg.no   = obj->sym->regno;   
+        	reg.type = obj->sym->type;         
             break;
         }
         case OBJECT_FIELD:

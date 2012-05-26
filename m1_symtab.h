@@ -4,9 +4,9 @@
 
 
 typedef enum m1_valuetype {
-	VAL_STRING,
-	VAL_FLOAT,
 	VAL_INT,
+	VAL_FLOAT,
+	VAL_STRING,
 	VAL_CHUNK /* uses str field of m1_value union */
 } m1_valuetype;
 

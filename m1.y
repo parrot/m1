@@ -405,11 +405,7 @@ var_list    : var 				{ $$ = $1; }
             ;               
             
 var         : TK_IDENT opt_init
-                { 
-                    $$ = var(yyget_extra(yyscanner), $1, $2); 
-                    $$->sym = sym_new_symbol(&(comp->currentchunk->locals), $1, comp->regs[TYPE_INT]++);
-                  
-                }
+                { $$ = var(yyget_extra(yyscanner), $1, $2); }
             | TK_IDENT '[' TK_INT ']'
                 { $$ = array(yyget_extra(yyscanner), $1, $3); }
             ;           
@@ -546,8 +542,16 @@ lhs     : lhs_obj
         
 lhs_obj : TK_IDENT
             { 
-              $$ = object(yyget_extra(yyscanner), OBJECT_MAIN); 
+              M1_compiler *comp = yyget_extra(yyscanner);
+              m1_symbol *sym    = sym_find_str(&comp->currentchunk->locals, $1);
+              
+              if (sym == NULL) {
+                yyerror(yyscanner, comp, "undeclared variable"); 
+              }
+              
+              $$ = object(comp, OBJECT_MAIN); 
               obj_set_ident($$, $1);
+              $$->sym = sym;      
             }            
         | lhs_obj field_access
             {

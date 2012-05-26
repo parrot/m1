@@ -54,9 +54,7 @@ sym_new_symbol(m1_symboltable *table, char *name, int regno) {
     sym->value.sval = name;
     sym->regno      = regno;
     
- 	sym->next       = table->syms;
-    table->syms     = sym;
-
+    link_sym(table, sym);
     
     return sym;   
 }
