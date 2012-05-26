@@ -23,7 +23,7 @@ typedef struct m1_symbol {
     m1_valuetype type;
     int          scope;
     int          constindex;
-    struct m1_var    *var;
+    struct m1_var    *var; /* pointer to declaration AST node for var */
     struct m1_symbol *next;    
     
 } m1_symbol;
