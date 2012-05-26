@@ -169,7 +169,7 @@ gencode_while(M1_compiler *comp, m1_whileexpr *w) {
 	   ...
 	
 	*/
-	m1_reg reg, testreg;
+	m1_reg reg;
 	int startlabel = gen_label(comp), 
 	    endlabel   = gen_label(comp);
 	
@@ -183,7 +183,7 @@ gencode_while(M1_compiler *comp, m1_whileexpr *w) {
 	
 	fprintf(OUT, "L%d:\n", endlabel);
 	reg = gencode_expr(comp, w->cond);
-	fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", startlabel, reg_chars[reg.type], reg.no);
+	fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", startlabel, reg_chars[(int)reg.type], reg.no);
 			
 	/* remove break label from stack. */
 	(void)pop(comp->breakstack);
@@ -207,10 +207,10 @@ gencode_dowhile(M1_compiler *comp, m1_whileexpr *w) {
     push(comp->breakstack, endlabel);
      
     fprintf(OUT, "L%d:\n", startlabel);
-    gencode_expr(comp, w->block);
+    gencode_block(comp, w->block);
     
     reg = gencode_expr(comp, w->cond);
-    fprintf(OUT, "\tgoto_if\tL%d\n", startlabel);
+    fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", startlabel, reg_chars[(int)reg.type], reg.no);
 
     fprintf(OUT, "L%d:\n", endlabel);
     
