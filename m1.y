@@ -389,37 +389,6 @@ print_stat  : "print" '(' expression ')' ';'
                 { $$ = printexpr(yyget_extra(yyscanner), $3); }
             ;
 
-/* TODO: handle M0 instructions */                        
-m0_block    : "M0" '{' m0_instructions '}'
-                { $$ = expression(yyget_extra(yyscanner), EXPR_M0BLOCK); }
-            ;            
-            
-m0_instructions : m0_instr
-                | m0_instructions m0_instr
-                    { 
-                      $1->next = $2; 
-                      $$ = $1;
-                    }
-                ;
-                
-m0_instr    : m0_op m0_arg ',' m0_arg ',' m0_arg
-                { $$ = NULL; /* instr($1, $2, $4, $6); */}
-            | m0_op m0_arg ',' m0_arg ',' 'x'
-                { $$ = NULL; /* instr($1, $2, $4, 0); */}
-            | m0_op m0_arg ',' 'x' ',' 'x'
-                { $$ = NULL; /*instr($1, $2, 0, 0); */}
-            | m0_op 'x' ',' 'x' ',' 'x'
-                { $$ = NULL; /*instr($1, 0, 0, 0); */}
-            ;                            
-            
-m0_arg      : M0_NUMBER  { $$=0; }
-            
-            /* add other argument types for M0 instructions */
-            ;
-            
-m0_op       : "add_i"   { $$=0; }         
-            /* add other M0 ops */
-            ;
                   
 const_declaration   : "const" type TK_IDENT '=' constexpr ';'
                         { $$ = constdecl(yyget_extra(yyscanner), $2, $3, $5); }
@@ -473,7 +442,7 @@ if_stat     : "if" '(' boolexpr ')' statement %prec LOWER_THAN_ELSE
             ;
             
             
-while_stat  : "while" '(' boolexpr ')' statement
+while_stat  : "while" '(' expression ')' statement
                 { $$ = whileexpr(yyget_extra(yyscanner), $3, $5); }
             ;
             
@@ -679,11 +648,10 @@ int_list    : /* empty */
             ;
             
 unexpr  : '-' expression
-                { $$ = unaryexpr(yyget_extra(yyscanner), UNOP_MINUS, $2); }                
-            
+                { $$ = unaryexpr(yyget_extra(yyscanner), UNOP_MINUS, $2); }                            
         ;            
        
-tertexpr    : boolexpr '?' expression ':' expression
+tertexpr    : boolexpr "?" expression ':' expression
                 { $$ = ifexpr(yyget_extra(yyscanner), $1, $3, $5); }
             ;
                    
@@ -722,6 +690,42 @@ native_type : "int"     { $$ = TYPE_INT; }
             ;
             
 user_type   : TK_IDENT { $$ = TYPE_USERDEFINED; }
+            ;
+
+
+
+/* Embedded M0 instructions in M1. */
+
+/* TODO: handle M0 instructions */                        
+m0_block    : "M0" '{' m0_instructions '}'
+                { $$ = expression(yyget_extra(yyscanner), EXPR_M0BLOCK); }
+            ;            
+            
+m0_instructions : m0_instr
+                | m0_instructions m0_instr
+                    { 
+                      $1->next = $2; 
+                      $$ = $1;
+                    }
+                ;
+                
+m0_instr    : m0_op m0_arg ',' m0_arg ',' m0_arg
+                { $$ = NULL; /* instr($1, $2, $4, $6); */}
+            | m0_op m0_arg ',' m0_arg ',' 'x'
+                { $$ = NULL; /* instr($1, $2, $4, 0); */}
+            | m0_op m0_arg ',' 'x' ',' 'x'
+                { $$ = NULL; /*instr($1, $2, 0, 0); */}
+            | m0_op 'x' ',' 'x' ',' 'x'
+                { $$ = NULL; /*instr($1, 0, 0, 0); */}
+            ;                            
+            
+m0_arg      : M0_NUMBER  { $$=0; }
+            
+            /* add other argument types for M0 instructions */
+            ;
+            
+m0_op       : "add_i"   { $$=0; }         
+            /* add other M0 ops */
             ;
 
 /* END */
