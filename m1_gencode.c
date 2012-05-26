@@ -64,7 +64,7 @@ gencode_number(M1_compiler *comp, double value) {
 	deref Nx, CONSTS, <const_id>
 	*/
     m1_reg     reg        = gen_reg(comp, TYPE_NUM);
-    m1_symbol *sym        = sym_find_num(comp->constants, value);
+    m1_symbol *sym        = sym_find_num(&comp->currentchunk->constants, value);
     m1_reg     constindex = gen_reg(comp, TYPE_INT);
 
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, sym->constindex);
@@ -78,7 +78,7 @@ gencode_int(M1_compiler *comp, int value) {
 	deref Ix, CONSTS, <const_id>
 	*/
     m1_reg     reg        = gen_reg(comp, TYPE_INT);
-    m1_symbol *sym        = sym_find_int(comp->constants, value);
+    m1_symbol *sym        = sym_find_int(&comp->currentchunk->constants, value);
     m1_reg     constindex = gen_reg(comp, TYPE_INT);
 
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, sym->constindex);
@@ -90,7 +90,7 @@ static m1_reg
 gencode_string(M1_compiler *comp, NOTNULL(char *value)) {
     m1_reg     reg        = gen_reg(comp, TYPE_STRING);
     m1_reg     constindex = gen_reg(comp, TYPE_INT);
-    m1_symbol *sym        = sym_find_str(comp->constants, value); /* find index of value in CONSTS */
+    m1_symbol *sym        = sym_find_str(&comp->currentchunk->constants, value); /* find index of value in CONSTS */
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, sym->constindex);
     fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", reg.no, constindex.no);
     return reg;
@@ -595,7 +595,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
 	m1_reg reg;
 	m1_reg pmcreg;
 	m1_reg offsetreg;
-    m1_symbol *fun = sym_find_chunk(comp->constants, f->name);
+    m1_symbol *fun = sym_find_chunk(&comp->currentchunk->constants, f->name);
     
     if (fun == NULL) {
         fprintf(stderr, "Cant find function %s\n", f->name);   
@@ -728,10 +728,15 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
     return reg;
 }
 
+
 static void
-print_consts(NOTNULL(m1_symboltable *table)) {
-	m1_symbol *iter;
-	iter = table->syms;
+gencode_consts(m1_symboltable *consttable) {
+    m1_symbol *iter;
+	
+	fprintf(OUT, ".constants\n");
+
+	iter = consttable->syms;
+	
 	while (iter != NULL) {
 		
 		switch (iter->type) {
@@ -753,11 +758,7 @@ print_consts(NOTNULL(m1_symboltable *table)) {
 		}
 		iter = iter->next;	
 	}
-}
-static void
-gencode_consts(M1_compiler *comp) {
-	fprintf(OUT, ".constants\n");
-	print_consts(comp->constants);	
+
 }
 
 static void
@@ -781,7 +782,7 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     
     fprintf(OUT, ".chunk \"%s\"\n", c->name);
     
-    gencode_consts(comp);
+    gencode_consts(&c->constants);
     gencode_metadata(comp);
     
     fprintf(OUT, ".bytecode\n");

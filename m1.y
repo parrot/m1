@@ -299,7 +299,7 @@ function_init   : return_type TK_IDENT
                           M1_compiler *comp = yyget_extra(yyscanner);                          
                           $$ = chunk(comp, $1, $2, NULL); 
                           comp->currentchunk = $$;
-                          sym_enter_chunk(comp->constants, $2);
+                          sym_enter_chunk(&comp->currentchunk->constants, $2);
                         }
                 ;
 

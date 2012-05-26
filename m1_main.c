@@ -41,9 +41,6 @@ main(int argc, char *argv[]) {
     yyset_extra(&comp, yyscanner);
     
     yyset_in(fp, yyscanner);
-
-    comp.constants = new_symtab();
-
     
     yyparse(yyscanner, &comp);
     

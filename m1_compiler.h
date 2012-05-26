@@ -9,9 +9,7 @@ typedef struct M1_compiler {
 	int				 		constindex; /* constant table index counter */
 	int              		label; /* label generator */
 	int          	 		regs[NUM_TYPES]; /* for the register allocator */
-	
-	struct m1_symboltable  *constants;
-	
+		
 	struct m1_stack        *breakstack; /* for handling break statements */
 	
     struct m1_chunk        *currentchunk; /* current chunk being parsed, if any. */
