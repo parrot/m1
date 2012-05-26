@@ -1,9 +1,12 @@
 %{
     
-#include "m1parser.h"
 #include <string.h>
+#include "m1parser.h"
+#include "m1_compiler.h"
 
 #define YY_EXTRA_TYPE  struct M1_compiler *
+
+extern int yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str);
 
 %}
 
@@ -40,7 +43,7 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 
 {WS}                    { /* nothing */ }
 
-[#].*{EOL}{WS}*         { /* ignore line comments */ }
+"//".*{EOL}{WS}*         { /* ignore line comments */ }
 
 {EOL}[\t\r\n ]*         { /* */ }
 
@@ -122,6 +125,8 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
                            yylval->sval = strdup(yytext);
                            return TK_IDENT; 
                         }
+
+.                       { yyerror(yyscanner, yyget_extra(yyscanner), yytext); }
 
 <M0_PARSING>{WS}        { /* do nothing */ }
 <M0_PARSING>{EOL}[\t\r\n ]*         {  }
