@@ -435,18 +435,19 @@ assignop    : '='  { $$ = OP_ASSIGN; }
     */
             ;            
             
-if_stat     : "if" '(' boolexpr ')' statement %prec LOWER_THAN_ELSE 
+            /* XXX expression should become boolexpr once we have cmp op */
+if_stat     : "if" '(' expression ')' statement %prec LOWER_THAN_ELSE  
                 { $$ = ifexpr(yyget_extra(yyscanner), $3, $5, NULL); }
-            | "if" '(' boolexpr ')' statement "else" statement 
+            | "if" '(' expression ')' statement "else" statement 
                 { $$ = ifexpr(yyget_extra(yyscanner), $3, $5, $7); }
             ;
             
             
-while_stat  : "while" '(' expression ')' statement
+while_stat  : "while" '(' expression ')' statement /* expression should become boolexpr once we have cmp op */
                 { $$ = whileexpr(yyget_extra(yyscanner), $3, $5); }
             ;
             
-do_stat     : "do" block "while" '(' boolexpr ')' ';'
+do_stat     : "do" block "while" '(' expression ')' ';' /* see comment while stat */
                 { $$ = dowhileexpr(yyget_extra(yyscanner), $5, $2); }
             ;
             
