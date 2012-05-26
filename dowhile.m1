@@ -1,0 +1,10 @@
+int main() {
+    int x;
+    x = 10;
+    do {
+        print(x);
+        x--;
+    }
+    while (x);
+    
+}
