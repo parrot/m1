@@ -45,9 +45,9 @@ BIGINT          {SIGN}?{DIGITS}"L"
 FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS})?|{DIGITS}[eE]{SIGN}?{DIGITS})
 %%
 
-{WS}                    { /* nothing */ }
+{WS}                    { /* ignore white space. */ }
 
-"//".*{EOL}{WS}*        { /* ignore line comments */ }
+"//".*{EOL}{WS}*        { /* ignore line comments. */ }
 
 "/*"                    { yy_push_state(MULTLINECOMMENT, yyscanner); }
 <MULTLINECOMMENT>"/*"   { yy_push_state(MULTLINECOMMENT, yyscanner); }
@@ -77,7 +77,7 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "-="                    { return TK_DEC_ASSIGN; }
 
 [\[\]{}();=+-/*^,\.]    { return yytext[0]; }
-[%&:]                  { return yytext[0]; }
+[%&:]                   { return yytext[0]; }
 
 "?"                     { return TK_ISTRUE; }
 "!"                     { return TK_NOT; }
@@ -121,7 +121,7 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
                           return TK_STRING_CONST;
                         }
 
-{DIGITS}                { 
+[1-9]{DIGIT}*|"0"       { 
                            yylval->ival = atoi(yytext); 
                            return TK_INT; 
                         }
@@ -138,11 +138,11 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 
 .                       { yyerror(yyscanner, yyget_extra(yyscanner), yytext); }
 
-<M0_PARSING>{WS}        { /* do nothing */ }
-<M0_PARSING>{EOL}[\t\r\n ]*         {  }
-<M0_PARSING>[{,]         { return yytext[0]; }
-<M0_PARSING>[}]         { BEGIN INITIAL; return yytext[0]; }
-<M0_PARSING>[0-9]+      { yylval->ival = atoi(yytext); return M0_NUMBER; }
+<M0_PARSING>{WS}             { /* do nothing */ }
+<M0_PARSING>{EOL}[\t\r\n ]*  { /* ignore */ }
+<M0_PARSING>[{,]             { return yytext[0]; }
+<M0_PARSING>[}]              { BEGIN INITIAL; return yytext[0]; }
+<M0_PARSING>[0-9]+           { yylval->ival = atoi(yytext); return M0_NUMBER; }
 
 %{
 /*   
