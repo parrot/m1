@@ -1,8 +1,14 @@
 int main() {
     int x;
     x = 10;
+    print("10..1\n");
     while (x) {
-        x--;
+
+        print("ok..");
         print(x);
+        print("\n");
+        x--;
+        
     }
+    print("\n");
 }
