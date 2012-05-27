@@ -183,8 +183,49 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 %token  KW_M0		"M0"
         TK_NL   
         M0_NUMBER
-        KW_ADD_I	"add_i"
-        KW_ADD_N    "add_n"
+        KW_NOOP         "noop"
+        KW_GOTO         "goto"
+        KW_GOTO_IF      "goto_if"
+        KW_GOTO_CHUNK   "goto_chunk"
+        KW_ADD_I        "add_i"
+        KW_ADD_N        "add_n"
+        KW_SUB_I        "sub_i"
+        KW_SUB_N        "sub_n"
+        KW_MULT_I       "mult_i"
+        KW_MULT_N       "mult_n"
+        KW_DIV_I        "div_i"
+        KW_DIV_N        "div_n"
+        KW_MOD_I        "mod_i"
+        KW_MOD_N        "mod_n"
+        KW_ITON         "iton"
+        KW_NTOI         "ntoi"
+        KW_ASHR         "ashr"
+        KW_LSHR         "lshr"
+        KW_SHL          "shl"
+        KW_AND          "and"
+        KW_OR           "or"
+        KW_XOR          "xor"
+        KW_GC_ALLOC     "gc_alloc"
+        KW_SYS_ALLOC    "sys_alloc"
+        KW_SYS_FREE "sys_free"
+        KW_COPY_MEM "copy_mem"
+        KW_SET      "set"
+        KW_SET_IMM  "set_imm"
+        KW_DEREF    "deref"
+        KW_SET_REF  "set_ref"
+        KW_SET_BYTE "set_byte"
+        KW_GET_BYTE "get_byte"
+        KW_SET_WORD "set_word"
+        KW_GET_WORD "get_word"
+        KW_CSYM     "csym"
+        KW_CCALL_ARG    "ccall_arg"
+        KW_CCALL_RET    "ccall_ret"
+        KW_CCALL    "ccall"
+        KW_PRINT_S  "print_s"
+        KW_PRINT_I  "print_i"
+        KW_PRINT_N  "print_n"
+        KW_EXIT     "exit"
+
         
 %pure-parser
 
@@ -210,6 +251,10 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
    extend the grammar with many rules to work around, just
    force default (shift) behaviour. This is a documented
    solution in "Lex & Yacc", JR Levine et al., O'Reilly.
+   
+   The TK_ISTRUE token ("?") is part of the ?: tertiary 
+   operator, and is should also be specified here to
+   allow the conditional expression to be a <boolexpr>.
 */
 %nonassoc LOWER_THAN_ELSE
 %nonassoc KW_ELSE TK_ISTRUE 
@@ -299,6 +344,7 @@ function_init   : return_type TK_IDENT
                           M1_compiler *comp = yyget_extra(yyscanner);                          
                           $$ = chunk(comp, $1, $2, NULL); 
                           comp->currentchunk = $$;
+                          /* enter name of function declaration in table */
                           sym_enter_chunk(&comp->currentchunk->constants, $2);
                         }
                 ;
@@ -400,7 +446,8 @@ var_declaration: type var_list ';'
                               
 var_list    : var 				{ $$ = $1; }
             | var_list ',' var	
-                { $$ = $1; /* FIX */}
+               { $$ = $1; /* Implement this. */ }
+            
             ;               
             
 var         : TK_IDENT opt_init
@@ -448,7 +495,9 @@ do_stat     : "do" block "while" '(' expression ')' ';' /* see comment while sta
             ;
             
 switch_stat : "switch" '(' expression ')' '{' cases default_case '}'
-                { $$ = switchexpr(yyget_extra(yyscanner), $3, $6, $7); }
+                { $$ = switchexpr(yyget_extra(yyscanner), $3, $6, $7); 
+                  fprintf(stderr, "switch statement not implemented yet!\n");
+                }
             ;
             
 cases       : /* empty */
@@ -501,7 +550,7 @@ for_init    : /* empty */
             
 for_cond    : /* empty */
                 { $$ = NULL; }
-            | boolexpr
+            | expression
             ;
             
 for_step    : /* empty */
@@ -559,6 +608,7 @@ lhs_obj : TK_IDENT
               /* go to end of list to link field access to the end */   
               while (iter->next != NULL)
                 iter = iter->next;
+                
               /* found end of list, now link it */  
               iter->next = $2;
               /* always return head of the list */
@@ -731,8 +781,51 @@ m0_arg      : M0_NUMBER  { $$=0; }
             /* add other argument types for M0 instructions */
             ;
             
-m0_op       : "add_i"   { $$=0; }         
-            /* add other M0 ops */
+m0_op       : "add_i"   { $$=0; }  
+            /*
+            | "noop"
+            | "goto"
+            | "goto_if"
+            | "goto_chunk"
+            | "add_i"
+            | "add_n"
+            | "sub_i"
+            | "sub_n"
+            | "mult_i"
+            | "mult_n"
+            | "div_i"
+            | "div_n"
+            | "mod_i"
+            | "mod_n"
+            | "iton"
+            | "ntoi"
+            | "ashr"
+            | "lshr"
+            | "shl"
+            | "and"
+            | "or"
+            | "xor"
+            | "gc_alloc"
+            | "sys_alloc"
+            | "sys_free"
+            | "copy_mem"
+            | "set"
+            | "set_imm"
+            | "deref"
+            | "set_ref"
+            | "set_byte"
+            | "get_byte"
+            | "set_word"
+            | "get_word"
+            | "csym"
+            | "ccall_arg"
+            | "ccall_ret"
+            | "ccall"
+            | "print_s"
+            | "print_i"
+            | "print_n"
+            | "exit" 
+            */
             ;
 
 /* END */
