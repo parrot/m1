@@ -117,7 +117,6 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 %type <ival> return_type 
              type 
              native_type 
-             user_type
              TK_INT
              m0_op
              m0_arg                       
@@ -682,22 +681,23 @@ binexpr     : expression '=' expression /* to allow writing: a = b = c; */
             ;
            
 return_type : type    { $$ = $1; }
-            | "void"  { $$ = TYPE_VOID; }
+            | "void"  { $$ = VAL_INT; }
             ;
             
-type    : native_type
-        | user_type  
+type    : native_type   
+              {
+               M1_compiler *comp = yyget_extra(yyscanner);
+               comp->parsingtype = $1;
+               $$ = $1;  
+              }        
         ;
         
-native_type : "int"     { $$ = TYPE_INT; }
-            | "num"     { $$ = TYPE_NUM; }
-            | "string"  { $$ = TYPE_STRING; }
+native_type : "int"     { $$ = VAL_INT; }
+            | "num"     { $$ = VAL_FLOAT; }
+            | "string"  { $$ = VAL_STRING; }
       /* TODO: what about "pmc" ? */
             ;
             
-user_type   : TK_IDENT { $$ = TYPE_USERDEFINED; }
-            ;
-
 
 
 /* Embedded M0 instructions in M1. */

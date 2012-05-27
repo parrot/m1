@@ -12,6 +12,7 @@ typedef struct M1_compiler {
 	int               expect_usertype; /* identifiers can be types or identifiers. 
 	                       Keep track what the lexer should return (TK_IDENT or TK_USERTYPE 	
 	                       */
+    int               parsingtype; /* when parsing var declarations, need to know this when entering symbols. */
 	struct m1_stack  *breakstack; /* for handling break statements */
 	
     struct m1_chunk  *currentchunk; /* current chunk being parsed, if any. */

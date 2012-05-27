@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "m1_symtab.h"
 #include "m1_semcheck.h"
 #include "m1_ast.h"
 
-static data_type
+static m1_valuetype
 check_object(M1_compiler *comp, m1_object *obj) {
 	switch (obj->type) {
 		case OBJECT_MAIN: /* x in x.y */
@@ -21,18 +22,18 @@ check_object(M1_compiler *comp, m1_object *obj) {
 	return 0;
 }
 
-static data_type
+static m1_valuetype
 check_expr(M1_compiler *comp, m1_expression *expr) {
-	data_type t;
+	m1_valuetype t;
 	switch (expr->type) {
 		case EXPR_NUMBER:
-			return TYPE_NUM;
+			return VAL_FLOAT;
 		case EXPR_INT:
-			return TYPE_INT;
+			return VAL_INT;
 		case EXPR_BINARY: 
 		{
-			data_type ltype = check_expr(comp, expr->expr.b->left);
-			data_type rtype = check_expr(comp, expr->expr.b->right);
+			m1_valuetype ltype = check_expr(comp, expr->expr.b->left);
+			m1_valuetype rtype = check_expr(comp, expr->expr.b->right);
 			
 			if (ltype != rtype) {
 				fprintf(stderr, "Incompatible types in binary expression\n");
@@ -56,7 +57,7 @@ check_expr(M1_compiler *comp, m1_expression *expr) {
     	case EXPR_BREAK:
     		break;
 	    case EXPR_STRING:
-	    	return TYPE_STRING;
+	    	return VAL_STRING;
 	    	
 		case EXPR_CONSTDECL:
    		case EXPR_VARDECL:
@@ -70,9 +71,9 @@ check_expr(M1_compiler *comp, m1_expression *expr) {
 }
 
 
-static data_type
+static m1_valuetype
 check_chunk(M1_compiler *comp, m1_chunk *chunk) {
-	data_type type;
+	m1_valuetype type;
 	m1_expression *iter = chunk->block;
 	
 	while (iter != NULL) {

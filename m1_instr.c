@@ -251,11 +251,13 @@ write_exit(m0_instr *i) {
     fprintf(OUT, "exit");    
 }
 
+/*
 static int
 numops(m0_instr *i) {
     return 0;   
 }
-
+*/
+/*
 static void
 write_instr(m0_instr *i) {
     switch (numops(i)) {
@@ -274,6 +276,7 @@ write_instr(m0_instr *i) {
             break;
     }
 }
+*/
 
 void
 write_instructions(m0_instr *i) {

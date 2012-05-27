@@ -70,13 +70,6 @@ expr_set_int(M1_compiler *comp, m1_expression *e, int v) {
 
 }
 
-void 
-expr_set_string(M1_compiler *comp, m1_expression *e, char *str) {
-
-    e->expr.l = new_literal(VAL_STRING);
-    e->expr.l->value.sval = str;
-    e->expr.l->sym = sym_enter_str(&comp->currentchunk->constants, str, 0);    
-}
 
 
 m1_expression *
@@ -90,12 +83,28 @@ m1_expression *
 integer(M1_compiler *comp, int value) {
 	m1_expression *expr = expression(comp, EXPR_INT);
 	expr_set_int(comp, expr, value);
+	fprintf(stderr, "integer()\n");
 	return expr;	
 }
 m1_expression *
 string(M1_compiler *comp, char *str) {
 	m1_expression *expr = expression(comp, EXPR_STRING);
-	expr_set_string(comp, expr, str);
+	assert(str != NULL);
+	fprintf(stderr, "setting string...\n");
+
+
+    expr->expr.l = new_literal(VAL_STRING);
+    expr->expr.l->value.sval = str;
+    
+    assert(comp != NULL);
+    assert(comp->currentchunk != NULL);
+    assert(&comp->currentchunk->constants != NULL);
+    
+    fprintf(stderr, "entering string");
+    
+    expr->expr.l->sym = sym_enter_str(&comp->currentchunk->constants, str, 0);
+	
+	fprintf(stderr, "string()\n");
 	return expr;	
 }
 
@@ -174,7 +183,7 @@ funcall(M1_compiler *comp, char *name) {
 
 
 static m1_const *
-const_decl(data_type type, char *name, m1_expression *expr) {
+const_decl(m1_valuetype type, char *name, m1_expression *expr) {
     m1_const *c = (m1_const *)m1_malloc(sizeof(m1_const));
     c->type     = type;
     c->name     = name;
@@ -185,7 +194,7 @@ const_decl(data_type type, char *name, m1_expression *expr) {
 
 
 m1_expression *
-constdecl(M1_compiler *comp, data_type type, char *name, m1_expression *e) {
+constdecl(M1_compiler *comp, m1_valuetype type, char *name, m1_expression *e) {
 	m1_expression *expr = expression(comp, EXPR_CONSTDECL);
 	expr->expr.c = const_decl(type, name, e);
 	return expr;	
@@ -306,11 +315,12 @@ m1_object *
 object(M1_compiler *comp, m1_object_type type) {
     m1_object *obj = (m1_object *)m1_malloc(sizeof(m1_object));
     obj->type      = type;
+    fprintf(stderr, "object()\n");
     return obj;    
 }
 
 m1_structfield *
-structfield(M1_compiler *comp, char *name, data_type type) {
+structfield(M1_compiler *comp, char *name, m1_valuetype type) {
     m1_structfield *fld = (m1_structfield *)m1_malloc(sizeof(m1_structfield));
     fld->name           = name;
     fld->type           = type;
@@ -326,16 +336,13 @@ newstruct(M1_compiler *comp, char *name, m1_structfield *fields) {
 }
 
 
-static void
-expr_set_var_decl(m1_expression *node, data_type type, m1_var *decl) {
-    node->expr.v = decl;
-    decl->type   = type;    
-}
-
 m1_expression *
-vardecl(M1_compiler *comp, data_type type, m1_var *v) {
+vardecl(M1_compiler *comp, m1_valuetype type, m1_var *v) {
 	m1_expression *expr = expression(comp, EXPR_VARDECL);
-	expr_set_var_decl(expr, type, v);
+	
+	expr->expr.v  = v;
+
+
 	return expr;	
 }
 
@@ -349,10 +356,18 @@ make_var(M1_compiler *comp, char *name, m1_expression *init, unsigned size) {
 }
 
 m1_var *
-var(M1_compiler *comp, char *name, m1_expression *init) {
-	m1_var *v = make_var(comp, name, init, 1);
-	v->sym = sym_new_symbol(&(comp->currentchunk->locals), name, comp->regs[TYPE_INT]++);
-	fprintf(stderr, "allocated reg for %s is %d\n", v->name, v->sym->regno);
+var(M1_compiler *comp, char *varname, m1_expression *init) {
+	m1_var *v = make_var(comp, varname, init, 1);
+    
+    
+	v->sym = sym_new_symbol(&(comp->currentchunk->locals),  /* enter in current chunk's symbol table */
+	                       varname, 
+	                       comp->parsingtype);              /* type of this variable */
+		
+	assert(v->sym != NULL);
+	
+	fprintf(stderr, "allocated reg for %s is %d and type %d\n", v->name, v->sym->regno, v->sym->valtype);
+	
 	v->sym->var = v;
 	return v;
 }
@@ -386,13 +401,13 @@ dowhileexpr(M1_compiler *comp, m1_expression *cond, m1_expression *block) {
 unsigned 
 field_size(struct m1_structfield *field) {
 	switch (field->type) {
-		case TYPE_INT:
+		case VAL_INT:
 			return 4;
-		case TYPE_NUM:
+		case VAL_FLOAT:
 			return 8;
-		case TYPE_STRING: /* pointer? */
+		case VAL_STRING: /* pointer? */
 			return 4;
-		case TYPE_PMC: /* pointer */
+		case VAL_CHUNK: /* pointer */
 			return 4;
 		default: /* look up size of type. XXX */
 			return 4; /* fix this */	

@@ -7,18 +7,8 @@
 
 
 
-typedef enum data_types {
-    TYPE_INT    = 0,
-    TYPE_NUM    = 1,
-    TYPE_STRING = 2,
-    TYPE_PMC    = 3,
-    TYPE_VOID   = 4,
-    TYPE_USERDEFINED = 5
-    
-} data_type;
-
 typedef struct m1_chunk {
-    data_type             rettype;
+    m1_valuetype          rettype;
     char                 *name;
     struct m1_chunk      *next;
     struct m1_expression *block;
@@ -30,9 +20,9 @@ typedef struct m1_chunk {
 } m1_chunk;
 
 typedef struct m1_structfield {
-    char     *name; 
-    data_type type;     
-    unsigned  offset;
+    char        *name; 
+    m1_valuetype type;     
+    unsigned     offset;
     
     struct m1_structfield *next;
     
@@ -187,7 +177,7 @@ typedef struct m1_forexpr {
 
 /* const declarations */
 typedef struct m1_const {
-    data_type             type;
+    m1_valuetype          type;
     char                 *name;
     struct m1_expression *value;
 } m1_const;
@@ -195,7 +185,6 @@ typedef struct m1_const {
 
 /* variable declarations */
 typedef struct m1_var {
-    data_type             type;
     char                 *name;
     struct m1_expression *init;
     unsigned              size; /* 1 for non-arrays, larger for arrays */
@@ -287,7 +276,7 @@ extern void obj_set_index(m1_object *node, m1_expression *index);
             
 extern m1_object *object(M1_compiler *comp, m1_object_type type);            
 
-extern m1_structfield * structfield(M1_compiler *comp, char *name, data_type type);
+extern m1_structfield * structfield(M1_compiler *comp, char *name, m1_valuetype type);
 
 extern m1_struct *newstruct(M1_compiler *comp, char *name, m1_structfield *fields);
 
@@ -312,8 +301,8 @@ extern m1_object *arrayindex(M1_compiler *comp, m1_expression *index);
 extern m1_object *objectfield(M1_compiler *comp, char *field);
 extern m1_object *objectderef(M1_compiler *comp, char *field);
 extern m1_expression *printexpr(M1_compiler *comp, m1_expression *e);
-extern m1_expression *constdecl(M1_compiler *comp, data_type type, char *name, m1_expression *expr);
-extern m1_expression *vardecl(M1_compiler *comp, data_type type, m1_var *v);
+extern m1_expression *constdecl(M1_compiler *comp, m1_valuetype type, char *name, m1_expression *expr);
+extern m1_expression *vardecl(M1_compiler *comp, m1_valuetype type, m1_var *v);
 
 extern m1_var *var(M1_compiler *comp, char *name, m1_expression *init);
 extern m1_var *array(M1_compiler *comp, char *name, unsigned size);

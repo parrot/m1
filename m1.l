@@ -22,6 +22,8 @@ extern int yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str);
 %option stack
 %option never-interactive
 %option pointer
+%option noyy_top_state
+
 
 %x M0_PARSING
 %x MULTLINECOMMENT

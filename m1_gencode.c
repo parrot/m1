@@ -21,10 +21,13 @@ in gencode_number().
 #include "m1_ast.h"
 #include "m1_compiler.h"
 #include "m1_stack.h"
+#include "m1_symtab.h"
 
 #include "m1_ann.h"
 
 #define OUT	stdout
+
+#define M1DEBUG 1
 
 #ifdef M1DEBUG
     #define debug(x)    fprintf(stderr, x);
@@ -39,13 +42,15 @@ static void gencode_block(M1_compiler *comp, m1_expression *block);
 
 static const char type_chars[4] = {'i', 'n', 's', 'p'};
 static const char reg_chars[4] = {'I', 'N', 'S', 'P'};
+
+
 /*
 
 Allocate new registers as needed.
 
 */
 static m1_reg
-gen_reg(M1_compiler *comp, data_type type) {
+gen_reg(M1_compiler *comp, m1_valuetype type) {
     m1_reg reg;
     
     assert(comp != NULL);
@@ -53,7 +58,8 @@ gen_reg(M1_compiler *comp, data_type type) {
     
     reg.type = type;
 	reg.no   = comp->regs[type]++;   
-
+    fprintf(stderr, "generating regi %d for type %d\n", reg.no, type);
+    
     return reg;
 }
 
@@ -83,8 +89,8 @@ gencode_number(M1_compiler *comp, m1_literal *lit) {
     assert(lit->type = VAL_FLOAT);
     assert(lit->sym != NULL);
        
-    reg        = gen_reg(comp, TYPE_NUM);
-    constindex = gen_reg(comp, TYPE_INT);
+    reg        = gen_reg(comp, VAL_FLOAT);
+    constindex = gen_reg(comp, VAL_INT);
    
         
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
@@ -105,8 +111,8 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
     assert(lit->type == VAL_INT);
     assert(lit->sym != NULL);
    
-    reg        = gen_reg(comp, TYPE_INT);
-    constindex = gen_reg(comp, TYPE_INT);
+    reg        = gen_reg(comp, VAL_INT);
+    constindex = gen_reg(comp, VAL_INT);
 
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", reg.no, constindex.no);
@@ -123,8 +129,8 @@ gencode_string(M1_compiler *comp, m1_literal *lit) {
     assert(lit->sym != NULL);
     assert(lit->type == VAL_STRING);
    
-    reg        = gen_reg(comp, TYPE_STRING);
-    constindex = gen_reg(comp, TYPE_INT);
+    reg        = gen_reg(comp, VAL_STRING);
+    constindex = gen_reg(comp, VAL_INT);
       
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", reg.no, constindex.no);
@@ -169,7 +175,7 @@ gencode_obj(M1_compiler *comp, m1_object *obj) {
 	assert(&comp->currentchunk->locals != NULL);
 	
 	
-	oreg = gen_reg(comp, TYPE_INT);
+	oreg = gen_reg(comp, VAL_INT);
 	
 	
     switch (obj->type) {
@@ -177,9 +183,14 @@ gencode_obj(M1_compiler *comp, m1_object *obj) {
         	assert(obj->obj.field != NULL);
         	assert(obj->sym != NULL);
 
-        	/* return register with the symbol's allocated register number */
-        	reg.no   = obj->sym->regno;   
-        	reg.type = obj->sym->type;         
+        	/* if symbol has not register allocated yet, do it now. */
+        	if (obj->sym->regno == NO_REG_ALLOCATED_YET) {
+                m1_reg r = gen_reg(comp, obj->sym->valtype); 
+                obj->sym->regno = r.no;
+        	}  
+        	reg.no = obj->sym->regno;
+        	reg.type = obj->sym->valtype; 
+        	fprintf(stderr, "Object %s has reg %d and type %d\n", obj->sym->value.sval, obj->sym->regno, obj->sym->valtype);        
             break;
         }
         case OBJECT_FIELD:
@@ -424,9 +435,9 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
     		op = "set"; /* in case of a = b = c; then b = c part is a binary expression */
     		break;
         case OP_PLUS:
-            if (left.type == TYPE_INT)
+            if (left.type == VAL_INT)
                 op = "add_i";
-            else if (left.type == TYPE_NUM)
+            else if (left.type == VAL_FLOAT)
                 op = "add_n";
             else { /* should not happen */
                 fprintf(stderr, "wrong type for add");
@@ -434,9 +445,9 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
             }
             break;
         case OP_MINUS:
-             if (left.type == TYPE_INT)
+             if (left.type == VAL_INT)
                 op = "sub_i";
-            else if (left.type == TYPE_NUM)
+            else if (left.type == VAL_FLOAT)
                 op = "sub_n";
             else { /* should not happen */
                 fprintf(stderr, "wrong type for sub");
@@ -445,9 +456,9 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
 
             break;
         case OP_MUL:
-             if (left.type == TYPE_INT)
+             if (left.type == VAL_INT)
                 op = "mul_i";
-            else if (left.type == TYPE_NUM)
+            else if (left.type == VAL_FLOAT)
                 op = "mul_n";
             else { /* should not happen */
                 fprintf(stderr, "wrong type for mul");
@@ -456,9 +467,9 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
 
             break;
         case OP_DIV:
-             if (left.type == TYPE_INT)
+             if (left.type == VAL_INT)
                 op = "div_i";
-            else if (left.type == TYPE_NUM)
+            else if (left.type == VAL_FLOAT)
                 op = "div_n";
             else { /* should not happen */
                 fprintf(stderr, "wrong type for div");
@@ -466,9 +477,9 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
             }
             break;
         case OP_MOD:
-            if (left.type == TYPE_INT)
+            if (left.type == VAL_INT)
                 op = "mod_i";
-            else if (left.type == TYPE_NUM)
+            else if (left.type == VAL_FLOAT)
                 op = "mod_n";
             else { /* should not happen */
                 fprintf(stderr, "wrong type for mod");
@@ -513,7 +524,7 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
             break;   
     }
     
-       right       = gencode_expr(comp, b->right);  
+    right       = gencode_expr(comp, b->right);  
     target      = gen_reg(comp, left.type);  
     
     fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", op, reg_chars[(int)target.type], target.no, 
@@ -528,7 +539,7 @@ gencode_not(M1_compiler *comp, m1_unexpr *u) {
     int label1, label2;
     
     reg  = gencode_expr(comp, u->expr);
-    temp = gen_reg(comp, TYPE_INT);
+    temp = gen_reg(comp, VAL_INT);
     
     /* if reg is zero, make it nonzero (false->true).
     If it's non-zero, make it zero. (true->false). 
@@ -577,8 +588,8 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     char  *op;
     int    postfix = 0;
     m1_reg reg;
-    m1_reg target = gen_reg(comp, TYPE_INT); /* for final value */
-    m1_reg one    = gen_reg(comp, TYPE_INT); /* to store "1" */
+    m1_reg target = gen_reg(comp, VAL_INT); /* for final value */
+    m1_reg one    = gen_reg(comp, VAL_INT); /* to store "1" */
     
     switch (u->op) {
         case UNOP_POSTINC:
@@ -648,10 +659,10 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
         fprintf(stderr, "Cant find function %s\n", f->name);   
         return reg;
     }
-    reg = gen_reg(comp, TYPE_INT);
+    reg = gen_reg(comp, VAL_INT);
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", reg.no, fun->constindex);
-    pmcreg = gen_reg(comp, TYPE_PMC);
-    offsetreg = gen_reg(comp, TYPE_INT);
+    pmcreg = gen_reg(comp, VAL_CHUNK);
+    offsetreg = gen_reg(comp, VAL_INT);
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", offsetreg.no, 0);
     fprintf(OUT, "\tderef\tP%d, CONSTS, I%d\n", pmcreg.no, reg.no);
     fprintf(OUT, "\tgoto_chunk\tP%d, I%d, x\n", pmcreg.no, offsetreg.no);
@@ -665,7 +676,7 @@ gencode_print(M1_compiler *comp, m1_expression *expr) {
     m1_reg reg;
     m1_reg one;
     reg = gencode_expr(comp, expr);
-    one = gen_reg(comp, TYPE_INT);
+    one = gen_reg(comp, VAL_INT);
     
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n",  one.no);
 	fprintf(OUT, "\tprint_%c\tI%d, %c%d, x\n", type_chars[(int)reg.type], one.no, reg_chars[(int)reg.type], reg.no);
@@ -674,8 +685,8 @@ gencode_print(M1_compiler *comp, m1_expression *expr) {
 
 static m1_reg
 gencode_new(M1_compiler *comp, m1_newexpr *expr) {
-	m1_reg reg     = gen_reg(comp, TYPE_INT);
-	m1_reg sizereg = gen_reg(comp, TYPE_INT);
+	m1_reg reg     = gen_reg(comp, VAL_INT);
+	m1_reg sizereg = gen_reg(comp, VAL_INT);
 	unsigned size  = 128; /* fix; should be size of object requested */
 	fprintf(OUT, "\tset_imm I%d, 0, %d\n", sizereg.no, size);
 	fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", reg.no, sizereg.no);
@@ -789,7 +800,7 @@ gencode_consts(m1_symboltable *consttable) {
 	
 	while (iter != NULL) {
 		
-		switch (iter->type) {
+		switch (iter->valtype) {
 			case VAL_STRING:
 				fprintf(OUT, "%d %s\n", iter->constindex, iter->value.sval);
 				break;
@@ -828,9 +839,25 @@ gencode_block(M1_compiler *comp, m1_expression *block) {
 static void 
 gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     
-    m1_reg r0, r1;
     int i;
+    
+#ifdef PRELOAD_0_AND_1    
+    m1_reg r0, r1;
+    
+    /* The numbers 0 and 1 are used quite a lot. Rather than
+       generating them as needed, pre-store them in registers
+       0 and 1. Small overhead for when it's not needed, but
+       saves quite a few instructions overall in more 
+       complex code. 
+     */
+     
+    r0 = gen_reg(comp, VAL_INT);
+    r1 = gen_reg(comp, VAL_INT); 
+    
+    fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", r0.no);
+    fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", r1.no); 
     fprintf(OUT, ".chunk \"%s\"\n", c->name);
+#endif
     
     /* for each chunk, reset the register allocator */
     for (i = 0; i < NUM_TYPES; ++i)
@@ -839,19 +866,9 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     gencode_consts(&c->constants);
     gencode_metadata(c);
     
-    fprintf(OUT, ".bytecode\n");
+    fprintf(OUT, ".bytecode\n");    
     
-    /* The numbers 0 and 1 are used quite a lot. Rather than
-       generating them as needed, pre-store them in registers
-       0 and 1. Small overhead for when it's not needed, but
-       saves quite a few instructions overall in more 
-       complex code. 
-     */
-    r0 = gen_reg(comp, TYPE_INT);
-    r1 = gen_reg(comp, TYPE_INT); 
-//    fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", r0.no);
-//    fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", r1.no); 
-    
+    debug("gencode_block\n");
     /* generate code for statements */
     gencode_block(comp, c->block);
 }
@@ -859,6 +876,7 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
 void 
 gencode(M1_compiler *comp, m1_chunk *ast) {
     m1_chunk *iter = ast;
+     
      
     fprintf(OUT, ".version 0\n");
     while (iter != NULL) {        

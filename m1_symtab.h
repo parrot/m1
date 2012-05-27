@@ -1,7 +1,7 @@
 #ifndef __M1_SYMTAB_H__
 #define __M1_SYMTAB_H__
 
-
+#define NO_REG_ALLOCATED_YET    (-1)
 
 typedef enum m1_valuetype {
 	VAL_INT,
@@ -18,11 +18,12 @@ typedef union m1_value {
 } m1_value;
 
 typedef struct m1_symbol {
-    m1_value     value;
-    int          regno; /* allocated register */
-    m1_valuetype type;
-    int          scope;
-    int          constindex;
+    m1_value          value;
+    m1_valuetype      valtype;
+    
+    int               regno; /* allocated register */
+    int               scope;
+    int               constindex;
     struct m1_var    *var; /* pointer to declaration AST node for var */
     struct m1_symbol *next;    
     
