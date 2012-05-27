@@ -10,6 +10,7 @@ What's working?
 * if-statements
 * for-statements
 * break statements (in loops)
+* !, && and || logical operators.
 
 What's not working?
 -------------------

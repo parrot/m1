@@ -595,7 +595,7 @@ gencode_not(M1_compiler *comp, m1_unexpr *u) {
       goto_if reg, L1 #non-zero, make it zero.
       set_imm Ix, 0, 0
       goto L2
-    L1: # zero, make it non-zero
+    L1: # nonzero, make it zero
       set_imm Ix, 0, 1
     L2:
       set reg, Ix
@@ -605,15 +605,15 @@ gencode_not(M1_compiler *comp, m1_unexpr *u) {
     label1 = gen_label(comp);
     label2 = gen_label(comp);
     
-    fprintf(OUT, "\tgoto_if\t%c%d, L%d, x\n", reg_chars[(int)reg.type], reg.no, label1);
-    fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", temp.no);
-    fprintf(OUT, "\tgoto L%d, x, x\n", label2);
-    fprintf(OUT, "L%d:\n", label1);
+    fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", label1, reg_chars[(int)reg.type], reg.no);
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", temp.no);
+    fprintf(OUT, "\tgoto L%d\n", label2);
+    fprintf(OUT, "L%d:\n", label1);
+    fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", temp.no);
     fprintf(OUT, "L%d:\n", label2);
-    fprintf(OUT, "\tset\t%c%d, I%d\n", reg_chars[(int)reg.type], reg.no, temp.no);
+    fprintf(OUT, "\tset\t%c%d, I%d, x\n", reg_chars[(int)reg.type], reg.no, temp.no);
     
-    return reg;
+    return temp;
 }
 
 static m1_reg
