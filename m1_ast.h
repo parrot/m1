@@ -35,6 +35,8 @@ typedef struct m1_struct {
     
     struct m1_structfield *fields;
     
+    struct m1_struct *structs;
+    
 } m1_struct;
 
 

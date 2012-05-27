@@ -182,7 +182,7 @@ gencode_null(M1_compiler *comp) {
 
 static m1_reg
 gencode_obj(M1_compiler *comp, m1_object *obj) {
-	m1_reg reg, oreg;
+	m1_reg reg;
 	
 
 	assert(comp != NULL);
@@ -194,7 +194,8 @@ gencode_obj(M1_compiler *comp, m1_object *obj) {
 	
 	
     switch (obj->type) {
-        case OBJECT_MAIN: {        	
+        case OBJECT_MAIN: 
+        {        	
         	assert(obj->obj.field != NULL);
         	assert(obj->sym != NULL);
 
@@ -208,13 +209,22 @@ gencode_obj(M1_compiler *comp, m1_object *obj) {
 
             break;
         }
-        case OBJECT_FIELD:
-            //fprintf(OUT, "\tset_imm\tI%d, %d\n", 1000, 4);
+        case OBJECT_FIELD: /* b in a.b */
+        {
+            /* TODO */
+            /*
+            m1_struct *s = find_struct(comp, 
+            m1_structfield *iter = 
+            while () {
+            obj->obj.field   
+            }
+            */
             break;
-        case OBJECT_DEREF:
-	/* todo */
+        }
+        case OBJECT_DEREF: /* b in a->b */
+        	/* todo */
             break;
-        case OBJECT_INDEX:         
+        case OBJECT_INDEX: /* b in a[b] */        
             reg = gencode_expr(comp, obj->obj.index);
             break;            
         default:
@@ -681,7 +691,8 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     m1_symbol *fun = sym_find_chunk(&comp->currentchunk->constants, f->name);
     
     if (fun == NULL) {
-        fprintf(stderr, "Cant find function %s\n", f->name);   
+        fprintf(stderr, "Cant find function '%s'\n", f->name);
+        ++comp->errors;
         return reg;
     }
     reg = gen_reg(comp, VAL_INT);
@@ -721,9 +732,13 @@ gencode_new(M1_compiler *comp, m1_newexpr *expr) {
 static m1_reg
 gencode_switch(M1_compiler *comp, m1_switch *expr) {
     m1_reg reg;
+    int endlabel;
     reg = gencode_expr(comp, expr->selector);
     
+    push(comp->breakstack, endlabel); /* for break statements to jump to. */    
     /* XXX implement cases */
+    
+    (void)pop(comp->breakstack);
     
     return reg;   
 }

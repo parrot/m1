@@ -173,6 +173,9 @@ funcall(M1_compiler *comp, char *name) {
 	m1_expression *expr = expression(comp, EXPR_FUNCALL);
 	expr->expr.f       = (m1_funcall *)m1_malloc(sizeof(m1_funcall));
 	expr->expr.f->name = name;
+	
+	/* enter name of function to invoke into constant table. */
+	sym_enter_chunk(&comp->currentchunk->constants, name);
     return expr;   
 }
 
@@ -359,9 +362,7 @@ var(M1_compiler *comp, char *varname, m1_expression *init) {
 	                       comp->parsingtype);              /* type of this variable */
 		
 	assert(v->sym != NULL);
-	
-	//fprintf(stderr, "allocated reg for %s is %d and type %d\n", v->name, v->sym->regno, v->sym->valtype);
-	
+		
 	v->sym->var = v;
 	return v;
 }

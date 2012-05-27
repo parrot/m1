@@ -16,6 +16,8 @@ typedef struct M1_compiler {
 	struct m1_stack  *breakstack; /* for handling break statements */
 	
     struct m1_chunk  *currentchunk; /* current chunk being parsed, if any. */
+    
+    struct m1_struct *structs; /* list of struct definitions. */
 	
 } M1_compiler;
 
