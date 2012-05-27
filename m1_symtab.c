@@ -56,11 +56,13 @@ sym_new_symbol(m1_symboltable *table, char *name, int type) {
     sym->value.sval = name;
     sym->regno      = NO_REG_ALLOCATED_YET;
     sym->valtype    = type;
+    sym->next       = NULL;
     
     link_sym(table, sym);
     
     return sym;   
 }
+
 
 void
 print_symboltable(m1_symboltable *table) {
@@ -108,22 +110,15 @@ sym_enter_str(m1_symboltable *table, char *name, int scope) {
 m1_symbol *
 sym_enter_chunk(m1_symboltable *table, char *name) {
     m1_symbol *sym;
-    
-    sym = sym_find_chunk(table, name);
-    
-    if (sym)
-    	return sym;
-    	
-   	sym = (m1_symbol *)calloc(1, sizeof(m1_symbol));
-    if (sym == NULL) {
-        fprintf(stderr, "cant alloc mem for sym");
-        exit(EXIT_FAILURE);
-    }
-    sym->value.sval = name;
+    /* a chunk is just stored as a name, but override the type. */
+    sym = sym_enter_str(table, name, 0);        
     sym->valtype    = VAL_CHUNK;
-    sym->constindex = table->constindex++;
-    link_sym(table, sym);
     return sym;       
+}
+
+m1_symbol *
+sym_find_chunk(m1_symboltable *table, char *name) {
+    return sym_find_str(table, name);   
 }
 
 m1_symbol *
@@ -152,13 +147,12 @@ sym_enter_num(m1_symboltable *table, double val) {
 m1_symbol *
 sym_enter_int(m1_symboltable *table, int val) {
     m1_symbol *sym;
-    
-    
-    
+           
     sym = sym_find_int(table, val);
-    if (sym)
+    if (sym) {
     	return sym;
-    	
+    }
+        	
     sym = (m1_symbol *)calloc(1, sizeof(m1_symbol));
     if (sym == NULL) {
         fprintf(stderr, "cant alloc mem for sym");
@@ -168,6 +162,7 @@ sym_enter_int(m1_symboltable *table, int val) {
     sym->value.ival = val;
     sym->valtype    = VAL_INT;    
     sym->constindex = table->constindex++;
+    sym->next       = NULL;
     
     link_sym(table, sym);
     return sym;    
@@ -178,47 +173,37 @@ sym_find_str(m1_symboltable *table, char *name) {
     m1_symbol *sym;
     
     assert(table != NULL);
+    assert(name != NULL);
     
     sym = table->syms;
-    
-    
-    while (sym != NULL) {
-     
-        fprintf(stderr, "comparing string\n");
-        assert(sym->value.sval != NULL);
         
-        if (strcmp(sym->value.sval, name) == 0) {
-            fprintf(stderr, "done\n");
-            return sym;
+    while (sym != NULL) {        
+        if (sym->valtype == VAL_STRING || sym->valtype == VAL_CHUNK) {
+            assert(sym->value.sval != NULL);
+            assert(name != NULL);  
+                           
+            if (strcmp(sym->value.sval, name) == 0) {     
+                return sym;
+            }   
         }
             
         sym = sym->next;   
     }
-    fprintf(stderr, "cant find string");
     return NULL;
 }
 
-m1_symbol *
-sym_find_chunk(m1_symboltable *table, char *name) {
-    m1_symbol *sym = table->syms;
-    
-    while (sym != NULL) {
-        if (strcmp(sym->value.sval, name) == 0)
-            return sym;
-            
-        sym = sym->next;   
-    }
-    return NULL;
-}
+
 
 m1_symbol *
 sym_find_num(m1_symboltable *table, double fval) {
     m1_symbol *sym = table->syms;
     
     while (sym != NULL) {
-        /* XXX shouldn't do comparisons on floats */
-        if (sym->value.fval == fval) {        	
-            return sym;            
+       
+        if (sym->valtype == VAL_FLOAT) {
+            if (sym->value.fval == fval) {        	
+                return sym;            
+            }
         }
             
         sym = sym->next;   
@@ -231,9 +216,11 @@ sym_find_int(m1_symboltable *table, int ival) {
     m1_symbol *sym = table->syms;
     
     while (sym != NULL) {
-        if (sym->value.ival == ival)
-            return sym;
-            
+        if (sym->valtype == VAL_INT) {
+            if (sym->value.ival == ival) {
+                return sym;
+            }
+        }    
         sym = sym->next;   
     }
     return NULL;

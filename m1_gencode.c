@@ -175,7 +175,7 @@ gencode_obj(M1_compiler *comp, m1_object *obj) {
 	assert(&comp->currentchunk->locals != NULL);
 	
 	
-	oreg = gen_reg(comp, VAL_INT);
+	//oreg = gen_reg(comp, VAL_INT);
 	
 	
     switch (obj->type) {
