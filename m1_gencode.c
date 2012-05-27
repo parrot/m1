@@ -101,21 +101,36 @@ gencode_number(M1_compiler *comp, m1_literal *lit) {
 static m1_reg
 gencode_int(M1_compiler *comp, m1_literal *lit) {
 	/*
+	
+	
 	deref Ix, CONSTS, <const_id>
+	
+	or 
+	
+	set_imm Ix, y, z
+	
 	*/
-    m1_reg     reg,
-               constindex;       
+    m1_reg     reg;
 
     assert(comp != NULL);
     assert(lit != NULL);
     assert(lit->type == VAL_INT);
     assert(lit->sym != NULL);
-   
-    reg        = gen_reg(comp, VAL_INT);
-    constindex = gen_reg(comp, VAL_INT);
 
-    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
-    fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", reg.no, constindex.no);
+    reg = gen_reg(comp, VAL_INT);   
+    
+    if (lit->sym->value.ival < (256 * 255)) { /* XXX check these numbers. operands are 8 bit? */
+        /* use set_imm X, N*256, remainder)   */
+        int remainder = lit->sym->value.ival % 256;
+        int num256    = (lit->sym->value.ival - remainder) / 256; 
+        fprintf(OUT, "\tset_imm\tI%d, %d, %d\n", reg.no, num256, remainder);
+    } 
+    else {
+        m1_reg constindex = gen_reg(comp, VAL_INT);
+
+        fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
+        fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", reg.no, constindex.no);
+    }
     return reg;
 }
 
