@@ -411,42 +411,54 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
 static m1_reg
 gencode_or(M1_compiler *comp, m1_binexpr *b) {
 	/*
-	result1 = <evaluate left>
-	goto_if result1 != 0, END
-	result2 = <evaluate right>
+	  left = <evaluate left>
+	  goto_if left, END
+	  right = <evaluate right>
+	  left = right 
 	END:
 	*/
 	m1_reg left, right;
 	int endlabel;
 	
-	endlabel = gen_label(comp);
-	left     = gencode_expr(comp, b->left);
+	endlabel  = gen_label(comp);
 	
-	fprintf(OUT, "\tgoto_if L_OR_%d\n", endlabel);
 	
-	right = gencode_expr(comp, b->right);
-	
-	fprintf(OUT, "L_OR_%d:\n", endlabel);
+	left = gencode_expr(comp, b->left);	
+	/* if left was not true, then need to evaluate right, otherwise short-cut. */
+	fprintf(OUT, "\tgoto_if L%d, %c%d\n", endlabel, reg_chars[(int)left.type], left.no);
+	right = gencode_expr(comp, b->right);	
+	fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[(int)left.type], left.no, 
+	                                       reg_chars[(int)right.type], right.no);
+	fprintf(OUT, "L%d:\n", endlabel);
 	return left;	
 }
 
 static m1_reg
 gencode_and(M1_compiler *comp, m1_binexpr *b) {
 	/*
-	result1 = <evaluate left>
-	goto_if result1 == 0, END
-	result2 = <evaluate right>
+	  left = <evaluate left>
+	  goto_if left, evalright
+	  goto END
+	evalright:
+	  right = <evaluate right>
+	  left = right
 	END:
 	*/
 	m1_reg left, right;
-	int endlabel = gen_label(comp);
+	int endlabel  = gen_label(comp);
+	int evalright = gen_label(comp);
 	
 	left = gencode_expr(comp, b->left);
-	fprintf(OUT, "\tgoto_if\tL_AND_%d\n", endlabel);	
+	/* if left was false, no need to evaluate right, and go to end. */
+	fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", evalright, reg_chars[(int)left.type], left.no);		
+	fprintf(OUT, "\tgoto L%d\n", endlabel);
+	fprintf(OUT, "L%d:\n", evalright);
 	right = gencode_expr(comp, b->right);
+	/* copy result from right to left result reg, as that's the reg that will be returned. */
+	fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[(int)left.type], left.no, reg_chars[(int)right.type], right.no);	
+	fprintf(OUT, "L%d:\n", endlabel);
 	
-	fprintf(OUT, "L_AND_%d:\n", endlabel);
-	return right;
+	return left;
 }
 
 static m1_reg
