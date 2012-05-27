@@ -542,10 +542,11 @@ lhs     : lhs_obj
 lhs_obj : TK_IDENT
             { 
               M1_compiler *comp = yyget_extra(yyscanner);
-              m1_symbol *sym    = sym_find_str(&comp->currentchunk->locals, $1);
+              m1_symbol *sym    = sym_lookup_symbol(&comp->currentchunk->locals, $1);
               
               if (sym == NULL) {
-                yyerror(yyscanner, comp, "undeclared variable"); 
+                fprintf(stderr, "Undeclared variable: ");
+                yyerror(yyscanner, comp, $1); 
               }
               
               $$ = object(comp, OBJECT_MAIN); 

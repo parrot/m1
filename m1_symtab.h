@@ -18,6 +18,7 @@ typedef union m1_value {
 } m1_value;
 
 typedef struct m1_symbol {
+    char             *name; 
     m1_value          value;
     m1_valuetype      valtype;
     
@@ -51,6 +52,8 @@ extern m1_symbol *sym_find_int(m1_symboltable *table, int val);
 extern m1_symbol *sym_find_chunk(m1_symboltable *table, char *name);
 
 extern m1_symbol *sym_new_symbol(m1_symboltable *table, char *name, int type);
+extern m1_symbol *sym_lookup_symbol(m1_symboltable *table, char *name);
+
 extern void print_symboltable(m1_symboltable *table);
 
 #endif

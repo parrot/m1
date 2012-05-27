@@ -83,15 +83,12 @@ m1_expression *
 integer(M1_compiler *comp, int value) {
 	m1_expression *expr = expression(comp, EXPR_INT);
 	expr_set_int(comp, expr, value);
-	fprintf(stderr, "integer()\n");
 	return expr;	
 }
 m1_expression *
 string(M1_compiler *comp, char *str) {
 	m1_expression *expr = expression(comp, EXPR_STRING);
 	assert(str != NULL);
-	fprintf(stderr, "setting string...\n");
-
 
     expr->expr.l = new_literal(VAL_STRING);
     expr->expr.l->value.sval = str;
@@ -100,11 +97,9 @@ string(M1_compiler *comp, char *str) {
     assert(comp->currentchunk != NULL);
     assert(&comp->currentchunk->constants != NULL);
     
-    fprintf(stderr, "entering string");
     
     expr->expr.l->sym = sym_enter_str(&comp->currentchunk->constants, str, 0);
-	
-	fprintf(stderr, "string()\n");
+
 	return expr;	
 }
 
@@ -315,7 +310,6 @@ m1_object *
 object(M1_compiler *comp, m1_object_type type) {
     m1_object *obj = (m1_object *)m1_malloc(sizeof(m1_object));
     obj->type      = type;
-    fprintf(stderr, "object()\n");
     return obj;    
 }
 
@@ -366,7 +360,7 @@ var(M1_compiler *comp, char *varname, m1_expression *init) {
 		
 	assert(v->sym != NULL);
 	
-	fprintf(stderr, "allocated reg for %s is %d and type %d\n", v->name, v->sym->regno, v->sym->valtype);
+	//fprintf(stderr, "allocated reg for %s is %d and type %d\n", v->name, v->sym->regno, v->sym->valtype);
 	
 	v->sym->var = v;
 	return v;

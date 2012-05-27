@@ -50,17 +50,39 @@ sym_new_symbol(m1_symboltable *table, char *name, int type) {
     m1_symbol *sym = (m1_symbol *)calloc(1, sizeof(m1_symbol));
     
     if (sym == NULL) {
-        fprintf(stderr, "cant alloc mem for new sym");
+        fprintf(stderr, "cant alloc mem for new sym %s", name);
         exit(EXIT_FAILURE);   
     }
-    sym->value.sval = name;
+    sym->name       = name; /* name of this symbol */
     sym->regno      = NO_REG_ALLOCATED_YET;
-    sym->valtype    = type;
+    sym->valtype    = type; 
     sym->next       = NULL;
     
     link_sym(table, sym);
     
     return sym;   
+}
+
+m1_symbol *
+sym_lookup_symbol(m1_symboltable *table, char *name) {
+    m1_symbol *sym;
+    
+    assert(table != NULL);
+    assert(name != NULL);
+    
+    sym = table->syms;
+        
+    while (sym != NULL) {        
+        assert(sym->name != NULL);
+        assert(name != NULL);  
+                           
+        if (strcmp(sym->name, name) == 0) {     
+            return sym;
+        }   
+            
+        sym = sym->next;   
+    }
+    return NULL;
 }
 
 
@@ -75,34 +97,29 @@ print_symboltable(m1_symboltable *table) {
 }
 
 m1_symbol *
-sym_enter_str(m1_symboltable *table, char *name, int scope) {
+sym_enter_str(m1_symboltable *table, char *str, int scope) {
     m1_symbol *sym;
     
-    fprintf(stderr, "enter_str()\n");
     assert(table != NULL);
     
-    sym = sym_find_str(table, name);
+    sym = sym_find_str(table, str);
     
     if (sym) {
-        fprintf(stderr, "string found\n");
+     
     	return sym;
     }
-    fprintf(stderr, "string not found\n");
     	
    	sym = (m1_symbol *)calloc(1, sizeof(m1_symbol));
     if (sym == NULL) {
         fprintf(stderr, "cant alloc mem for sym");
         exit(EXIT_FAILURE);
-    }
+    }        
     
-    fprintf(stderr, "sym enter ");
-    
-    sym->value.sval = name;
+    sym->value.sval = str;
     sym->valtype    = VAL_STRING;
     sym->scope      = scope;
     sym->constindex = table->constindex++;
     
-    fprintf(stderr, "sym enter str done\n");
     link_sym(table, sym);
     return sym;    
 }

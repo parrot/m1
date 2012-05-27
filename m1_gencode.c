@@ -323,31 +323,33 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
 	/*
 	
 	result1 = <evaluate condition>
-	goto_if result1 == 0, ELSE
-	<code for ifblock>
-	goto END
-	ELSE:
+	goto_if result1, L1
 	<code for elseblock>
-	END:
+	goto L2
+    L1:
+	<code for ifblock>
+	L2:
 	*/
-	m1_reg cond;
-	int endlabel  = gen_label(comp),
-		elselabel = gen_label(comp) ;
+	m1_reg condreg;
+	int endlabel = gen_label(comp),
+		iflabel  = gen_label(comp) ;
 
 	
-    cond = gencode_expr(comp, i->cond);
+    condreg = gencode_expr(comp, i->cond);
 	
-	fprintf(OUT, "\tgoto_if\tL_IF_%d\n", elselabel);
-	
-    gencode_expr(comp, i->ifblock);
-	fprintf(OUT, "\tgoto L%d\n", endlabel);
-	fprintf(OUT, "L_IF_%d:\n", elselabel);
-	
-    if (i->elseblock) {    	
+	fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", iflabel, reg_chars[(int)condreg.type], condreg.no);
+
+    /* else block */
+    if (i->elseblock) {            	
         gencode_block(comp, i->elseblock);
+        fprintf(OUT, "\tgoto L%d\n", endlabel);
     }
-    fprintf(OUT, "L_IF_%d:\n", endlabel);
-    return cond;       
+    /* if block */
+	fprintf(OUT, "L%d:\n", iflabel);
+    gencode_expr(comp, i->ifblock);
+			
+    fprintf(OUT, "L%d:\n", endlabel);
+    return condreg;       
 }
 
 static m1_reg
@@ -856,9 +858,10 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     
     fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", r0.no);
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", r1.no); 
-    fprintf(OUT, ".chunk \"%s\"\n", c->name);
+
 #endif
-    
+
+    fprintf(OUT, ".chunk \"%s\"\n", c->name);    
     /* for each chunk, reset the register allocator */
     for (i = 0; i < NUM_TYPES; ++i)
         comp->regs[i] = 0;
