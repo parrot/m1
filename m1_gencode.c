@@ -296,29 +296,36 @@ static m1_reg
 gencode_for(M1_compiler *comp, m1_forexpr *i) {
 	/*
 	
+	
 	<code for init>
 	START:
 	<code for cond>
-	goto_if END
+	goto_if cond, L1
+	goto END
+	L1: 
 	<code for block>
 	<code for step>
 	goto START
 	END:
 	*/
     int startlabel = gen_label(comp),
-        endlabel   = gen_label(comp);
+        endlabel   = gen_label(comp),
+        blocklabel = gen_label(comp);
         
     m1_reg reg;
     
     if (i->init)
         gencode_expr(comp, i->init);
 
-	fprintf(OUT, "L%d\n", startlabel);
+	fprintf(OUT, "L%d:\n", startlabel);
 	
     if (i->cond)
         reg = gencode_expr(comp, i->cond);
    
-    fprintf(OUT, "\tgoto_if L%d\n", endlabel);
+    fprintf(OUT, "\tgoto_if L%d, %c%d\n", blocklabel, reg_chars[(int)reg.type], reg.no);
+    fprintf(OUT, "\tgoto L%d\n", endlabel);
+    
+    fprintf(OUT, "L%d:\n", blocklabel);
     
     if (i->block) 
         gencode_expr(comp, i->block);
