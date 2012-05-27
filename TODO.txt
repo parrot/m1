@@ -3,7 +3,7 @@ TODO
 
 What's working?
 ---------------
-* simple declarations (int x;).
+* simple declarations and initializations (int x; int y = 1;).
 * simple assignments (x = 42;).
 * while loops
 * do-while loops
@@ -11,6 +11,7 @@ What's working?
 * for-statements
 * break statements (in loops)
 * !, && and || logical operators.
+* math expressions (+, -, /, etc.)
 
 What's not working?
 -------------------
@@ -50,9 +51,11 @@ random list of items:
 * any other keywords? e.g., continue? 
 * implement semantic checker (a thorough one!)
 * finish code generator
-* implement constant and variable declarations
+* [FIXED] implement constant and variable declarations
 * do we want member functions: x.y(); ? (prob for PMCs)
 * exception handling at this level?
-* make compiler re-entrant
+* [FIXED] make compiler re-entrant
 * improve symbol table handling
 * free all memory after done.
+* an optimizer, perhaps implemented in yet another bison-based grammar; based on certain patterns of intructions that are generated, some instructions can be removed. 
+* A register allocator (linear-scan algorithm), to minimize register usage.
