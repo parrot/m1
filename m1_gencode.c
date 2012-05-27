@@ -184,7 +184,7 @@ static m1_reg
 gencode_obj(M1_compiler *comp, m1_object *obj) {
 	m1_reg reg, oreg;
 	
-	debug("gencode_obj() start...\n");
+
 	assert(comp != NULL);
 	assert(comp->currentchunk != NULL);
 	assert(&comp->currentchunk->locals != NULL);
@@ -203,9 +203,9 @@ gencode_obj(M1_compiler *comp, m1_object *obj) {
                 m1_reg r = gen_reg(comp, obj->sym->valtype); 
                 obj->sym->regno = r.no;
         	}  
-        	reg.no = obj->sym->regno;
+        	reg.no   = obj->sym->regno;
         	reg.type = obj->sym->valtype; 
-        	fprintf(stderr, "Object %s has reg %d and type %d\n", obj->sym->value.sval, obj->sym->regno, obj->sym->valtype);        
+
             break;
         }
         case OBJECT_FIELD:
@@ -721,6 +721,27 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
     return reg;   
 }
 
+static void
+gencode_vardecl(M1_compiler *comp, m1_var *v) {
+    
+    if (v->init) {
+       m1_reg reg;  
+       m1_symbol *s = v->sym;
+       reg = gencode_expr(comp, v->init);   
+       
+       /* check for first usage of this variable; may not have a reg allocated yet. */
+       if (s->regno == NO_REG_ALLOCATED_YET) {
+            m1_reg r = gen_reg(comp, s->valtype);
+            s->regno = r.no;
+       }
+       fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[s->valtype], 
+                                              s->regno, 
+                                              reg_chars[(int)reg.type], 
+                                              reg.no);
+    }
+       
+}
+
 static m1_reg
 gencode_expr(M1_compiler *comp, m1_expression *e) {
 
@@ -788,7 +809,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             /* do nothing. constants are compiled away */
         	break;
         case EXPR_VARDECL:
-            /* do nothing. variables are not visible at M0. */
+            gencode_vardecl(comp, e->expr.v);            
             break;
         case EXPR_SWITCH:
             reg = gencode_switch(comp, e->expr.s);
