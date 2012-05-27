@@ -1,7 +1,36 @@
 TODO
 ====
 
+What's working?
+---------------
+* simple declarations (int x;).
+* simple assignments (x = 42;).
+* while loops
+* do-while loops
+* if-statements
+* for-statements
+* break statements (in loops)
+
+What's not working?
+-------------------
+* function calls (mostly the returns); parameters/arguments.
+* namespaces
+* PMC and struct definitions (incl methods)
+* return statements
+* switch statements
+* boolean expressions (e.g., >, <)
+* advanced field access (a.b, a->b, etc.)
+* pointers, objects (int *x;), null, new.m
+* arrays (and initializations)
+* self, super
+* type checking (separate phase of compiler)
+* import statement.
+* try/catch statement (needed?)
+
+
+
 short-term roadmap:
+-------------------
 * [FIXED?] implement assignments (x=1). This includes symbol management (sym tables). HIGH PRIORITY
 * implement function calls properly (including returning from a function) HIGH PRIORITY
 * [FIXED?] finish up control statements (if, while, dowhile, break)
@@ -12,6 +41,7 @@ short-term roadmap:
 
 
 random list of items:
+---------------------
 * implement parameter and argument handling
 * implement namespaces and their handling
 * implement pointers properly in the parser

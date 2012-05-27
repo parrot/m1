@@ -606,6 +606,10 @@ gencode_not(M1_compiler *comp, m1_unexpr *u) {
 
 static m1_reg
 gencode_uminus(M1_compiler *comp, m1_unexpr *u) {
+    /*
+    x = -x
+    (e.g: x = 42 => x = -42).
+    */
     m1_reg reg;
     
     reg = gencode_expr(comp, u->expr);

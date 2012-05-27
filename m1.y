@@ -706,6 +706,7 @@ arrayconstructor: '{' const_list '}'
                      { $$ = NULL; }
                 ;  
             
+                           
 const_list    : constexpr
               | const_list ',' constexpr            
               ;
