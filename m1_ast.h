@@ -307,7 +307,7 @@ extern m1_expression *constdecl(M1_compiler *comp, m1_valuetype type, char *name
 extern m1_expression *vardecl(M1_compiler *comp, m1_valuetype type, m1_var *v);
 
 extern m1_var *var(M1_compiler *comp, char *name, m1_expression *init);
-extern m1_var *array(M1_compiler *comp, char *name, unsigned size);
+extern m1_var *array(M1_compiler *comp, char *name, unsigned size, m1_expression *init);
 
 extern unsigned field_size(struct m1_structfield *field);
 

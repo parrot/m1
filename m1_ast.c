@@ -368,8 +368,9 @@ var(M1_compiler *comp, char *varname, m1_expression *init) {
 }
 
 m1_var *
-array(M1_compiler *comp, char *name, unsigned size) {
-	return make_var(comp, name, NULL, size);
+array(M1_compiler *comp, char *name, unsigned size, m1_expression *init) {
+    /* XXX not sure about type of init */
+	return make_var(comp, name, init, size);
 }
 
 m1_expression *

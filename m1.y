@@ -162,6 +162,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              nullexpr
              subexpr
              newexpr
+             opt_array_init
              
 %type <instr> m0_instructions
               m0_instr
@@ -307,7 +308,7 @@ namespace_definition: "namespace" TK_IDENT ';'
                          }        
 
 /* TODO: PMC handling */
-pmc_definition	: "pmc" TK_IDENT extends_clause '{'  pmc_items '}' ';'
+pmc_definition	: "pmc" TK_IDENT extends_clause '{'  pmc_items '}'
                 ;
                                 
 extends_clause	: /* empty */
@@ -363,7 +364,7 @@ param   : type TK_IDENT
         | type '*' TK_IDENT
         ;
                                              
-struct_definition   : "struct" TK_IDENT '{' struct_members '}' ';'
+struct_definition   : "struct" TK_IDENT '{' struct_members '}' 
                         { $$ = newstruct(yyget_extra(yyscanner), $2, $4); }
                     ;         
                     
@@ -452,9 +453,15 @@ var_list    : var 				{ $$ = $1; }
             
 var         : TK_IDENT opt_init
                 { $$ = var(yyget_extra(yyscanner), $1, $2); }
-            | TK_IDENT '[' TK_INT ']'
-                { $$ = array(yyget_extra(yyscanner), $1, $3); }
+            | TK_IDENT '[' TK_INT ']' opt_array_init
+                { $$ = array(yyget_extra(yyscanner), $1, $3, $5); }
             ;           
+            
+opt_array_init  : /* empty */
+                    { $$ = NULL; }
+                | '=' arrayconstructor  
+                    { $$ = NULL; }    
+                ;
             
 opt_init    : /* empty */
                 { $$ = NULL; }
@@ -695,13 +702,13 @@ nullexpr    : "null"
                 { $$ = expression(yyget_extra(yyscanner), EXPR_NULL); }            
             ;
             
-arrayconstructor: '{' int_list '}' 
+arrayconstructor: '{' const_list '}' 
                      { $$ = NULL; }
                 ;  
             
-int_list    : /* empty */
-            | int_list ',' TK_INT            
-            ;
+const_list    : constexpr
+              | const_list ',' constexpr            
+              ;
             
 unexpr  : '-' expression
                 { $$ = unaryexpr(yyget_extra(yyscanner), UNOP_MINUS, $2); }                            
