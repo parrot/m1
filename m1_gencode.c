@@ -341,9 +341,10 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
 
     /* else block */
     if (i->elseblock) {            	
-        gencode_block(comp, i->elseblock);
-        fprintf(OUT, "\tgoto L%d\n", endlabel);
+        gencode_block(comp, i->elseblock);     
     }
+    fprintf(OUT, "\tgoto L%d\n", endlabel);
+    
     /* if block */
 	fprintf(OUT, "L%d:\n", iflabel);
     gencode_expr(comp, i->ifblock);
