@@ -1,6 +1,25 @@
 TODO
 ====
 
+How can you help?
+-----------------
+If you're interested in M1 and M0, contributions in the following
+areas are particularly welcome:
+* tests (boring! :-) - ideas for a test framework?
+* figure out how to do function calls and parameters.
+* figure out how to do modules (multi-file programs)
+* figure out how to do structs and arrays (address + offsets)
+* figure out how to do pointers and/or references (Java-like).
+* can we do exceptions at this level/
+* How to do objects/classes, and vtables? 
+* Ideas for an optimizer? register allocator? 
+* a disassembler to generate M1?
+* a profiler?
+* other developers' tools?
+* Implement the switch statement (need comparison ops - coming soon in M0!)
+* Just review the code, and ask questions to clarify. These will be rewarded with documentation that explains it. 
+* Implement the semantic checking phase.
+
 What's working?
 ---------------
 * simple declarations and initializations (int x; int y = 1;).
