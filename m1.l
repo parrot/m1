@@ -122,6 +122,7 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "super"					{ return KW_SUPER; }
 "switch"                { return KW_SWITCH; }
 "true"                  { return KW_TRUE; }
+"unsigned"              { return KW_UNSIGNED; }
 "void"                  { return KW_VOID; }
 "vtable"				{ return KW_VTABLE; }
 "while"                 { return KW_WHILE; }

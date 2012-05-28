@@ -110,6 +110,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
         TK_NOT          "!"
         KW_EXTERN       "extern"
         KW_IMPORT       "import"
+        KW_UNSIGNED     "unsigned"
 
         
 %type <sval> TK_IDENT
@@ -344,6 +345,7 @@ function_definition : function_init '(' parameters ')' block
                         { 
                           $1->block = $5;  
                           print_symboltable(&comp->currentchunk->locals);
+                          $$ = $1;
                         }
                     ;
 
