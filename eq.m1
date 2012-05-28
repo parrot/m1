@@ -7,10 +7,21 @@ int main() {
     else
         print("nok..1\n");
            
-           
-    y = 0;
-    if (x == y)
+
+    if (x != x)
         print("nok..2\n");
     else
-        print("ok..2\n");          
+        print("ok..2\n");
+                   
+    y = 0;
+    if (x == y)
+        print("nok..3\n");
+    else
+        print("ok..3\n");     
+        
+        
+    if (x != y) 
+        print("ok..4\n");
+    else
+        print("nok..4\n");    
 }

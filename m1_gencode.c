@@ -464,9 +464,24 @@ gencode_and(M1_compiler *comp, m1_binexpr *b) {
 static m1_reg
 gencode_ne(M1_compiler *comp, m1_binexpr *b) {
     m1_reg reg, left, right;
+    int endlabel, equal_label;
+    
     left  = gencode_expr(comp, b->left);
     right = gencode_expr(comp, b->right);
+    endlabel    = gen_label(comp);
+    equal_label = gen_label(comp);
     
+    reg = gen_reg(comp, VAL_INT);
+    fprintf(OUT, "\tsub_i\tI%d, %c%d, %c%d\n", reg.no, reg_chars[(int)left.type], left.no,
+                                                      reg_chars[(int)right.type], right.no);
+                                                      
+    fprintf(OUT, "\tgoto_if L%d, %c%d\n", equal_label, reg_chars[(int)reg.type], reg.no);
+    fprintf(OUT, "\tset_imm\t%c%d, 0, 0\n", reg_chars[(int)reg.type], reg.no);
+    fprintf(OUT, "\tgoto L%d\n", endlabel);                                                      
+    
+    fprintf(OUT, "L%d:\n", equal_label);
+    fprintf(OUT, "\tset_imm\t%c%d, 0, 1\n", reg_chars[(int)reg.type], reg.no);
+    fprintf(OUT, "L%d:\n", endlabel);    
     
     return reg;   
 }
