@@ -721,6 +721,9 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     /* generate code for the pre/post ++ expression */ 
     reg = gencode_expr(comp, u->expr);
     
+    one    = gen_reg(comp, VAL_INT);
+    target = gen_reg(comp, VAL_INT);
+    
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", one.no);
     fprintf(OUT, "\t%s\tI%d, I%d, I%d\n", op, target.no, reg.no, one.no);
     
