@@ -75,8 +75,16 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 ">>"                    { return TK_RSH; }
 
 "::"                    { return TK_SCOPE; }
+
 "+="                    { return TK_INC_ASSIGN; }
 "-="                    { return TK_DEC_ASSIGN; }
+"*="                    { return TK_MUL_ASSIGN; }
+"/="                    { return TK_DIV_ASSIGN; }
+"%="                    { return TK_MOD_ASSIGN; }
+"<<="                   { return TK_SHL_ASSIGN; }
+">>="                   { return TK_SHR_ASSIGN; }
+"|="                    { return TK_BOR_ASSIGN; }
+"&="                    { return TK_BAND_ASSIGN; }
 
 [\[\]{}();=+-/*^,\.]    { return yytext[0]; }
 [%&:]                   { return yytext[0]; }

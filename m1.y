@@ -86,6 +86,13 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
         TK_STRING_CONST
         TK_INC_ASSIGN   "+="
         TK_DEC_ASSIGN   "-="
+        TK_MUL_ASSIGN   "*="
+        TK_DIV_ASSIGN   "/="
+        TK_MOD_ASSIGN   "%="
+        TK_SHL_ASSIGN   ">>="
+        TK_SHR_ASSIGN   "<<="
+        TK_BAND_ASSIGN  "&="
+        TK_BOR_ASSIGN   "|="
         KW_CASE         "case"
         KW_DEFAULT      "default"
         KW_SWITCH       "switch"
@@ -477,12 +484,16 @@ assign_expr : lhs assignop rhs
                 { $$ = assignexpr(yyget_extra(yyscanner), $1, $2, $3); }            
             ;
             
-assignop    : '='  { $$ = OP_ASSIGN; }
-            | "+=" { $$ = OP_PLUS; }
-            | "-=" { $$ = OP_MINUS; }
-    /* TODO: implement other assign operators like *=, /=, %=, >>=, <<=. 
-    Contributions welcome! see ast.h for list of ops.
-    */
+assignop    : '='   { $$ = OP_ASSIGN; }
+            | "+="  { $$ = OP_PLUS; }
+            | "-="  { $$ = OP_MINUS; }
+            | "*="  { $$ = OP_MUL; }
+            | "/="  { $$ = OP_DIV; }
+            | "%="  { $$ = OP_MOD; }
+            | ">>=" { $$ = OP_RSH; }
+            | "<<=" { $$ = OP_LSH; }
+            | "|="  { $$ = OP_BOR; }
+            | "&="  { $$ = OP_BAND; }
             ;            
             
             /* XXX expression should become boolexpr once we have cmp op */
