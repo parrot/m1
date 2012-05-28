@@ -1,0 +1,16 @@
+int main() {
+    int x = 1;
+    int y = 1;
+    
+    if (x == y) 
+        print("ok..1\n");
+    else
+        print("nok..1\n");
+           
+           
+    y = 0;
+    if (x == y)
+        print("nok..2\n");
+    else
+        print("ok..2\n");          
+}
