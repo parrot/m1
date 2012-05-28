@@ -462,8 +462,48 @@ gencode_and(M1_compiler *comp, m1_binexpr *b) {
 }
 
 static m1_reg
+gencode_ne(M1_compiler *comp, m1_binexpr *b) {
+    m1_reg reg, left, right;
+    left  = gencode_expr(comp, b->left);
+    right = gencode_expr(comp, b->right);
+    
+    
+    return reg;   
+}
+
+static m1_reg
 gencode_eq(M1_compiler *comp, m1_binexpr *b) {
-    m1_reg reg;
+    /*
+    left = <code for left>
+    right = <code for right>
+    diff = left - right
+    goto_if NOTEQUAL, diff # not zero
+    result = 1
+    goto END
+    NOTEQUAL:
+    result = 0
+    END:
+    
+    */
+    m1_reg reg, left, right;
+    int endlabel, notequal_label;
+    
+    left  = gencode_expr(comp, b->left);
+    right = gencode_expr(comp, b->right);
+    endlabel       = gen_label(comp);
+    notequal_label = gen_label(comp);
+    
+    reg = gen_reg(comp, VAL_INT);
+    fprintf(OUT, "\tsub_i\tI%d, %c%d, %c%d\n", reg.no, reg_chars[(int)left.type], left.no,
+                                                      reg_chars[(int)right.type], right.no);
+                                                      
+    fprintf(OUT, "\tgoto_if L%d, %c%d\n", notequal_label, reg_chars[(int)reg.type], reg.no);
+    fprintf(OUT, "\tset_imm\t%c%d, 0, 1\n", reg_chars[(int)reg.type], reg.no);
+    fprintf(OUT, "\tgoto L%d\n", endlabel);                                                      
+    
+    fprintf(OUT, "L%d:\n", notequal_label);
+    fprintf(OUT, "\tset_imm\t%c%d, 0, 0\n", reg_chars[(int)reg.type], reg.no);
+    fprintf(OUT, "L%d:\n", endlabel);
     
     return reg;   
 }
@@ -550,10 +590,10 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
             break;
         case OP_EQ:
             return gencode_eq(comp, b);
-            break;
-        case OP_NE:
-/*            op = "!=";*/
-            break;
+            
+        case OP_NE: /* a != b;*/
+            return gencode_ne(comp, b);
+
         case OP_AND: /* a && b */
             return gencode_and(comp, b);
 
@@ -638,9 +678,9 @@ static m1_reg
 gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     char  *op;
     int    postfix = 0;
-    m1_reg reg;
-    m1_reg target = gen_reg(comp, VAL_INT); /* for final value */
-    m1_reg one    = gen_reg(comp, VAL_INT); /* to store "1" */
+    m1_reg reg, 
+           target, 
+           one;
     
     switch (u->op) {
         case UNOP_POSTINC:
@@ -667,6 +707,9 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
             op = "unknown op";
             break;   
     }   
+    gen_reg(comp, VAL_INT); /* for final value */
+    gen_reg(comp, VAL_INT); /* to store "1" */
+
     
     /* generate code for the pre/post ++ expression */ 
     reg = gencode_expr(comp, u->expr);
@@ -727,11 +770,13 @@ gencode_print(M1_compiler *comp, m1_expression *expr) {
 
     m1_reg reg;
     m1_reg one;
+    
     reg = gencode_expr(comp, expr);
     one = gen_reg(comp, VAL_INT);
     
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n",  one.no);
 	fprintf(OUT, "\tprint_%c\tI%d, %c%d, x\n", type_chars[(int)reg.type], one.no, reg_chars[(int)reg.type], reg.no);
+	
 	return reg;
 }
 
@@ -739,16 +784,20 @@ static m1_reg
 gencode_new(M1_compiler *comp, m1_newexpr *expr) {
 	m1_reg reg     = gen_reg(comp, VAL_INT);
 	m1_reg sizereg = gen_reg(comp, VAL_INT);
+	
 	unsigned size  = 128; /* fix; should be size of object requested */
+	
 	fprintf(OUT, "\tset_imm I%d, 0, %d\n", sizereg.no, size);
 	fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", reg.no, sizereg.no);
+	
 	return reg;	
 }
 
 static m1_reg
 gencode_switch(M1_compiler *comp, m1_switch *expr) {
     m1_reg reg;
-    int endlabel;
+    int endlabel = gen_label(comp);
+    
     reg = gencode_expr(comp, expr->selector);
     
     push(comp->breakstack, endlabel); /* for break statements to jump to. */    
@@ -763,9 +812,8 @@ static void
 gencode_vardecl(M1_compiler *comp, m1_var *v) {
     
     if (v->init) {
-       m1_reg reg;  
-       m1_symbol *s = v->sym;
-       reg = gencode_expr(comp, v->init);   
+       m1_reg     reg = gencode_expr(comp, v->init);     
+       m1_symbol *s   = v->sym;
        
        /* check for first usage of this variable; may not have a reg allocated yet. */
        if (s->regno == NO_REG_ALLOCATED_YET) {
@@ -784,7 +832,9 @@ static m1_reg
 gencode_expr(M1_compiler *comp, m1_expression *e) {
 
     m1_reg reg;
+    
     debug("gencode_expr start...\n");
+    
     if (e == NULL) {
     	debug("expr e is null in gencode_expr\n");
         return reg;
@@ -884,7 +934,7 @@ gencode_consts(m1_symboltable *consttable) {
 			case VAL_FLOAT:
 				fprintf(OUT, "%d %f\n", iter->constindex, iter->value.fval);
 				break;
-			case VAL_INT:
+			case VAL_INT:			
 				fprintf(OUT, "%d %d\n", iter->constindex, iter->value.ival);
 				break;
 	        case VAL_CHUNK:
@@ -907,6 +957,7 @@ gencode_metadata(m1_chunk *c) {
 static void
 gencode_block(M1_compiler *comp, m1_expression *block) {
     m1_expression *iter = block;
+    
     while (iter != NULL) {
         (void)gencode_expr(comp, iter);
         iter = iter->next;
@@ -951,6 +1002,11 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     gencode_block(comp, c->block);
 }
 
+/*
+
+Top-level function to drive the code generation phase.
+Iterate over the list of chunks, and generate code for each.
+*/
 void 
 gencode(M1_compiler *comp, m1_chunk *ast) {
     m1_chunk *iter = ast;
