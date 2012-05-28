@@ -516,6 +516,34 @@ gencode_eq(M1_compiler *comp, m1_binexpr *b) {
 }
 
 static m1_reg
+gencode_lt(M1_compiler *comp, m1_binexpr *b) {
+    /* for LT (<) operator, use the ISGE opcode, but swap its arguments. */
+    m1_reg result = gen_reg(comp, VAL_INT);
+    m1_reg left   = gencode_expr(comp, b->left);
+    m1_reg right  = gencode_expr(comp, b->right);
+    
+    fprintf(OUT, "\tisge I%d, %c%d, %c%d\n", result.no, reg_chars[(int)right.type], right.no,
+                                                        reg_chars[(int)left.type], left.no);
+
+    return result;
+}
+
+static m1_reg
+gencode_le(M1_compiler *comp, m1_binexpr *b) {
+    /* for LE (<=) operator, use the ISGT opcode, but swap its arguments. */
+    m1_reg result = gen_reg(comp, VAL_INT);
+    m1_reg left   = gencode_expr(comp, b->left);
+    m1_reg right  = gencode_expr(comp, b->right);
+    
+    fprintf(OUT, "\tisgt I%d, %c%d, %c%d\n", result.no, reg_chars[(int)right.type], right.no,
+                                                        reg_chars[(int)left.type], left.no);
+
+    return result;
+
+}
+
+
+static m1_reg
 gencode_binary(M1_compiler *comp, m1_binexpr *b) {
     char  *op = NULL;
     m1_reg left, 
@@ -584,16 +612,16 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
             op = "xor";
             break;
         case OP_GT:
-/*            op = ">";*/
+            op = "isgt";
             break;
         case OP_GE:
-/*            op = ">=";*/
+            op = "isge";
             break;
         case OP_LT:
-/*            op = "<";*/
-            break;
+            return gencode_lt(comp, b);
+
         case OP_LE:
-/*            op = "<=";*/
+            return gencode_le(comp, b);
             break;
         case OP_EQ:
             return gencode_eq(comp, b);
@@ -669,16 +697,24 @@ gencode_uminus(M1_compiler *comp, m1_unexpr *u) {
     x = -x
     (e.g: x = 42 => x = -42).
     */
-    m1_reg reg;
+    m1_reg reg, zeroreg;
+    int less0_label = gen_label(comp);
     
     reg = gencode_expr(comp, u->expr);
     
-    /* XXX M0 definitely needs a gt or lt opcode. 
-    a "neg" and "not" as well as bit-inverse opcode (a = ~a) would
-    be handy too.
-    */
+    zeroreg = gen_reg(comp, VAL_INT);
     
-    return reg;    
+    fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", zeroreg.no);
+    /* reuse the zeroreg reg. */
+    fprintf(OUT, "\tisgt\tI%d, %c%d, I%d\n", zeroreg.no, reg_chars[(int)reg.type], reg.no, zeroreg.no);
+    fprintf(OUT, "\tgoto_if L%d, I%d\n", less0_label, zeroreg.no);
+    
+    /* XXX subtract the value in reg from itself, twice */
+    
+    fprintf(OUT, "L%d:\n", less0_label);
+    /* XXX add the value in reg to itself twice */
+        
+    return zeroreg;    
 }
 
 static m1_reg
@@ -805,11 +841,49 @@ static m1_reg
 gencode_switch(M1_compiler *comp, m1_switch *expr) {
     m1_reg reg;
     int endlabel = gen_label(comp);
+    int base;
+    int max;
+    m1_case *caseiter;
+    m1_reg temp, test;
+    temp = gen_reg(comp, VAL_INT);
+    test = gen_reg(comp, VAL_INT);
+//    m1_reg jmp;
     
     reg = gencode_expr(comp, expr->selector);
     
     push(comp->breakstack, endlabel); /* for break statements to jump to. */    
     /* XXX implement cases */
+    
+    caseiter = expr->cases;
+    
+    /* find the base */
+    max = base = caseiter->selector;
+
+    while (caseiter != NULL) {
+        if (base < caseiter->selector)
+            base = caseiter->selector;
+        
+        if (max > caseiter->selector)
+            max = caseiter->selector;
+                
+        caseiter = caseiter->next;   
+    }
+    
+    caseiter = expr->cases;
+   
+    while (caseiter != NULL) {
+        int label = gen_label(comp);
+        
+        fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", temp.no, caseiter->selector);
+        fprintf(OUT, "\tsub_i\tI%d, I%d, I%d\n", test.no, reg.no, temp.no); 
+        fprintf(OUT, "\tgoto_if L%d, I%d\n", label, test.no);
+        
+        caseiter = caseiter->next;
+    }
+
+    
+    
+    
     
     (void)pop(comp->breakstack);
     
