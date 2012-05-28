@@ -714,9 +714,7 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
             op = "unknown op";
             break;   
     }   
-    gen_reg(comp, VAL_INT); /* for final value */
-    gen_reg(comp, VAL_INT); /* to store "1" */
-
+    
     
     /* generate code for the pre/post ++ expression */ 
     reg = gencode_expr(comp, u->expr);

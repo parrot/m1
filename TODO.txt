@@ -13,6 +13,7 @@ What's working?
 * !, && and || logical operators.
 * math expressions (+, -, /, etc.)
 * != and == operators.
+* pre and postfix ++ and -- operators.
 
 What's not working?
 -------------------
