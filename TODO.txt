@@ -12,6 +12,7 @@ What's working?
 * break statements (in loops)
 * !, && and || logical operators.
 * math expressions (+, -, /, etc.)
+* != and == operators.
 
 What's not working?
 -------------------
