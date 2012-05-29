@@ -91,6 +91,7 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 
 "?"                     { return TK_ISTRUE; }
 "!"                     { return TK_NOT; }
+"bool"                  { return KW_BOOL; }
 "break"                 { return KW_BREAK; }
 "case"                  { return KW_CASE; }
 "const"                 { return KW_CONST; }

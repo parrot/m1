@@ -111,6 +111,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
         KW_EXTERN       "extern"
         KW_IMPORT       "import"
         KW_UNSIGNED     "unsigned"
+        KW_BOOL         "bool"
 
         
 %type <sval> TK_IDENT
@@ -247,14 +248,16 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 
 %start TOP
 
-%left '?' ':' 
+
+%left  ':' 
 %nonassoc TK_INC_ASSIGN '='
 %left TK_AND TK_OR 
 %left TK_LE TK_GE TK_LT TK_GT TK_EQ TK_NE
 %left TK_LSH TK_RSH
-%left '+' '-' TK_NOT
+%left '+' '-' 
 %left '*' '/' '&' '|' '%'  '^'
 %left TK_INC TK_DEC 
+%left TK_NOT
 
 /* for dangling else conflict in the grammar; don't
    extend the grammar with many rules to work around, just
@@ -499,18 +502,18 @@ assignop    : '='   { $$ = OP_ASSIGN; }
             ;            
             
             /* XXX expression should become boolexpr once we have cmp op */
-if_stat     : "if" '(' expression ')' statement %prec LOWER_THAN_ELSE  
+if_stat     : "if" '(' boolexpr ')' statement %prec LOWER_THAN_ELSE  
                 { $$ = ifexpr(yyget_extra(yyscanner), $3, $5, NULL); }
-            | "if" '(' expression ')' statement "else" statement 
+            | "if" '(' boolexpr ')' statement "else" statement 
                 { $$ = ifexpr(yyget_extra(yyscanner), $3, $5, $7); }
             ;
             
             
-while_stat  : "while" '(' expression ')' statement /* expression should become boolexpr once we have cmp op */
+while_stat  : "while" '(' boolexpr ')' statement /* expression should become boolexpr once we have cmp op */
                 { $$ = whileexpr(yyget_extra(yyscanner), $3, $5); }
             ;
             
-do_stat     : "do" block "while" '(' expression ')' ';' /* see comment while stat */
+do_stat     : "do" block "while" '(' boolexpr ')' ';' /* see comment while stat */
                 { $$ = dowhileexpr(yyget_extra(yyscanner), $5, $2); }
             ;
             
@@ -570,7 +573,7 @@ for_init    : /* empty */
             
 for_cond    : /* empty */
                 { $$ = NULL; }
-            | expression
+            | boolexpr
             ;
             
 for_step    : /* empty */
@@ -696,8 +699,9 @@ boolexpr    : "true"
                 { $$ = binexpr(yyget_extra(yyscanner), $1, OP_LSH, $3); }
             | expression ">>" expression
                 { $$ = binexpr(yyget_extra(yyscanner), $1, OP_RSH, $3); }   
-            | "!" expression
+            | "!" expression 
                 { $$ = unaryexpr(yyget_extra(yyscanner), UNOP_NOT, $2); }                                            
+           
             ;   
             
 newexpr     : "new" TK_IDENT '(' arguments ')'
@@ -762,6 +766,7 @@ type    : native_type
 native_type : "int"     { $$ = VAL_INT; }
             | "num"     { $$ = VAL_FLOAT; }
             | "string"  { $$ = VAL_STRING; }
+            | "bool"    { $$ = VAL_INT; }
       /* TODO: what about "pmc" ? */
             ;
             
