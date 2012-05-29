@@ -31,9 +31,10 @@ What's working?
 * break statements (in loops)
 * !, && and || logical operators.
 * math expressions (+, -, /, etc.)
-* != and == operators.
+* ==, !=, >, <, <=, >= comparison operators.
 * pre and postfix ++ and -- operators.
 * unary minus op.
+
 
 What's not working?
 -------------------
