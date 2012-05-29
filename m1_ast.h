@@ -63,6 +63,7 @@ typedef enum m1_expr_type {
     EXPR_ADDRESS,   /* &x */
     EXPR_ASSIGN,
     EXPR_BINARY,
+    EXPR_BOOL,
     EXPR_BREAK,
     EXPR_CAST,    
     EXPR_CONSTDECL,
@@ -159,7 +160,8 @@ typedef struct m1_object {
     } obj;
     
     enum m1_object_type type;
-    struct m1_symbol *sym;
+    struct m1_symbol   *sym;
+    unsigned line; 
     
     struct m1_object *parent;  
       
@@ -265,8 +267,8 @@ typedef struct m1_expression {
         struct m1_castexpr   *cast;
     } expr;
     
-    m1_expr_type      type;
-
+    m1_expr_type  type; /* selector for union */
+    unsigned      line; /* line number */
     
     struct m1_expression *next;
     
@@ -341,6 +343,7 @@ extern m1_expression *newexpr(M1_compiler *copm, char *type);
 extern m1_object *lhsobj(M1_compiler *comp, m1_object *parent, m1_object *field);
 extern m1_expression *castexpr(M1_compiler *comp, int type, m1_expression *castedexpr);
 
+extern m1_expression *bool(M1_compiler *comp, int istrue);
 
 #endif
 
