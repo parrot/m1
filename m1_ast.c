@@ -301,7 +301,7 @@ expr_set_assign(M1_compiler *comp, m1_expression *node, m1_expression *lhs, int 
 
 void 
 obj_set_ident(m1_object *node, char *ident) {
-    node->obj.field = ident;    
+    node->obj.name = ident;    
 }
 
 void 
@@ -314,6 +314,16 @@ object(M1_compiler *comp, m1_object_type type) {
     m1_object *obj = (m1_object *)m1_malloc(sizeof(m1_object));
     obj->type      = type;
     return obj;    
+}
+
+m1_object *
+lhsobj(M1_compiler *comp, m1_object *parent, m1_object *field) {
+    m1_object *lhsobj = (m1_object *)m1_malloc(sizeof(m1_object));
+    lhsobj->type      = OBJECT_LINK;
+    
+    lhsobj->obj.field = field;
+    lhsobj->parent    = parent;
+    return lhsobj;   
 }
 
 m1_structfield *

@@ -624,15 +624,24 @@ lhs_obj : TK_IDENT
             }            
         | lhs_obj field_access
             {
+                /*
               m1_object *iter = $1;
-              /* go to end of list to link field access to the end */   
-              while (iter->next != NULL)
-                iter = iter->next;
+              // go to end of list to link field access to the end 
+              while (iter->parent != NULL)
+                iter = iter->parent;
                 
-              /* found end of list, now link it */  
-              iter->next = $2;
-              /* always return head of the list */
+              // found end of list, now link it   
+              iter->parent = $2;
+              // always return head of the list 
               $$ = $1;
+                */
+                
+              
+
+              //make a new node that links $1 and $2.
+              M1_compiler *comp = yyget_extra(yyscanner);
+              $$ = lhsobj(comp, $1, $2);
+                                          
             }
         | "self"
         	{ $$ = object(yyget_extra(yyscanner), OBJECT_SELF); }

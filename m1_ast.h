@@ -132,6 +132,7 @@ typedef struct m1_unexpr {
 } m1_unexpr;
 
 typedef enum m1_object_type {
+    OBJECT_LINK,  /* node linking a and b in a.b */
     OBJECT_MAIN,  /* a in a.b  */
     OBJECT_FIELD, /* b in a.b  */
     OBJECT_INDEX, /* b in a[b] */
@@ -145,16 +146,29 @@ typedef enum m1_object_type {
 typedef struct m1_object {
     
     union {
-        char *field;  /* for name, field or deref access */
+        char                 *name;  /* for name, field or deref access */
         struct m1_expression *index; /* for array index */        
+        struct m1_object     *field; /* if this is a linking node representing "a.b" */
     } obj;
     
     enum m1_object_type type;
     struct m1_symbol *sym;
     
-    struct m1_object *next;  
+    struct m1_object *parent;  
       
 } m1_object;
+
+typedef enum m1_lhsobj_type {
+    LHS_INDEX, /* a[b] */
+    LHS_FIELD  /* a.b */
+    
+} m1_lhsobj_type;
+
+typedef struct m1_lhsobj {
+    struct m1_lhsobj *obj;
+    struct m1_lhsobj *field;
+      
+} m1_lhs_obj;
 
 /* for while and do-while statements */
 typedef struct m1_whileexpr {
@@ -316,5 +330,6 @@ extern m1_case *switchcase(M1_compiler *comp, int selector, m1_expression *block
 
 extern m1_expression *newexpr(M1_compiler *copm, char *type);
 
+extern m1_object *lhsobj(M1_compiler *comp, m1_object *parent, m1_object *field);
 #endif
 

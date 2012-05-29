@@ -42,13 +42,13 @@ static void
 eval_obj(m1_object *obj) {
     switch (obj->type) {
         case OBJECT_MAIN:
-            fprintf(OUT, "%s", obj->obj.field);
+            fprintf(OUT, "%s", obj->obj.name);
             break;
         case OBJECT_FIELD:
-            fprintf(OUT, ".%s", obj->obj.field);
+            fprintf(OUT, ".%s", obj->obj.name);
             break;
         case OBJECT_DEREF:
-            fprintf(OUT, "->%s", obj->obj.field);
+            fprintf(OUT, "->%s", obj->obj.name);
             break;
         case OBJECT_INDEX:
             fprintf(OUT, "[");
@@ -59,8 +59,8 @@ eval_obj(m1_object *obj) {
             break;
     }      
     
-    if (obj->next) {
-        eval_obj(obj->next);   
+    if (obj->parent) {
+        eval_obj(obj->parent);   
     }
 }
 

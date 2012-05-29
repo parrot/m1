@@ -189,11 +189,47 @@ gencode_obj(M1_compiler *comp, m1_object *obj) {
 	assert(comp->currentchunk != NULL);
 	assert(&comp->currentchunk->locals != NULL);
 	
+	if (obj->type == OBJECT_LINK) {
+	   m1_reg field;
+	   
+	   fprintf(stderr ,"object\n");
+	   reg = gencode_obj(comp, obj->parent);  
+	   
+	   assert(obj->obj.field != NULL); 
+	   
+	   field = gencode_obj(comp, obj->obj.field);    
+	   
+	}
 	
-	//oreg = gen_reg(comp, VAL_INT);
+	if (obj->type == OBJECT_MAIN) {
+	    fprintf(stderr, "main\n");
+        if (obj->sym->regno == NO_REG_ALLOCATED_YET) {
+            m1_reg r = gen_reg(comp, obj->sym->valtype); 
+            obj->sym->regno = r.no;
+        }  
+        reg.no   = obj->sym->regno;
+        reg.type = obj->sym->valtype;  
+	}
+	else if (obj->type == OBJECT_FIELD) {
+	   
+	   fprintf(stderr, "field\n");
+	   fprintf(OUT, "\tadd_i <offset>\n");  
+	}
 	
+
+	return reg;
+		
+}
+
+static m1_reg
+backup(M1_compiler *comp, m1_object *obj) {
+	m1_reg reg;
 	
     switch (obj->type) {
+        case OBJECT_LINK:
+        {
+            return gencode_obj(comp, obj->parent); /* go recursively to the end. */    
+        }
         case OBJECT_MAIN: 
         {        	
         	assert(obj->obj.field != NULL);
@@ -231,8 +267,8 @@ gencode_obj(M1_compiler *comp, m1_object *obj) {
             break;
     }      
     
-    if (obj->next) {
-        reg = gencode_obj(comp, obj->next);   
+    if (obj->parent) {
+        reg = gencode_obj(comp, obj->parent);   
     }
     
     return reg;
