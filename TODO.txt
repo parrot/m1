@@ -33,6 +33,7 @@ What's working?
 * math expressions (+, -, /, etc.)
 * != and == operators.
 * pre and postfix ++ and -- operators.
+* unary minus op.
 
 What's not working?
 -------------------
