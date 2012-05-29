@@ -232,6 +232,7 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent) {
                             reg_chars[(int)reg.type], 
                             reg.no, 
                             obj->obj.name);
+            */
                             
             /* return a pointer to this node by OUT parameter. */
             *parent = obj;
