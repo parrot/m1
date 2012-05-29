@@ -181,57 +181,40 @@ gencode_null(M1_compiler *comp) {
 }   
 
 static m1_reg
-gencode_obj(M1_compiler *comp, m1_object *obj) {
+gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent) {
 	m1_reg reg;
-	
+
 
 	assert(comp != NULL);
 	assert(comp->currentchunk != NULL);
 	assert(&comp->currentchunk->locals != NULL);
+
+    *parent = obj;   	
+	/* handle OBJECT_LINK nodes differently as they are the key to the recursion. */
 	
 	if (obj->type == OBJECT_LINK) {
 	   m1_reg field;
-	   
+
 	   fprintf(stderr ,"object\n");
-	   reg = gencode_obj(comp, obj->parent);  
-	   
+	   /* visit this node's parent recursively, depth-first. 
+	   parent parameter will return a pointer to it so it can
+	   be passed on when visiting the field.
+	   */
+	   reg = gencode_obj(comp, obj->parent, parent);  
+	   	   
 	   assert(obj->obj.field != NULL); 
-	   
-	   field = gencode_obj(comp, obj->obj.field);    
-	   
-	}
-	
-	if (obj->type == OBJECT_MAIN) {
-	    fprintf(stderr, "main\n");
-        if (obj->sym->regno == NO_REG_ALLOCATED_YET) {
-            m1_reg r = gen_reg(comp, obj->sym->valtype); 
-            obj->sym->regno = r.no;
-        }  
-        reg.no   = obj->sym->regno;
-        reg.type = obj->sym->valtype;  
-	}
-	else if (obj->type == OBJECT_FIELD) {
-	   
-	   fprintf(stderr, "field\n");
-	   fprintf(OUT, "\tadd_i <offset>\n");  
-	}
-	
 
-	return reg;
-		
-}
-
-static m1_reg
-backup(M1_compiler *comp, m1_object *obj) {
-	m1_reg reg;
+       /* pass the parent to the field node, so "c" knows who "b" is in b.c. */	   
+	   field = gencode_obj(comp, obj->obj.field, parent);    
+	   
+	}
 	
     switch (obj->type) {
-        case OBJECT_LINK:
-        {
-            return gencode_obj(comp, obj->parent); /* go recursively to the end. */    
-        }
+
         case OBJECT_MAIN: 
         {        	
+            fprintf(stderr, "main\n");
+
         	assert(obj->obj.field != NULL);
         	assert(obj->sym != NULL);
 
@@ -243,36 +226,39 @@ backup(M1_compiler *comp, m1_object *obj) {
         	reg.no   = obj->sym->regno;
         	reg.type = obj->sym->valtype; 
 
+            fprintf(OUT, "\tset\t%c%d, ?? # load object %s's base address in reg\n", 
+                            reg_chars[(int)reg.type], 
+                            reg.no, 
+                            obj->obj.name);
+                            
+            /* return a pointer to this node by OUT parameter. */
+            *parent = obj;
             break;
         }
         case OBJECT_FIELD: /* b in a.b */
-        {
-            /* TODO */
-            /*
-            m1_struct *s = find_struct(comp, 
-            m1_structfield *iter = 
-            while () {
-            obj->obj.field   
-            }
-            */
+        {            
+	        fprintf(OUT, "\tadd_i\t%c%d, <offset for field %s>\n", reg_chars[(int)reg.type], reg.no, obj->obj.name);  
+            //fprintf(stderr, "parent: %s\n", (*parent)->obj.name); 
             break;
         }
         case OBJECT_DEREF: /* b in a->b */
-        	/* todo */
+        	reg = gencode_obj(comp, obj->obj.field, parent);
+        	fprintf(OUT, "\tadd_i <struct>, I%d\n", reg.no);
             break;
         case OBJECT_INDEX: /* b in a[b] */        
             reg = gencode_expr(comp, obj->obj.index);
+            fprintf(OUT, "\tadd_i <array>, I%d\n", reg.no);
             break;            
         default:
             break;
-    }      
-    
-    if (obj->parent) {
-        reg = gencode_obj(comp, obj->parent);   
-    }
-    
-    return reg;
+    }  
+		
+
+	return reg;
+		
 }
+
+
 
 static m1_reg
 gencode_while(M1_compiler *comp, m1_whileexpr *w) {
@@ -425,7 +411,7 @@ static m1_reg
 gencode_deref(M1_compiler *comp, m1_object *o) {
 	m1_reg reg;
 
-    reg = gencode_obj(comp, o);
+    reg = gencode_obj(comp, o, NULL);
     return reg;
 }
 
@@ -433,7 +419,7 @@ static m1_reg
 gencode_address(M1_compiler *comp, m1_object *o) {
 	m1_reg reg;
 
-    reg = gencode_obj(comp, o);   
+    reg = gencode_obj(comp, o, NULL);   
     return reg;
 }
 
@@ -978,10 +964,11 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
         case EXPR_ADDRESS:
             reg = gencode_address(comp, e->expr.t);
             break;
-        case EXPR_OBJECT:
-            debug("expr type is EXPR_OBJECT\n");
-            reg = gencode_obj(comp, e->expr.t);
+        case EXPR_OBJECT: {
+            m1_object *obj;               
+            reg = gencode_obj(comp, e->expr.t, &obj);
             break;
+        }
         case EXPR_BREAK:
             gencode_break(comp);
             break;
