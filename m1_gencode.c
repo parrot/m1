@@ -208,9 +208,10 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent) {
 	   field = gencode_obj(comp, obj->obj.field, parent);    
 	   
 	}
+
 	
     switch (obj->type) {
-
+      
         case OBJECT_MAIN: 
         {        	
             fprintf(stderr, "main\n");
@@ -226,6 +227,7 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent) {
         	reg.no   = obj->sym->regno;
         	reg.type = obj->sym->valtype; 
 
+            /*
             fprintf(OUT, "\tset\t%c%d, ?? # load object %s's base address in reg\n", 
                             reg_chars[(int)reg.type], 
                             reg.no, 
@@ -544,8 +546,9 @@ gencode_lt(M1_compiler *comp, m1_binexpr *b) {
     m1_reg left   = gencode_expr(comp, b->left);
     m1_reg right  = gencode_expr(comp, b->right);
     
-    fprintf(OUT, "\tisge I%d, %c%d, %c%d\n", result.no, reg_chars[(int)right.type], right.no,
-                                                        reg_chars[(int)left.type], left.no);
+    fprintf(OUT, "\tisge_%c I%d, %c%d, %c%d\n", type_chars[(int)left.type], result.no, 
+                                                reg_chars[(int)right.type], right.no,
+                                                reg_chars[(int)left.type], left.no);
 
     return result;
 }
@@ -557,8 +560,9 @@ gencode_le(M1_compiler *comp, m1_binexpr *b) {
     m1_reg left   = gencode_expr(comp, b->left);
     m1_reg right  = gencode_expr(comp, b->right);
     
-    fprintf(OUT, "\tisgt I%d, %c%d, %c%d\n", result.no, reg_chars[(int)right.type], right.no,
-                                                        reg_chars[(int)left.type], left.no);
+    fprintf(OUT, "\tisgt_%c I%d, %c%d, %c%d\n", type_chars[(int)left.type], result.no, 
+                                                reg_chars[(int)right.type], right.no,
+                                                reg_chars[(int)left.type], left.no);
 
     return result;
 
@@ -634,17 +638,31 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
             op = "xor";
             break;
         case OP_GT:
-            op = "isgt";
+            if (left.type == VAL_INT)
+                op = "isgt_i";    
+            else if (left.type == VAL_FLOAT)
+                op = "isgt_n";
+            else {
+                fprintf(stderr, "wrong type for isgt");
+                exit(EXIT_FAILURE);   
+            }
             break;
         case OP_GE:
-            op = "isge";
+            if (left.type == VAL_INT)
+                op = "isge_i";    
+            else if (left.type == VAL_FLOAT)
+                op = "isge_n";
+            else {
+                fprintf(stderr, "wrong type for isge");
+                exit(EXIT_FAILURE);   
+            }
             break;
         case OP_LT:
             return gencode_lt(comp, b);
 
         case OP_LE:
             return gencode_le(comp, b);
-            break;
+            
         case OP_EQ:
             return gencode_eq(comp, b);
             
@@ -671,8 +689,10 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
     right       = gencode_expr(comp, b->right);  
     target      = gen_reg(comp, left.type);  
     
-    fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", op, reg_chars[(int)target.type], target.no, 
-           reg_chars[(int)left.type], left.no, reg_chars[(int)right.type], right.no);
+    fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", op, 
+                                             reg_chars[(int)target.type], target.no, 
+                                             reg_chars[(int)left.type], left.no, 
+                                             reg_chars[(int)right.type], right.no);
     return target;
 }
 
