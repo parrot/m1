@@ -220,10 +220,6 @@ eval_unary(m1_unexpr *u) {
             postfix = 0; 
             op = "--";
             break;
-        case UNOP_MINUS:
-            postfix = 0;
-            op = "-";
-            break;    
         default:
             op = "unknown op";
             break;   

@@ -469,7 +469,7 @@ var         : TK_IDENT opt_init
 opt_array_init  : /* empty */
                     { $$ = NULL; }
                 | '=' arrayconstructor  
-                    { $$ = NULL; }    
+                    { $$ = $2; }    
                 ;
             
 opt_init    : /* empty */
@@ -725,7 +725,7 @@ const_list    : constexpr
               ;
             
 unexpr  : '-' expression
-                { $$ = unaryexpr(yyget_extra(yyscanner), UNOP_MINUS, $2); }                            
+                { $$ = binexpr(yyget_extra(yyscanner), $2, OP_MUL, integer(yyget_extra(yyscanner), -1)); }                                          
         ;            
        
 tertexpr    : boolexpr "?" expression ':' expression

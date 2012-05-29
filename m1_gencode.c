@@ -119,7 +119,7 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
 
     reg = gen_reg(comp, VAL_INT);   
     
-    if (lit->sym->value.ival < (256 * 255)) { /* XXX check these numbers. operands are 8 bit? */
+    if (lit->sym->value.ival < (256 * 255) && lit->sym->value.ival >= 0) { /* XXX check these numbers. operands are 8 bit? */
         /* use set_imm X, N*256, remainder)   */
         int remainder = lit->sym->value.ival % 256;
         int num256    = (lit->sym->value.ival - remainder) / 256; 
@@ -579,9 +579,9 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
             break;
         case OP_MUL:
              if (left.type == VAL_INT)
-                op = "mul_i";
+                op = "mult_i";
             else if (left.type == VAL_FLOAT)
-                op = "mul_n";
+                op = "mult_n";
             else { /* should not happen */
                 fprintf(stderr, "wrong type for mul");
                 exit(EXIT_FAILURE);
@@ -691,31 +691,7 @@ gencode_not(M1_compiler *comp, m1_unexpr *u) {
     return temp;
 }
 
-static m1_reg
-gencode_uminus(M1_compiler *comp, m1_unexpr *u) {
-    /*
-    x = -x
-    (e.g: x = 42 => x = -42).
-    */
-    m1_reg reg, zeroreg;
-    int less0_label = gen_label(comp);
-    
-    reg = gencode_expr(comp, u->expr);
-    
-    zeroreg = gen_reg(comp, VAL_INT);
-    
-    fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", zeroreg.no);
-    /* reuse the zeroreg reg. */
-    fprintf(OUT, "\tisgt\tI%d, %c%d, I%d\n", zeroreg.no, reg_chars[(int)reg.type], reg.no, zeroreg.no);
-    fprintf(OUT, "\tgoto_if L%d, I%d\n", less0_label, zeroreg.no);
-    
-    /* XXX subtract the value in reg from itself, twice */
-    
-    fprintf(OUT, "L%d:\n", less0_label);
-    /* XXX add the value in reg to itself twice */
-        
-    return zeroreg;    
-}
+
 
 static m1_reg
 gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
@@ -742,8 +718,6 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
             op = "sub_i";
             postfix = 0; 
             break;
-        case UNOP_MINUS:
-            return gencode_uminus(comp, u);
         case UNOP_NOT:
             return gencode_not(comp, u);
         default:
