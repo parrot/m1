@@ -453,3 +453,13 @@ newexpr(M1_compiler *comp, char *type) {
 	return expr;	
 }
 
+m1_expression *
+castexpr(M1_compiler *comp, int type, m1_expression *castedexpr) {
+    m1_expression *expr = expression(comp, EXPR_CAST);
+    m1_castexpr *cast   = (m1_castexpr *)m1_malloc(sizeof(m1_castexpr));
+    cast->type          = type;
+    cast->expr          = castedexpr;
+    expr->expr.cast     = cast;
+    return expr;   
+}
+

@@ -63,7 +63,8 @@ typedef enum m1_expr_type {
     EXPR_ADDRESS,   /* &x */
     EXPR_ASSIGN,
     EXPR_BINARY,
-    EXPR_BREAK,    
+    EXPR_BREAK,
+    EXPR_CAST,    
     EXPR_CONSTDECL,
     EXPR_DEREF,     /* *x */
     EXPR_DOWHILE,
@@ -83,6 +84,7 @@ typedef enum m1_expr_type {
     EXPR_UNARY,
     EXPR_VARDECL,
     EXPR_WHILE
+    
 
 } m1_expr_type;
 
@@ -130,6 +132,11 @@ typedef struct m1_unexpr {
     m1_unop op;
     
 } m1_unexpr;
+
+typedef struct m1_castexpr {
+    struct m1_expression *expr;
+    int type;    
+} m1_castexpr;
 
 typedef enum m1_object_type {
     OBJECT_LINK,  /* node linking a and b in a.b */
@@ -255,6 +262,7 @@ typedef struct m1_expression {
         struct m1_switch     *s;
         struct m1_newexpr    *n;
         struct m1_literal    *l;
+        struct m1_castexpr   *cast;
     } expr;
     
     m1_expr_type      type;
@@ -331,5 +339,8 @@ extern m1_case *switchcase(M1_compiler *comp, int selector, m1_expression *block
 extern m1_expression *newexpr(M1_compiler *copm, char *type);
 
 extern m1_object *lhsobj(M1_compiler *comp, m1_object *parent, m1_object *field);
+extern m1_expression *castexpr(M1_compiler *comp, int type, m1_expression *castedexpr);
+
+
 #endif
 

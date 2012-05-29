@@ -101,13 +101,13 @@ gencode_number(M1_compiler *comp, m1_literal *lit) {
 static m1_reg
 gencode_int(M1_compiler *comp, m1_literal *lit) {
 	/*
-	
-	
-	deref Ix, CONSTS, <const_id>
-	
-	or 
-	
-	set_imm Ix, y, z
+	If the value is smaller than 256*255 and > 0, 
+	then generate set_imm, otherwise, load the constant 
+	from the constants table.
+
+	    deref Ix, CONSTS, <const_id>
+    or:	
+    	set_imm Ix, y, z
 	
 	*/
     m1_reg     reg;
@@ -136,19 +136,19 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
 
 static m1_reg
 gencode_string(M1_compiler *comp, m1_literal *lit) {
-    m1_reg     reg,
-               constindex;
+    m1_reg reg,
+           constidxreg;
     
     assert(comp != NULL);
     assert(lit != NULL);
     assert(lit->sym != NULL);
     assert(lit->type == VAL_STRING);
    
-    reg        = gen_reg(comp, VAL_STRING);
-    constindex = gen_reg(comp, VAL_INT);
+    reg         = gen_reg(comp, VAL_STRING);
+    constidxreg = gen_reg(comp, VAL_INT);
       
-    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
-    fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", reg.no, constindex.no);
+    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constidxreg.no, lit->sym->constindex);
+    fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", reg.no, constidxreg.no);
     return reg;
 }
 
@@ -163,11 +163,12 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
 	
     rhs = gencode_expr(comp, a->rhs);
     lhs = gencode_expr(comp, a->lhs);
+    
     /* copy the value held in register for rhs to the register of lhs */
     assert((lhs.type >= 0) && (lhs.type < 4));
     assert((rhs.type >= 0) && (rhs.type < 4));
     
-    fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, reg_chars[(int)rhs.type], rhs.no);
+    fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, reg_chars[(int)rhs.type], rhs.no);
     
     
 	return lhs;
@@ -176,7 +177,9 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
 static m1_reg
 gencode_null(M1_compiler *comp) {
 	m1_reg reg;
-
+	reg = gen_reg(comp, VAL_INT);
+	/* "null" is just 0, but then in a "pointer" context. */
+    fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", reg.no);
     return reg;
 }   
 
@@ -928,12 +931,33 @@ gencode_vardecl(M1_compiler *comp, m1_var *v) {
 }
 
 static m1_reg
-gencode_expr(M1_compiler *comp, m1_expression *e) {
-
+gencode_cast(M1_compiler *comp, m1_castexpr *expr) {
     m1_reg reg;
+    m1_reg result;
     
-    debug("gencode_expr start...\n");
+    reg = gencode_expr(comp, expr->expr);
     
+    if (expr->type == VAL_INT) {
+        result = gen_reg(comp, VAL_INT);
+        fprintf(OUT, "\tntoi\tI%d, %c%d, x\n", result.no, reg_chars[(int)reg.type], reg.no);
+    }
+    else if (expr->type == VAL_FLOAT) {
+        result = gen_reg(comp, VAL_FLOAT);
+        fprintf(OUT, "\titon\tN%d, %c%d, x\n", result.no, reg_chars[(int)reg.type], reg.no);
+    }
+    else {
+        fprintf(stderr, "wrong type in casting\n");
+        exit(EXIT_FAILURE);   
+    }
+    
+
+    return reg;   
+}
+
+static m1_reg
+gencode_expr(M1_compiler *comp, m1_expression *e) {
+    m1_reg reg;
+        
     if (e == NULL) {
     	debug("expr e is null in gencode_expr\n");
         return reg;
@@ -1008,6 +1032,8 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
         case EXPR_PRINT:
             gencode_print(comp, e->expr.e);   
             break; 
+        case EXPR_CAST:
+            return gencode_cast(comp, e->expr.cast);
         default:
             fprintf(stderr, "unknown expr type");   
             exit(EXIT_FAILURE);
@@ -1016,6 +1042,11 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
 }
 
 
+/*
+
+Generate the constants segment.
+
+*/
 static void
 gencode_consts(m1_symboltable *consttable) {
     m1_symbol *iter;
@@ -1049,10 +1080,16 @@ gencode_consts(m1_symboltable *consttable) {
 
 }
 
+/*
+
+Generate the metadata segment. 
+
+*/
 static void
 gencode_metadata(m1_chunk *c) {
 	fprintf(OUT, ".metadata\n");	
 }
+
 
 static void
 gencode_block(M1_compiler *comp, m1_expression *block) {
@@ -1068,8 +1105,10 @@ static void
 gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     
     int i;
+   
+#define PRELOAD_0_AND_1     0
     
-#ifdef PRELOAD_0_AND_1    
+#if PRELOAD_0_AND_1    
     m1_reg r0, r1;
     
     /* The numbers 0 and 1 are used quite a lot. Rather than
@@ -1106,13 +1145,14 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
 
 Top-level function to drive the code generation phase.
 Iterate over the list of chunks, and generate code for each.
+
 */
 void 
 gencode(M1_compiler *comp, m1_chunk *ast) {
     m1_chunk *iter = ast;
-     
-     
+                        
     fprintf(OUT, ".version 0\n");
+    
     while (iter != NULL) {        
         gencode_chunk(comp, iter);
         iter = iter->next;   

@@ -45,7 +45,8 @@ main(int argc, char *argv[]) {
     yyparse(yyscanner, &comp);
     
     fprintf(stderr, "parsing done\n");
-    if (comp.errors == 0) {
+    if (comp.errors == 0) 
+    {
 //    	check(&comp, comp.ast); /*  need to finish */
     	fprintf(stderr, "generating code...\n");
 	    gencode(&comp, comp.ast);

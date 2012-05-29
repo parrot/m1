@@ -719,6 +719,8 @@ const_list    : constexpr
             
 unexpr  : '-' expression
                 { $$ = binexpr(yyget_extra(yyscanner), $2, OP_MUL, integer(yyget_extra(yyscanner), -1)); }                                          
+        | '(' return_type ')' expression %prec LOWER_THAN_ELSE
+                { $$ = castexpr(yyget_extra(yyscanner), $2, $4); }
         ;            
        
 tertexpr    : boolexpr "?" expression ':' expression
