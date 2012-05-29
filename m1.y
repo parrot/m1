@@ -112,6 +112,10 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
         KW_IMPORT       "import"
         KW_UNSIGNED     "unsigned"
         KW_BOOL         "bool"
+        KW_CATCH        "catch"
+        KW_THROW        "throw"
+        KW_TRY          "try"
+        KW_CONTINUE     "continue"
 
         
 %type <sval> TK_IDENT
@@ -440,10 +444,28 @@ statement   : assign_stat
             | break_stat  
             | switch_stat 
             | print_stat
-   /* do we want a try_stat? "try" block ["catch" '(' TK_IDENT ')' block]+ */
+            | try_stat { $$ = NULL; fprintf(stderr, "try stat not implemented!\n"); }
+            | throw_stat { $$ = NULL; fprintf(stderr, "throw stat not implemented!\n"); }
+            | continue_stat { $$ = NULL; fprintf(stderr, "continue stat not implemented!\n"); }
             | m0_block                                      
             ;
+
+continue_stat   : "continue" ';'
+                ;
+                
+try_stat    : "try" block catch_blocks
+            ;
             
+catch_blocks: catch_block
+            | catch_blocks catch_block
+            ;
+            
+catch_block : "catch" '(' TK_IDENT ')' block
+            ;
+
+throw_stat  : "throw" expression ';'
+            ;
+                                    
 print_stat  : "print" '(' expression ')' ';'
                 { $$ = printexpr(yyget_extra(yyscanner), $3); }
             ;
@@ -501,7 +523,7 @@ assignop    : '='   { $$ = OP_ASSIGN; }
             | "&="  { $$ = OP_BAND; }
             ;            
             
-            /* XXX expression should become boolexpr once we have cmp op */
+           
 if_stat     : "if" '(' boolexpr ')' statement %prec LOWER_THAN_ELSE  
                 { $$ = ifexpr(yyget_extra(yyscanner), $3, $5, NULL); }
             | "if" '(' boolexpr ')' statement "else" statement 
@@ -509,18 +531,16 @@ if_stat     : "if" '(' boolexpr ')' statement %prec LOWER_THAN_ELSE
             ;
             
             
-while_stat  : "while" '(' boolexpr ')' statement /* expression should become boolexpr once we have cmp op */
+while_stat  : "while" '(' boolexpr ')' statement 
                 { $$ = whileexpr(yyget_extra(yyscanner), $3, $5); }
             ;
             
-do_stat     : "do" block "while" '(' boolexpr ')' ';' /* see comment while stat */
+do_stat     : "do" block "while" '(' boolexpr ')' ';' 
                 { $$ = dowhileexpr(yyget_extra(yyscanner), $5, $2); }
             ;
             
 switch_stat : "switch" '(' expression ')' '{' cases default_case '}'
-                { $$ = switchexpr(yyget_extra(yyscanner), $3, $6, $7); 
-                  fprintf(stderr, "switch statement not implemented yet!\n");
-                }
+                { $$ = switchexpr(yyget_extra(yyscanner), $3, $6, $7); }
             ;
             
 cases       : /* empty */
@@ -676,9 +696,9 @@ subexpr     : '(' expression ')'
             ;
             
 boolexpr    : "true"
-                { $$ = NULL; }
+                { $$ = bool(yyget_extra(yyscanner), 1); }
             | "false"
-                { $$ = NULL; }
+                { $$ = bool(yyget_extra(yyscanner), 0); }
             | expression "==" expression
                 { $$ = binexpr(yyget_extra(yyscanner), $1, OP_EQ, $3); }
             | expression "!=" expression

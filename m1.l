@@ -94,7 +94,9 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "bool"                  { return KW_BOOL; }
 "break"                 { return KW_BREAK; }
 "case"                  { return KW_CASE; }
+"catch"                 { return KW_CATCH; }
 "const"                 { return KW_CONST; }
+"continue"              { return KW_CONTINUE; }
 "default"               { return KW_DEFAULT; }
 "do"                    { return KW_DO; }
 "else"                  { return KW_ELSE; }
@@ -122,7 +124,9 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "struct"                { return KW_STRUCT; }
 "super"					{ return KW_SUPER; }
 "switch"                { return KW_SWITCH; }
+"throw"                 { return KW_THROW; }
 "true"                  { return KW_TRUE; }
+"try"                   { return KW_TRY; }
 "unsigned"              { return KW_UNSIGNED; }
 "void"                  { return KW_VOID; }
 "vtable"				{ return KW_VTABLE; }
