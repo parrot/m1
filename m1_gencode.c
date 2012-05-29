@@ -168,7 +168,8 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
     assert((lhs.type >= 0) && (lhs.type < 4));
     assert((rhs.type >= 0) && (rhs.type < 4));
     
-    fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, reg_chars[(int)rhs.type], rhs.no);
+    fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
+                                            reg_chars[(int)rhs.type], rhs.no);
     
     
 	return lhs;
@@ -859,52 +860,73 @@ gencode_new(M1_compiler *comp, m1_newexpr *expr) {
 
 static m1_reg
 gencode_switch(M1_compiler *comp, m1_switch *expr) {
+    /*
+    switch (selector) {
+        case val1:
+            stat1
+        case val2:
+            stat2
+        case val3:
+            stat3
+        default: 
+            stat4  
+    }
+    
+    translates to:
+    
+      sel = <evaluate selector>
+    TEST1:
+      sub_i result, selector, val1
+      goto_if TEST2, result # if result is non-zero, then it's not case 1
+      <code for stat1>
+    TEST2:  
+      sub_i result, selector, val2
+      goto_if TEST3, result
+      <code for stat2>
+    TEST3:  
+      sub_i result, selector, val3
+      goto_if TEST4, result
+      <code for stat3>
+    TEST4:
+      <code for default>
+    END: #break statements will go here.
+      
+    */
     m1_reg reg;
     int endlabel = gen_label(comp);
-    int base;
-    int max;
+
     m1_case *caseiter;
-    m1_reg temp, test;
-    temp = gen_reg(comp, VAL_INT);
+    m1_reg test;
     test = gen_reg(comp, VAL_INT);
-//    m1_reg jmp;
     
+    /* evaluate selector */
     reg = gencode_expr(comp, expr->selector);
     
     push(comp->breakstack, endlabel); /* for break statements to jump to. */    
-    /* XXX implement cases */
-    
+
+
     caseiter = expr->cases;
     
-    /* find the base */
-    max = base = caseiter->selector;
-
     while (caseiter != NULL) {
-        if (base < caseiter->selector)
-            base = caseiter->selector;
+        int testlabel;
         
-        if (max > caseiter->selector)
-            max = caseiter->selector;
-                
+        fprintf(OUT, "\tsub_i\tI%d, I%d, I%d\n", test.no, reg.no, caseiter->selector);
+     
+        testlabel = gen_label(comp);
+        fprintf(OUT, "\tgoto_if L%d, I%d\n", testlabel, test.no);
+
+        gencode_block(comp, caseiter->block);
+        
+        fprintf(OUT, "L%d:\n", testlabel);
+
         caseiter = caseiter->next;   
     }
     
-    caseiter = expr->cases;
-   
-    while (caseiter != NULL) {
-        int label = gen_label(comp);
-        
-        fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", temp.no, caseiter->selector);
-        fprintf(OUT, "\tsub_i\tI%d, I%d, I%d\n", test.no, reg.no, temp.no); 
-        fprintf(OUT, "\tgoto_if L%d, I%d\n", label, test.no);
-        
-        caseiter = caseiter->next;
+    if (expr->defaultstat) {
+       gencode_block(comp, expr->defaultstat); 
     }
-
     
-    
-    
-    
+    fprintf(OUT, "L%d:\n", endlabel);      
     (void)pop(comp->breakstack);
     
     return reg;   
