@@ -175,43 +175,33 @@ check_binary(M1_compiler *comp, m1_binexpr *b) {
     ltype = check_expr(comp, b->left);
     rtype = check_expr(comp, b->right);   
 
-
+    if (ltype != rtype) {
+        type_error(comp, 0, "types of left and right operands do not match");   
+    }
+    
     switch(b->op) {
         case OP_PLUS:
-            op = "+";
-            break;
         case OP_MINUS:
-            op = "-";
-            break;
         case OP_MUL:
-            op = "*";
-            break;
-        case OP_DIV:
-            op = "/";
-            break;
+        case OP_DIV:       
         case OP_MOD:
-            op = "%";
-            break;
         case OP_XOR:
-            op = "^";
+            if (ltype != TYPE_INT || ltype != TYPE_NUM || rtype != TYPE_INT || rtype != TYPE_NUM) {
+                type_error(comp, 0, "mathematical operator needs integer or floating-point expressions as operands");   
+            }
             break;
         case OP_GT:
-            op = ">";
-            break;
         case OP_GE:
-            op = ">=";
-            break;
         case OP_LT:
-            op = "<";
-            break;
         case OP_LE:
-            op = "<=";
-            break;
         case OP_EQ:
-            op = "==";
-            break;
         case OP_NE:
-            op = "!=";
+            if (ltype == TYPE_NUM) {
+                warning(comp, 0, "comparing floating-point numbers may not yield correct results");       
+            }
+            else if (ltype == TYPE_STRING) {
+                type_error(comp, 0, "cannot apply comparison operator on strings");   
+            }
             break;
         case OP_AND:
         case OP_OR:
@@ -223,10 +213,10 @@ check_binary(M1_compiler *comp, m1_binexpr *b) {
             }
             break;
         case OP_BAND:
-            op = "&";
-            break;
         case OP_BOR:
-            op = "|";
+            if (ltype != TYPE_INT) {
+                type_error(comp, 0, "cannot apply binary & or | operator on non-integer expressions");   
+            }
             break;
         default:
             op = "unknown op";
@@ -239,16 +229,20 @@ check_binary(M1_compiler *comp, m1_binexpr *b) {
 
 static m1_type
 check_unary(M1_compiler *comp, m1_unexpr *u) {
-    m1_type t;
+    m1_type t = TYPE_VOID;
 
     t = check_expr(comp, u->expr);     
     switch (u->op) {
         case UNOP_POSTINC:
         case UNOP_PREINC:
+            if (t != TYPE_INT) {
+                type_error(comp, 0, "cannot apply '++' operator on non-integer expression");   
+            }                    
+            break;        
         case UNOP_POSTDEC:
         case UNOP_PREDEC:   
             if (t != TYPE_INT) {
-                type_error(comp, 0, "cannot apply '++' operator on non-integer expression");   
+                type_error(comp, 0, "cannot apply '--' operator on non-integer expression");   
             }                    
             break;        
         case UNOP_NOT:
@@ -284,7 +278,8 @@ check_switch(M1_compiler *comp, m1_switch *s) {
 
 static m1_type
 check_expr(M1_compiler *comp, m1_expression *e) {
-    m1_type t;
+    m1_type t = TYPE_VOID;
+    
     if (e == NULL) 
         return t;
         
@@ -297,7 +292,10 @@ check_expr(M1_compiler *comp, m1_expression *e) {
 
         case EXPR_STRING:
             return TYPE_STRING;
-
+        case EXPR_TRUE:
+        case EXPR_FALSE:
+            return TYPE_BOOL;
+            
         case EXPR_BINARY:
             return check_binary(comp, e->expr.b);
             
@@ -323,7 +321,7 @@ check_expr(M1_compiler *comp, m1_expression *e) {
             check_for(comp, e->expr.o);
             break;
         case EXPR_RETURN:
-            check_return(comp, e->expr.e);
+            return check_return(comp, e->expr.e);
             break;
         case EXPR_NULL:
             return TYPE_NULL;
