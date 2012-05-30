@@ -35,7 +35,8 @@ main(int argc, char *argv[]) {
     comp.breakstack = new_stack();   	
     comp.expect_usertype = 0; /* when not parsing a function's body, 
                                    then identifiers are types */   	
-                                   
+    comp.is_parsing_usertype = 1;
+                                       
     /* set up lexer and parser */   	
     yylex_init(&yyscanner);
     yyset_extra(&comp, yyscanner);

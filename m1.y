@@ -13,6 +13,7 @@
 #include "m1_ast.h"
 #include "m1_instr.h"
 #include "m1_compiler.h"
+#include "m1_decl.h"
 
 
 extern int yylex(YYSTYPE *yylval, yyscan_t yyscanner);
@@ -298,16 +299,21 @@ chunks  : chunk
             { $$ = $1; }
         | chunks chunk
             { 
-              $1->next = $2;
-              $$ = $1; 
+              if ($1 != NULL) {
+                $1->next = $2;
+                $$ = $1; 
+              }
+              else {
+                $$ = $2; 
+              }
+
+              
             }            
         ;
         
 chunk   : function_definition            
         | struct_definition
-           { $$ = NULL; /* structs are PMCs with all fields public and no methods */
-           fprintf(stderr, "structs are not implemented yet!\n"); 
-           }
+           { $$ = NULL; }
         | namespace_definition
            { $$ = NULL; /* do we want namespaces? */ 
            fprintf(stderr, "namespaces are not implemented yet!\n");
@@ -405,7 +411,11 @@ param   : type TK_IDENT
         ;
                                              
 struct_definition   : "struct" TK_IDENT '{' struct_members '}' 
-                        { $$ = newstruct(yyget_extra(yyscanner), $2, $4); }
+                        { 
+                          M1_compiler *comp = yyget_extra(yyscanner);
+                          $$ = newstruct(comp, $2, $4); 
+                          type_enter_def(comp, $2);
+                        }
                     ;         
                     
 struct_members      : struct_member
@@ -597,7 +607,7 @@ function_call_stat  : function_call_expr ';'
 
 /* TODO: argument handling  */                
 arguments   : /* empty */
-                { $$ = NULL; }
+                { $$ = NULL; fprintf(stderr, "no arguments\n"); }
             | expr_list
                 { $$ = NULL; }
             ;

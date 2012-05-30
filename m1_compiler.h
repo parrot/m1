@@ -19,6 +19,10 @@ typedef struct M1_compiler {
     
     struct m1_struct *structs; /* list of struct definitions. */
 	
+	struct m1_decl   *declarations; 
+	
+	int               is_parsing_usertype; /* boolean to indicate whether a type is parsed. */
+	
 } M1_compiler;
 
 #endif

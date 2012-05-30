@@ -126,7 +126,12 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "return"                { return KW_RETURN; }
 "self"					{ return KW_SELF; }
 "string"                { return KW_STRING; }
-"struct"                { return KW_STRUCT; }
+
+"struct"                { M1_compiler *comp = yyget_extra(yyscanner);
+                          comp->is_parsing_usertype = 1;
+                          return KW_STRUCT; 
+                        }
+
 "super"					{ return KW_SUPER; }
 "switch"                { return KW_SWITCH; }
 "throw"                 { return KW_THROW; }
@@ -153,15 +158,22 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
                         }
                         
 [a-zA-Z_][a-zA-Z0-9]*   { 
-                           M1_compiler *comp;
-                           m1_decl *decl = type_find_def(comp, yytext);
+                           M1_compiler *comp = yyget_extra(yyscanner);
+                           yylval->sval      = strdup(yytext);                   
                            
-                           if (decl == NULL) { /* not found, so must be an identifier */
-                               yylval->sval = strdup(yytext);
-                               return TK_IDENT; 
+                           if (comp->is_parsing_usertype == 1) {
+                               m1_decl     *decl = type_find_def(comp, yytext);
+                       
+                               if (decl == NULL) { /* not found, so must be an identifier */
+                                  return TK_IDENT; 
+                               }                            
+                               else {
+                                  comp->is_parsing_usertype = 0;
+                                  return TK_USERTYPE;
+                               }
                            }
                            else {
-                               return TK_USERTYPE;
+                               return TK_IDENT;
                            }
                            
                         }

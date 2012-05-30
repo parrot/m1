@@ -11,14 +11,23 @@ typedef enum m1_decl_type {
 } m1_decl_type;
 
 typedef struct m1_decl {
-    char *name;
+    char           *name;
     
-    m1_decl_type type;
+    union {
+        struct m1_struct *s; 
+        struct m1_struct *p; /* for PMC declarations */
+        struct m1_enum   *e;
+
+    } d;
+    
+    m1_decl_type    type;
+    struct m1_decl *next;
     
 } m1_decl;
 
 
 extern m1_decl *type_find_def(M1_compiler *comp, char *typename);
+extern m1_decl *type_enter_def(M1_compiler *comp, char *typename);
 
 #endif
 

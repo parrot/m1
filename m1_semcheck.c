@@ -345,6 +345,10 @@ check_expr(M1_compiler *comp, m1_expression *e) {
         case EXPR_SWITCH:
             check_switch(comp, e->expr.s);
             break;
+            
+        case EXPR_NEW:
+            break;
+            
         default:
             fprintf(stderr, "unknown expr type");   
             exit(EXIT_FAILURE);

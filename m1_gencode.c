@@ -1057,7 +1057,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
         case EXPR_CAST:
             return gencode_cast(comp, e->expr.cast);
         default:
-            fprintf(stderr, "unknown expr type");   
+            fprintf(stderr, "unknown expr type (%d)", e->type);   
             exit(EXIT_FAILURE);
     }   
     return reg;
