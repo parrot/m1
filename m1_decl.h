@@ -27,7 +27,7 @@ typedef struct m1_decl {
 
 
 extern m1_decl *type_find_def(M1_compiler *comp, char *typename);
-extern m1_decl *type_enter_def(M1_compiler *comp, char *typename);
+extern m1_decl *type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structdef);
 
 #endif
 

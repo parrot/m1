@@ -27,18 +27,22 @@ type_find_def(M1_compiler *comp, char *typename) {
 }
 
 m1_decl *
-type_enter_def(M1_compiler *comp, char *typename) {
+type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structdef) {
     m1_decl *decl = (m1_decl *)calloc(1, sizeof(m1_decl));    
     
     assert(comp != NULL);
     
-    fprintf(stderr, "entering type [%s]\n", typename);
+    fprintf(stderr, "entering type [%s]\n", structname);
     if (decl == NULL) {
         fprintf(stderr, "cant alloc mem for decl\n");
         exit(EXIT_FAILURE);   
     }
     
-    decl->name = typename;
+    decl->name = structname;
+    decl->d.s  = structdef;
+    decl->type = DECL_STRUCT;
+    
+    /* link in list of declarations */
     decl->next = comp->declarations;
     comp->declarations = decl;
     

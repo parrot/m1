@@ -127,10 +127,7 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "self"					{ return KW_SELF; }
 "string"                { return KW_STRING; }
 
-"struct"                { M1_compiler *comp = yyget_extra(yyscanner);
-                          comp->is_parsing_usertype = 1;
-                          return KW_STRUCT; 
-                        }
+"struct"                { return KW_STRUCT; }
 
 "super"					{ return KW_SUPER; }
 "switch"                { return KW_SWITCH; }
@@ -161,6 +158,10 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
                            M1_compiler *comp = yyget_extra(yyscanner);
                            yylval->sval      = strdup(yytext);                   
                            
+                           /* if parser is currently expecting a usertype ID
+                              check to see if yytext is indeed the name of 
+                              a user-defined type. Otherwise just return TK_IDENT.
+                            */
                            if (comp->is_parsing_usertype == 1) {
                                m1_decl     *decl = type_find_def(comp, yytext);
                        

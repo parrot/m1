@@ -7,7 +7,9 @@ typedef enum m1_valuetype {
 	VAL_INT,
 	VAL_FLOAT,
 	VAL_STRING,
-	VAL_CHUNK /* uses str field of m1_value union */
+	VAL_CHUNK,  /* uses sval field of m1_value union */
+	VAL_ADDRESS /* uses ival field of m1_value union */
+	
 } m1_valuetype;
 
 typedef union m1_value {

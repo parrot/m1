@@ -152,6 +152,11 @@ typedef enum m1_object_type {
     
 } m1_object_type;
 
+/* struct to represent an element or link between two elements
+   in aggregates. In a.b.c, each element (a, b, c) is represented
+   by one m1_object node.
+   
+ */
 typedef struct m1_object {
     
     union {
@@ -160,8 +165,8 @@ typedef struct m1_object {
         struct m1_object     *field; /* if this is a linking node representing "a.b" */
     } obj;
     
-    enum m1_object_type type;
-    struct m1_symbol   *sym;
+    enum m1_object_type type; /* selector for union */
+    struct m1_symbol   *sym;        
     unsigned line; 
     
     struct m1_object *parent;  
@@ -214,7 +219,7 @@ typedef struct m1_var {
     char                 *name;
     struct m1_expression *init;
     unsigned              size; /* 1 for non-arrays, larger for arrays */
-    struct m1_symbol     *sym; /* pointer to symbol in symboltable */
+    struct m1_symbol     *sym;  /* pointer to symbol in symboltable */
     
 } m1_var;
 

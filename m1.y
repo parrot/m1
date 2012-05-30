@@ -136,6 +136,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              type 
              native_type 
              TK_INT
+             TK_USERTYPE
              m0_op
              m0_arg                       
              assignop
@@ -414,7 +415,7 @@ struct_definition   : "struct" TK_IDENT '{' struct_members '}'
                         { 
                           M1_compiler *comp = yyget_extra(yyscanner);
                           $$ = newstruct(comp, $2, $4); 
-                          type_enter_def(comp, $2);
+                          type_enter_struct(comp, $2, $$);
                         }
                     ;         
                     
@@ -807,18 +808,24 @@ binexpr     : expression '=' expression /* to allow writing: a = b = c; */
             ;
            
 return_type : type    { $$ = $1; }
-            | "void"  { $$ = VAL_INT; }
+            | "void"  { $$ = VAL_INT; /* XXX fix later. */ }
             ;
             
 type    : native_type   
               {
-               M1_compiler *comp = yyget_extra(yyscanner);
-               comp->parsingtype = $1;
-               $$ = $1;  
+                 M1_compiler *comp = yyget_extra(yyscanner);
+                 comp->parsingtype = $1;
+                 $$ = $1;  
               } 
         | TK_USERTYPE
               {
-                
+                 M1_compiler *comp = yyget_extra(yyscanner);
+                 /* pointers are implemented as ints, but type checker
+                    needs to know it's a pointer. so fix this later.
+                    XXXX
+                  */
+                 comp->parsingtype = VAL_INT; 
+                 $$ = $1; 
               }
                        
         ;
@@ -827,7 +834,6 @@ native_type : "int"     { $$ = VAL_INT; }
             | "num"     { $$ = VAL_FLOAT; }
             | "string"  { $$ = VAL_STRING; }
             | "bool"    { $$ = VAL_INT; }
-      /* TODO: what about "pmc" ? */
             ;
             
 

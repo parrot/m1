@@ -6,4 +6,6 @@ struct Object {
 int main() {
     Object o;
     o = new Object();
+    print(o);
+    o.x = 42;
 }

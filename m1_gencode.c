@@ -193,24 +193,29 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent) {
 	assert(comp->currentchunk != NULL);
 	assert(&comp->currentchunk->locals != NULL);
 
-    *parent = obj;   	
+
 	/* handle OBJECT_LINK nodes differently as they are the key to the recursion. */
 	
 	if (obj->type == OBJECT_LINK) {
 	   m1_reg field;
 
 	   fprintf(stderr ,"object\n");
+	   
+	   /* set the parent OUT parameter to the currently visited node (obj) */
+	   *parent = obj;   	
+	   
 	   /* visit this node's parent recursively, depth-first. 
 	   parent parameter will return a pointer to it so it can
 	   be passed on when visiting the field.
 	   */
+       
 	   reg = gencode_obj(comp, obj->parent, parent);  
 	   	   
 	   assert(obj->obj.field != NULL); 
 
        /* pass the parent to the field node, so "c" knows who "b" is in b.c. */	   
 	   field = gencode_obj(comp, obj->obj.field, parent);    
-	   
+        	   
 	}
 
 	
@@ -242,10 +247,22 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent) {
             *parent = obj;
             break;
         }
-        case OBJECT_FIELD: /* b in a.b */
+        case OBJECT_FIELD: /* example: b in a.b */
         {            
-	        fprintf(OUT, "\tadd_i\t%c%d, <offset for field %s>\n", reg_chars[(int)reg.type], reg.no, obj->obj.name);  
-            //fprintf(stderr, "parent: %s\n", (*parent)->obj.name); 
+            /* XXX need to get a pointer to the m1_struct object that represents 
+            the parent (a in example) , so that we can look for the field (b in example).
+            The m1_structfield node for the field (b) has a field <offset> that must be 
+            added to the base address, if it's > 0.
+            */
+            int offset = 0;
+            if (offset > 0) {
+               m1_reg offsetreg = gen_reg(comp, VAL_INT);
+               
+               fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", offsetreg.no, offset);
+	           fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", reg.no, reg.no, offsetreg.no);
+            }
+            
+            fprintf(stderr, "parent: %s\n", (*parent)->obj.name); 
             break;
         }
         case OBJECT_DEREF: /* b in a->b */
