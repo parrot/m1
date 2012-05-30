@@ -1,0 +1,9 @@
+
+struct Object {
+  int x;  
+}
+
+int main() {
+    Object o;
+    o = new Object();
+}
