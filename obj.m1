@@ -1,6 +1,7 @@
 
 struct Object {
   int x;  
+  int y;
 }
 
 int main() {
@@ -8,4 +9,5 @@ int main() {
     o = new Object();
     print(o);
     o.x = 42;
+    o.y = 3;
 }
