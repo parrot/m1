@@ -36,6 +36,7 @@ main(int argc, char *argv[]) {
     comp.expect_usertype = 0; /* when not parsing a function's body, 
                                    then identifiers are types */   	
     comp.is_parsing_usertype = 1;
+    comp.yyscanner = yyscanner; /* yyscanner has a pointer to comp, and vice versa. */
                                        
     /* set up lexer and parser */   	
     yylex_init(&yyscanner);
@@ -49,8 +50,11 @@ main(int argc, char *argv[]) {
     if (comp.errors == 0) 
     {
     	check(&comp, comp.ast); /*  need to finish */
-    	fprintf(stderr, "generating code...\n");
-	    gencode(&comp, comp.ast);
+    	//if (comp.errors == 0) 
+    	{
+        	fprintf(stderr, "generating code...\n");
+	        gencode(&comp, comp.ast);
+    	}
     }
     
     fclose(fp);

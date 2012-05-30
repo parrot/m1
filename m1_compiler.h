@@ -3,6 +3,16 @@
 
 #define NUM_TYPES   4
 
+
+
+#ifndef YY_TYPEDEF_YY_SCANNER_T
+#  define YY_TYPEDEF_YY_SCANNER_T
+
+typedef void * yyscan_t;
+
+#endif
+
+
 typedef struct M1_compiler {
 	unsigned          errors;
 	struct m1_chunk  *ast;	 /* root of the AST */
@@ -22,6 +32,8 @@ typedef struct M1_compiler {
 	struct m1_decl   *declarations; 
 	
 	int               is_parsing_usertype; /* boolean to indicate whether a type is parsed. */
+	
+	yyscan_t          yyscanner;
 	
 } M1_compiler;
 
