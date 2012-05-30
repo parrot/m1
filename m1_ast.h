@@ -63,12 +63,12 @@ typedef enum m1_expr_type {
     EXPR_ADDRESS,   /* &x */
     EXPR_ASSIGN,
     EXPR_BINARY,
-    EXPR_BOOL,
     EXPR_BREAK,
     EXPR_CAST,    
     EXPR_CONSTDECL,
     EXPR_DEREF,     /* *x */
     EXPR_DOWHILE,
+    EXPR_FALSE,
     EXPR_FOR,
     EXPR_FUNCALL,
     EXPR_IF,
@@ -82,6 +82,7 @@ typedef enum m1_expr_type {
     EXPR_RETURN,
     EXPR_STRING,
     EXPR_SWITCH,
+    EXPR_TRUE,
     EXPR_UNARY,
     EXPR_VARDECL,
     EXPR_WHILE
@@ -343,7 +344,6 @@ extern m1_expression *newexpr(M1_compiler *copm, char *type);
 extern m1_object *lhsobj(M1_compiler *comp, m1_object *parent, m1_object *field);
 extern m1_expression *castexpr(M1_compiler *comp, int type, m1_expression *castedexpr);
 
-extern m1_expression *bool(M1_compiler *comp, int istrue);
 
 #endif
 

@@ -463,9 +463,3 @@ castexpr(M1_compiler *comp, int type, m1_expression *castedexpr) {
     return expr;   
 }
 
-m1_expression *
-bool(M1_compiler *comp, int istrue) {
-    m1_expression *expr = expression(comp, EXPR_BOOL);
-    
-    return expr;    
-}

@@ -696,9 +696,9 @@ subexpr     : '(' expression ')'
             ;
             
 boolexpr    : "true"
-                { $$ = bool(yyget_extra(yyscanner), 1); }
+                { $$ = expression(yyget_extra(yyscanner), EXPR_TRUE); }
             | "false"
-                { $$ = bool(yyget_extra(yyscanner), 0); }
+                { $$ = expression(yyget_extra(yyscanner), EXPR_FALSE); }
             | expression "==" expression
                 { $$ = binexpr(yyget_extra(yyscanner), $1, OP_EQ, $3); }
             | expression "!=" expression
