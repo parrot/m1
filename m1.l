@@ -3,6 +3,7 @@
 #include <string.h>
 #include "m1parser.h"
 #include "m1_compiler.h"
+#include "m1_decl.h"
 
 #define YY_EXTRA_TYPE  struct M1_compiler *
 
@@ -152,8 +153,17 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
                         }
                         
 [a-zA-Z_][a-zA-Z0-9]*   { 
-                           yylval->sval = strdup(yytext);
-                           return TK_IDENT; 
+                           M1_compiler *comp;
+                           m1_decl *decl = type_find_def(comp, yytext);
+                           
+                           if (decl == NULL) { /* not found, so must be an identifier */
+                               yylval->sval = strdup(yytext);
+                               return TK_IDENT; 
+                           }
+                           else {
+                               return TK_USERTYPE;
+                           }
+                           
                         }
 
 .                       { yyerror(yyscanner, yyget_extra(yyscanner), yytext); }

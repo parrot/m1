@@ -242,6 +242,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
         KW_PRINT_I  "print_i"
         KW_PRINT_N  "print_n"
         KW_EXIT     "exit"
+        TK_USERTYPE
 
         
 %pure-parser
@@ -322,11 +323,14 @@ chunk   : function_definition
         ;        
 
 
-enum_definition : "enum" TK_IDENT '{' enum_constants '}' ';' { }
+enum_definition : "enum" TK_IDENT '{' enum_constants '}' ';' 
+                    { }
                 ;
         
-enum_constants  : enum_const {  }
-                | enum_constants ',' enum_const { }
+enum_constants  : enum_const 
+                    {  }
+                | enum_constants ',' enum_const 
+                    { }
                 ; 
                   
 enum_const      : TK_IDENT opt_enum_val
@@ -801,7 +805,12 @@ type    : native_type
                M1_compiler *comp = yyget_extra(yyscanner);
                comp->parsingtype = $1;
                $$ = $1;  
-              }        
+              } 
+        | TK_USERTYPE
+              {
+                
+              }
+                       
         ;
         
 native_type : "int"     { $$ = VAL_INT; }
@@ -811,7 +820,6 @@ native_type : "int"     { $$ = VAL_INT; }
       /* TODO: what about "pmc" ? */
             ;
             
-
 
 /* Embedded M0 instructions in M1. */
 
