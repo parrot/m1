@@ -100,12 +100,14 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "default"               { return KW_DEFAULT; }
 "do"                    { return KW_DO; }
 "else"                  { return KW_ELSE; }
+"enum"                  { return KW_ENUM; }
 "extends"				{ return KW_EXTENDS; }
 "extern"                { return KW_EXTERN; }
 "false"                 { return KW_FALSE; }
 "for"                   { return KW_FOR; }
 "if"                    { return KW_IF; }
 "import"                { return KW_IMPORT; }
+"inline"                { return KW_INLINE; }
 "int"                   { return KW_INT; }
 
 "M0"                    { BEGIN(M0_PARSING); return KW_M0; }
@@ -118,6 +120,8 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 
 "pmc"					{ return KW_PMC; }
 "print"                 { return KW_PRINT; }
+"private"               { return KW_PRIVATE; }
+"public"                { return KW_PUBLIC; }
 "return"                { return KW_RETURN; }
 "self"					{ return KW_SELF; }
 "string"                { return KW_STRING; }

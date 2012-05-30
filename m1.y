@@ -116,6 +116,10 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
         KW_THROW        "throw"
         KW_TRY          "try"
         KW_CONTINUE     "continue"
+        KW_INLINE       "inline"
+        KW_PRIVATE      "private"
+        KW_PUBLIC       "public"
+        KW_ENUM         "enum"
 
         
 %type <sval> TK_IDENT
@@ -267,9 +271,6 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
    force default (shift) behaviour. This is a documented
    solution in "Lex & Yacc", JR Levine et al., O'Reilly.
    
-   The TK_ISTRUE token ("?") is part of the ?: tertiary 
-   operator, and is should also be specified here to
-   allow the conditional expression to be a <boolexpr>.
 */
 %nonassoc LOWER_THAN_ELSE
 %nonassoc KW_ELSE TK_ISTRUE 
@@ -674,6 +675,11 @@ constexpr   : TK_NUMBER
                 { $$ = integer(yyget_extra(yyscanner), $1); }  
             | TK_STRING_CONST
                 {  $$ = string(yyget_extra(yyscanner), $1); }
+            | "true"
+                { $$ = expression(yyget_extra(yyscanner), EXPR_TRUE); }
+            | "false"
+                { $$ = expression(yyget_extra(yyscanner), EXPR_FALSE); }
+
             ;
             
 expression  : constexpr 
@@ -716,6 +722,8 @@ unexpr  : '-' expression
                 { $$ = binexpr(yyget_extra(yyscanner), $2, OP_MUL, integer(yyget_extra(yyscanner), -1)); }                                          
         | '(' return_type ')' expression %prec LOWER_THAN_ELSE
                 { $$ = castexpr(yyget_extra(yyscanner), $2, $4); }
+          | "!" expression 
+                { $$ = unaryexpr(yyget_extra(yyscanner), UNOP_NOT, $2); }                        
         ;            
        
 tertexpr    : expression "?" expression ':' expression
@@ -740,10 +748,6 @@ binexpr     : expression '=' expression /* to allow writing: a = b = c; */
                 { $$ = binexpr(yyget_extra(yyscanner), $1, OP_BAND, $3); }
             | expression '|' expression
                 { $$ = binexpr(yyget_extra(yyscanner), $1, OP_BOR, $3); }   
-            | "true"
-                { $$ = expression(yyget_extra(yyscanner), EXPR_TRUE); }
-            | "false"
-                { $$ = expression(yyget_extra(yyscanner), EXPR_FALSE); }
             | expression "==" expression
                 { $$ = binexpr(yyget_extra(yyscanner), $1, OP_EQ, $3); }
             | expression "!=" expression
@@ -764,8 +768,7 @@ binexpr     : expression '=' expression /* to allow writing: a = b = c; */
                 { $$ = binexpr(yyget_extra(yyscanner), $1, OP_LSH, $3); }
             | expression ">>" expression
                 { $$ = binexpr(yyget_extra(yyscanner), $1, OP_RSH, $3); }   
-            | "!" expression 
-                { $$ = unaryexpr(yyget_extra(yyscanner), UNOP_NOT, $2); }                                            
+                                      
                                     
             ;
            
