@@ -315,12 +315,32 @@ chunk   : function_definition
            { $$ = NULL; /* TODO */ 
            fprintf(stderr, "PMC definitions are not implemented yet!\n");
            }
+        | enum_definition
+           { $$ = NULL; /* TODO */
+           fprintf(stderr, "enum definitions are not implemented yet!\n");
+           }
         ;        
+
+
+enum_definition : "enum" TK_IDENT '{' enum_constants '}' ';' { }
+                ;
         
+enum_constants  : enum_const {  }
+                | enum_constants ',' enum_const { }
+                ; 
+                  
+enum_const      : TK_IDENT opt_enum_val
+                ;
+                
+opt_enum_val    : 
+                |'=' TK_INT
+                ;
+                   
 namespace_definition: "namespace" TK_IDENT ';'
                          { 
                            /* TODO */
-                         }        
+                         }    
+                     ;    
 
 /* TODO: PMC handling */
 pmc_definition	: "pmc" TK_IDENT extends_clause '{'  pmc_items '}'
