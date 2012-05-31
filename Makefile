@@ -1,7 +1,13 @@
-CC=gcc
-LEX=flex
-YACC=bison
-CFLAGS=-c -Wall
+CC    = gcc
+LEX   = flex
+YACC  = bison
+DEBUG = true
+
+ifeq ($(DEBUG), true)
+CFLAGS = -O0 -g -c -W -Wall
+else
+CFLAGS = -O3 -c -W -Wall
+endif
 
 m1: m1parser.o m1lexer.o m1_ast.o m1_eval.o m1_symtab.o m1_instr.o m1_gencode.o m1_semcheck.o m1_stack.o m1_main.o m1_decl.o
 	$(CC) -o m1 m1parser.o m1lexer.o m1_ast.o m1_eval.o m1_symtab.o m1_instr.o m1_gencode.o m1_semcheck.o m1_stack.o m1_main.o m1_decl.o
