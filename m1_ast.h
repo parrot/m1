@@ -167,9 +167,11 @@ typedef struct m1_object {
     
     enum m1_object_type type; /* selector for union */
     struct m1_symbol   *sym;        
-    unsigned line; 
+    unsigned            line; 
     
-    struct m1_object *parent;  
+    struct m1_object   *parent;  
+    char                is_target; /* true if this m1_object represents 
+                                      an object on the lhs from an assignment. */
       
 } m1_object;
 

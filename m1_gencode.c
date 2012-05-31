@@ -300,9 +300,13 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent) {
         	fprintf(OUT, "\tadd_i <struct>, I%d\n", reg.no);
             break;
         case OBJECT_INDEX: /* b in a[b] */        
-            reg = gencode_expr(comp, obj->obj.index);
-            fprintf(OUT, "\tadd_i <array>, I%d\n", reg.no);
+        {
+            int offset = 0;
+            m1_reg offsetreg = gencode_expr(comp, obj->obj.index);
+            
+          //  fprintf(OUT, "\tderef\t%d, <array>, I%d\n", reg.no);
             break;            
+        }
         default:
             break;
     }  
