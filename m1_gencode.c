@@ -206,7 +206,32 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent) {
 	   
 	   /* visit this node's parent recursively, depth-first. 
 	   parent parameter will return a pointer to it so it can
-	   be passed on when visiting the field.
+	   be passed on when visiting the field. Note that this invocation
+	   is recursive, so THIS function will be called again. Note also that
+	   the tree was built upside down, so obj->parent is really its parent
+	   in which the current node is a (link-node to a) field.
+	   
+	   x.y.z looks like this:
+	   
+	   x   y   z
+	    \ /   /
+	     L1  /
+	      \ /
+	       L2
+	        
+	       ^
+	       |
+	     Node L2 is the root in this tree. Both L1 and L2 are of type OBJECT_LINK.
+	     Node "x" is OBJECT_MAIN, whereas nodes "y" and "z" are OBJECT_FIELD.
+	     First this function (gencode_obj) goes all the way down to x, sets the
+	     OUT parameter "parent" to itself, then as the function returns, comes
+	     back to L1, then visits y, passing on a pointer to node for "x" through
+	     the parent parameter. Then, node y sets the parent OUT parameter to itself
+	     (again, in this funciton gencode_obj), and then control goes up to L2,
+	     visiting z, passing a pointer to node "y" through the parent parameter.
+	     
+	     Neat huh?  
+	       
 	   */
        
 	   reg = gencode_obj(comp, obj->parent, parent);  
@@ -253,14 +278,19 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent) {
             the parent (a in example) , so that we can look for the field (b in example).
             The m1_structfield node for the field (b) has a field <offset> that must be 
             added to the base address, if it's > 0.
+            
+            XXX2: study this in further detail. Need to use deref/set_ref. 
             */
             int offset = 0;
             if (offset > 0) {
                m1_reg offsetreg = gen_reg(comp, VAL_INT);
                
-               fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", offsetreg.no, offset);
-	           fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", reg.no, reg.no, offsetreg.no);
+               //fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", offsetreg.no, offset);
+	           //fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", reg.no, reg.no, offsetreg.no);
             }
+            
+            /* set parent OUT parameter to the current node. */
+            *parent = obj;
             
             fprintf(stderr, "parent: %s\n", (*parent)->obj.name); 
             break;
