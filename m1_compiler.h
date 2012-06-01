@@ -14,25 +14,29 @@ typedef void * yyscan_t;
 
 
 typedef struct M1_compiler {
-	unsigned          errors;
-	struct m1_chunk  *ast;	 /* root of the AST */
-	int				  constindex; /* constant table index counter */
-	int               label; /* label generator */
-	int          	  regs[NUM_TYPES]; /* for the register allocator */
-	int               expect_usertype; /* identifiers can be types or identifiers. 
-	                       Keep track what the lexer should return (TK_IDENT or TK_USERTYPE 	
-	                       */
-    int               parsingtype; /* when parsing var declarations, need to know this when entering symbols. */
-	struct m1_stack  *breakstack; /* for handling break statements */
-	
-    struct m1_chunk  *currentchunk; /* current chunk being parsed, if any. */
+	unsigned            errors;
+	struct m1_chunk    *ast;	    /* root of the AST */
+	int				    constindex; /* constant table index counter */
+	int                 label;      /* label generator */
+	int          	    regs[NUM_TYPES]; /* for the register allocator */
+	int                 expect_usertype; /* identifiers can be types or identifiers. 
+	                       Keep track what the lexer should return (TK_IDENT or TK_USERTYPE */
+	                       
+    int                 parsingtype; /* when parsing var declarations, need to know this when entering symbols. */
     
-    struct m1_struct *structs; /* list of struct definitions. */
+	struct m1_intstack *breakstack; /* for handling break statements */
+
 	
-	struct m1_decl   *declarations; 
+    struct m1_chunk    *currentchunk; /* current chunk being parsed, if any. */
+    
+    struct m1_struct   *structs; /* list of struct definitions. */
 	
-	int               is_parsing_usertype; /* boolean to indicate whether a type is parsed. */
+	struct m1_decl     *declarations; 
 	
+	int                 is_parsing_usertype; /* boolean to indicate whether a type is parsed. */
+
+	struct m1_regstack *regstack; /* for storing registers in code generator */
+		
 	yyscan_t          yyscanner;
 	
 } M1_compiler;

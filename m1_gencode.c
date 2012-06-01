@@ -308,7 +308,7 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target
             /* set parent OUT parameter to current node. */
             *parent = obj;
             
-            reg = gencode_obj(comp, obj->parent, parent, is_target);  
+            ///reg = gencode_obj(comp, obj->parent, parent, is_target);  
             
             if (is_target == 1) {
                 fprintf(OUT, "\tset_ref\t%c%d, %c%d\n", reg_chars[(int)reg.type], reg.no, 

@@ -1,32 +1,34 @@
 #ifndef __M1_STACK_H__
 #define __M1_STACK_H__
 
-/* use a union if we need a stack for different types than int */
-/*
-union m1_stack_entry {
-    int ival;
-        
-} m1_stack_entry;
-*/
+#include "m1_gencode.h"
 
 /* XXX make this flexible later */
 #define STACKSIZE   128
 
-typedef struct m1_stack {
+typedef struct m1_intstack {
     int store[STACKSIZE];
     int sp; /* stack pointer */        
-} m1_stack;
+    
+} m1_intstack;
 
 
-extern m1_stack *new_stack(void);
+typedef struct m1_regstack {
+    struct m1_reg store[STACKSIZE];
+    int           sp; /* stack pointer */
+    
+} m1_regstack;
 
-extern void delete_stack(m1_stack *stack);
 
-extern void push(m1_stack *stack, int value);
+extern m1_intstack *new_stack(void);
 
-extern int pop(m1_stack *stack);
+extern void delete_stack(m1_intstack *stack);
 
-extern int top(m1_stack *stack);
+extern void push(m1_intstack *stack, int value);
+
+extern int pop(m1_intstack *stack);
+
+extern int top(m1_intstack *stack);
 
 #endif
 
