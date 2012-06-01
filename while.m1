@@ -3,12 +3,12 @@ int main() {
     x = 10;
     print("10..1\n");
     while (x) {
-
+        
         print("ok..");
         print(x);
-        print("\n");
+        print("\n");   
         x--;
-        
     }
     print("\n");
+           
 }

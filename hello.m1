@@ -1,3 +1,9 @@
+void foo() {
+ 
+    print("foo\n");
+}
+
 int main() {
 	print("hello\n");
+	foo();
 }
