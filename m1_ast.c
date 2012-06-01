@@ -41,9 +41,14 @@ chunk(M1_compiler *comp, int rettype, NOTNULL(char *name), m1_expression *block)
 
 m1_expression *
 expression(M1_compiler *comp, m1_expr_type type) {
-    m1_expression *e = (m1_expression *)m1_malloc(sizeof(m1_expression));
-    e->type          = type;
-    e->line          = yyget_lineno(comp->yyscanner);
+    m1_expression *e;
+    
+    assert(comp != NULL);
+    assert(comp->yyscanner != NULL);
+    
+    e        = (m1_expression *)m1_malloc(sizeof(m1_expression));
+    e->type  = type;
+    e->line  = yyget_lineno(comp->yyscanner);
     return e;   
 }
 
