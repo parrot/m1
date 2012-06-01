@@ -36,7 +36,9 @@ main(int argc, char *argv[]) {
    
     /* set up compiler */
    	memset(&comp, 0, sizeof(M1_compiler)); 
-    comp.breakstack = new_stack();   	
+    comp.breakstack = new_intstack();   
+    comp.regstack   = new_regstack();	
+    
     comp.expect_usertype = 0; /* when not parsing a function's body, 
                                    then identifiers are types */   	
     comp.is_parsing_usertype = 1;

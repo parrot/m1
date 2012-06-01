@@ -60,6 +60,8 @@ gen_reg(M1_compiler *comp, m1_valuetype type) {
 	reg.no   = comp->regs[type]++;   
     fprintf(stderr, "generating regi %d for type %d\n", reg.no, type);
     
+    pushreg(comp->regstack, reg);
+    
     return reg;
 }
 
@@ -95,6 +97,9 @@ gencode_number(M1_compiler *comp, m1_literal *lit) {
         
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tN%d, CONSTS, %d\n", reg.no, constindex.no);
+    
+    pushreg(comp->regstack, reg);
+    
     return reg;
 }   
 
@@ -131,6 +136,9 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
         fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
         fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", reg.no, constindex.no);
     }
+    
+    pushreg(comp->regstack, reg);
+    
     return reg;
 }
 
@@ -149,6 +157,8 @@ gencode_string(M1_compiler *comp, m1_literal *lit) {
       
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constidxreg.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", reg.no, constidxreg.no);
+    
+    pushreg(comp->regstack, reg);
     return reg;
 }
 
@@ -172,6 +182,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
     fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
                                             reg_chars[(int)rhs.type], rhs.no);
     
+    pushreg(comp->regstack, lhs);
     
 	return lhs;
 }
@@ -182,6 +193,8 @@ gencode_null(M1_compiler *comp) {
 	reg = gen_reg(comp, VAL_INT);
 	/* "null" is just 0, but then in a "pointer" context. */
     fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", reg.no);
+    
+    pushreg(comp->regstack, reg);
     return reg;
 }   
 
@@ -324,7 +337,7 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target
             break;
     }  
 		
-
+    pushreg(comp->regstack, reg);
 	return reg;
 		
 }
@@ -364,6 +377,7 @@ gencode_while(M1_compiler *comp, m1_whileexpr *w) {
 	/* remove break label from stack. */
 	(void)pop(comp->breakstack);
 	
+	pushreg(comp->regstack, reg);
 	return reg;
 }
 
@@ -391,7 +405,7 @@ gencode_dowhile(M1_compiler *comp, m1_whileexpr *w) {
     fprintf(OUT, "L%d:\n", endlabel);
     
     (void)pop(comp->breakstack);
-    
+    pushreg(comp->regstack, reg);
     return reg;
 }
 
@@ -439,7 +453,7 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
     fprintf(OUT, "\tgoto L%d\n", startlabel);
     fprintf(OUT, "L%d:\n", endlabel);
     
-    
+    pushreg(comp->regstack, reg);
     return reg;
 }
 
@@ -475,6 +489,8 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
     gencode_expr(comp, i->ifblock);
 			
     fprintf(OUT, "L%d:\n", endlabel);
+    
+    pushreg(comp->regstack, condreg);
     return condreg;       
 }
 
@@ -483,6 +499,9 @@ gencode_deref(M1_compiler *comp, m1_object *o) {
 	m1_reg reg;
 
     reg = gencode_obj(comp, o, NULL, 0);
+    
+    pushreg(comp->regstack, reg);
+    
     return reg;
 }
 
@@ -491,6 +510,9 @@ gencode_address(M1_compiler *comp, m1_object *o) {
 	m1_reg reg;
 
     reg = gencode_obj(comp, o, NULL, 0);   
+    
+    pushreg(comp->regstack, reg);
+    
     return reg;
 }
 
@@ -498,6 +520,7 @@ static m1_reg
 gencode_return(M1_compiler *comp, m1_expression *e) {
 	m1_reg reg;
     reg = gencode_expr(comp, e);
+    pushreg(comp->regstack, reg);
     return reg;
 }
 
@@ -523,6 +546,8 @@ gencode_or(M1_compiler *comp, m1_binexpr *b) {
 	fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[(int)left.type], left.no, 
 	                                       reg_chars[(int)right.type], right.no);
 	fprintf(OUT, "L%d:\n", endlabel);
+	
+	pushreg(comp->regstack, left);
 	return left;	
 }
 
@@ -551,6 +576,7 @@ gencode_and(M1_compiler *comp, m1_binexpr *b) {
 	fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[(int)left.type], left.no, reg_chars[(int)right.type], right.no);	
 	fprintf(OUT, "L%d:\n", endlabel);
 	
+	pushreg(comp->regstack, left);
 	return left;
 }
 
@@ -595,6 +621,7 @@ ne_eq_common(M1_compiler *comp, m1_binexpr *b, int is_eq_op) {
     fprintf(OUT, "\tset_imm\t%c%d, 0, %d\n", reg_chars[(int)reg.type], reg.no, !is_eq_op);
     fprintf(OUT, "L%d:\n", endlabel);
     
+    pushreg(comp->regstack, reg);
     return reg;         
 }
 
@@ -604,7 +631,7 @@ gencode_ne(M1_compiler *comp, m1_binexpr *b) {
 }
 
 static m1_reg
-gencode_eq(M1_compiler *comp, m1_binexpr *b) {
+gencode_eq(M1_compiler *comp, m1_binexpr *b) {    
     return ne_eq_common(comp, b, 1);  
 }
 
@@ -619,6 +646,7 @@ gencode_lt(M1_compiler *comp, m1_binexpr *b) {
                                                 reg_chars[(int)right.type], right.no,
                                                 reg_chars[(int)left.type], left.no);
 
+    pushreg(comp->regstack, result);
     return result;
 }
 
@@ -633,6 +661,7 @@ gencode_le(M1_compiler *comp, m1_binexpr *b) {
                                                 reg_chars[(int)right.type], right.no,
                                                 reg_chars[(int)left.type], left.no);
 
+    pushreg(comp->regstack, result);
     return result;
 
 }
@@ -762,6 +791,7 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
                                              reg_chars[(int)target.type], target.no, 
                                              reg_chars[(int)left.type], left.no, 
                                              reg_chars[(int)right.type], right.no);
+    pushreg(comp->regstack, target);                                             
     return target;
 }
 
@@ -799,6 +829,7 @@ gencode_not(M1_compiler *comp, m1_unexpr *u) {
     fprintf(OUT, "L%d:\n", label2);
     fprintf(OUT, "\tset\t%c%d, I%d, x\n", reg_chars[(int)reg.type], reg.no, temp.no);
     
+    pushreg(comp->regstack, temp);
     return temp;
 }
 
@@ -856,6 +887,7 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
         fprintf(OUT, "\tset\tI%d, I%d, x\n", reg.no, target.no);
     }
         
+    pushreg(comp->regstack, reg);        
     return reg;	    
     
 }
@@ -890,6 +922,9 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", offsetreg.no, 0);
     fprintf(OUT, "\tderef\tP%d, CONSTS, I%d\n", pmcreg.no, reg.no);
     fprintf(OUT, "\tgoto_chunk\tP%d, I%d, x\n", pmcreg.no, offsetreg.no);
+    
+    pushreg(comp->regstack, reg);
+    
     return reg;
 }
 
@@ -905,6 +940,8 @@ gencode_print(M1_compiler *comp, m1_expression *expr) {
     
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n",  one.no);
 	fprintf(OUT, "\tprint_%c\tI%d, %c%d, x\n", type_chars[(int)reg.type], one.no, reg_chars[(int)reg.type], reg.no);
+	
+	pushreg(comp->regstack, reg);
 	
 	return reg;
 }
@@ -993,6 +1030,7 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
     fprintf(OUT, "L%d:\n", endlabel);      
     (void)pop(comp->breakstack);
     
+    pushreg(comp->regstack, reg);
     return reg;   
 }
 
@@ -1036,8 +1074,8 @@ gencode_cast(M1_compiler *comp, m1_castexpr *expr) {
         exit(EXIT_FAILURE);   
     }
     
-
-    return reg;   
+    pushreg(comp->regstack, result);
+    return result;   
 }
 
 static m1_reg
@@ -1124,6 +1162,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             fprintf(stderr, "unknown expr type (%d)", e->type);   
             exit(EXIT_FAILURE);
     }   
+    pushreg(comp->regstack, reg);
     return reg;
 }
 

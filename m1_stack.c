@@ -10,7 +10,7 @@ Needed by code generator to store labels for break statements, etc.
 
 
 m1_intstack *
-new_stack(void) {
+new_intstack(void) {
     m1_intstack *stack = (m1_intstack *)calloc(1, sizeof(m1_intstack));
     stack->sp          = 0;
     return stack;
