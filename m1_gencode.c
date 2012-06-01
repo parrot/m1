@@ -38,7 +38,7 @@ in gencode_number().
 
 static m1_reg gencode_expr(M1_compiler *comp, m1_expression *e);
 static void gencode_block(M1_compiler *comp, m1_expression *block);
-static m1_reg gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent);
+static m1_reg gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target);
 
 static const char type_chars[4] = {'i', 'n', 's', 'p'};
 static const char reg_chars[4] = {'I', 'N', 'S', 'P'};
@@ -163,7 +163,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
 	assert(a != NULL);
 	
     rhs = gencode_expr(comp, a->rhs);
-    lhs = gencode_obj(comp, a->lhs, &parent);
+    lhs = gencode_obj(comp, a->lhs, &parent, 1);
     
     /* copy the value held in register for rhs to the register of lhs */
     assert((lhs.type >= 0) && (lhs.type < 4));
@@ -186,7 +186,7 @@ gencode_null(M1_compiler *comp) {
 }   
 
 static m1_reg
-gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent) {
+gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target) {
 	m1_reg reg;
 
 
@@ -235,12 +235,12 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent) {
 	       
 	   */
        
-	   reg = gencode_obj(comp, obj->parent, parent);  
+	   reg = gencode_obj(comp, obj->parent, parent, is_target);  
 	   	   
 	   assert(obj->obj.field != NULL); 
 
        /* pass the parent to the field node, so "c" knows who "b" is in b.c. */	   
-	   field = gencode_obj(comp, obj->obj.field, parent);    
+	   field = gencode_obj(comp, obj->obj.field, parent, is_target);    
         	   
 	}
 
@@ -297,14 +297,14 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent) {
             break;
         }
         case OBJECT_DEREF: /* b in a->b */
-        	reg = gencode_obj(comp, obj->obj.field, parent);
+        	reg = gencode_obj(comp, obj->obj.field, parent, is_target);
         	fprintf(OUT, "\tadd_i <struct>, I%d\n", reg.no);
             break;
         case OBJECT_INDEX: /* b in a[b] */        
         {
             int offset = 0;
             m1_reg offsetreg = gencode_expr(comp, obj->obj.index);
-            if (obj->is_target == 1) {
+            if (is_target == 1) {
               //  fprintf(OUT, "\tderef\t%d, <array>, I%d\n", reg.no);
             }
             else {
@@ -474,7 +474,7 @@ static m1_reg
 gencode_deref(M1_compiler *comp, m1_object *o) {
 	m1_reg reg;
 
-    reg = gencode_obj(comp, o, NULL);
+    reg = gencode_obj(comp, o, NULL, 0);
     return reg;
 }
 
@@ -482,7 +482,7 @@ static m1_reg
 gencode_address(M1_compiler *comp, m1_object *o) {
 	m1_reg reg;
 
-    reg = gencode_obj(comp, o, NULL);   
+    reg = gencode_obj(comp, o, NULL, 0);   
     return reg;
 }
 
@@ -1089,7 +1089,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             break;
         case EXPR_OBJECT: {
             m1_object *obj;               
-            reg = gencode_obj(comp, e->expr.t, &obj);
+            reg = gencode_obj(comp, e->expr.t, &obj, 0);
             break;
         }
         case EXPR_BREAK:

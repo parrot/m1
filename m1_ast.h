@@ -170,8 +170,6 @@ typedef struct m1_object {
     unsigned            line; 
     
     struct m1_object   *parent;  
-    char                is_target; /* true if this m1_object represents 
-                                      an object on the lhs from an assignment. */
       
 } m1_object;
 
