@@ -302,18 +302,21 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target
             break;
         case OBJECT_INDEX: /* b in a[b] */        
         {
-            int offset = 0;
             
             m1_reg offsetreg = gencode_expr(comp, obj->obj.index);
             
             /* set parent OUT parameter to current node. */
             *parent = obj;
             
+            reg = gencode_obj(comp, obj->parent, parent, is_target);  
+            
             if (is_target == 1) {
-                fprintf(OUT, "\tset_ref\t%c%d\n", reg_chars[(int)offsetreg.type], offsetreg.no);
+                fprintf(OUT, "\tset_ref\t%c%d, %c%d\n", reg_chars[(int)reg.type], reg.no, 
+                                                        reg_chars[(int)offsetreg.type], offsetreg.no);
             }
             else {
-                fprintf(OUT, "\tderef\t%c%d\n", reg_chars[(int)offsetreg.type], offsetreg.no);
+                fprintf(OUT, "\tderef\t%c%d, %c%d\n", reg_chars[(int)reg.type], reg.no, 
+                                                      reg_chars[(int)offsetreg.type], offsetreg.no);
             }
             break;            
         }
