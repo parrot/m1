@@ -72,14 +72,18 @@ pushreg(m1_regstack *stack, m1_reg reg) {
 
 m1_reg
 popreg(m1_regstack *stack) {
-    print_stack(stack, "pop (before)");
-    return stack->store[--stack->sp];   
+    
+    m1_reg r = stack->store[--stack->sp];   
+    print_stack(stack, "pop (after)");
+    return r;
 }
 
 m1_reg
 topreg(m1_regstack *stack) {
-    print_stack(stack, "top (before)");
-    return stack->store[stack->sp - 1];   
+   
+    m1_reg r = stack->store[stack->sp - 1];   
+    print_stack(stack, "top (after)");
+    return r;
 }
 
 

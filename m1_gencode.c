@@ -60,8 +60,7 @@ gen_reg(M1_compiler *comp, m1_valuetype type) {
 	reg.no   = comp->regs[type]++;   
     fprintf(stderr, "generating regi %d for type %d\n", reg.no, type);
     
-    pushreg(comp->regstack, reg);
-    
+ 
     return reg;
 }
 
@@ -173,6 +172,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
     rhs = popreg(comp->regstack);
     
     obj_reg_count = gencode_obj(comp, a->lhs, &parent, 1);
+    fprintf(stderr, "gencode obj returned %d\n", obj_reg_count);
     
     if (obj_reg_count == 1) {
         lhs = popreg(comp->regstack);    
@@ -186,9 +186,10 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
                                                       reg_chars[(int)r2.type], r2.no,
                                                       reg_chars[(int)rhs.type], rhs.no);
     }
+    fprintf(stderr, "obj reg count = %d\n", obj_reg_count);
+    assert (obj_reg_count == 1 || obj_reg_count == 2);
       
-    //pushreg(comp->regstack, lhs);
-    
+     
 }
 
 static void
@@ -203,32 +204,26 @@ gencode_null(M1_compiler *comp) {
 
 static unsigned
 gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target) {
-	m1_reg reg;
+
     unsigned numregs_pushed = 0;
 
 	assert(comp != NULL);
-	assert(comp->currentchunk != NULL);
-	assert(&comp->currentchunk->locals != NULL);
+    assert(comp->currentchunk != NULL);
+    assert(&comp->currentchunk->locals != NULL);
 
 
 	/* handle OBJECT_LINK nodes differently as they are the key to the recursion. */
 	
-	if (obj->type == OBJECT_LINK) {
-	   m1_reg field;
-
-	   fprintf(stderr ,"object\n");
+  	
 	   
-	   /* set the parent OUT parameter to the currently visited node (obj) */
-	   *parent = obj;   	
+	    /* visit this node's parent recursively, depth-first. 
+	    parent parameter will return a pointer to it so it can
+	    be passed on when visiting the field. Note that this invocation
+	    is recursive, so THIS function will be called again. Note also that
+	    the tree was built upside down, so obj->parent is really its parent
+	    in which the current node is a (link-node to a) field.
 	   
-	   /* visit this node's parent recursively, depth-first. 
-	   parent parameter will return a pointer to it so it can
-	   be passed on when visiting the field. Note that this invocation
-	   is recursive, so THIS function will be called again. Note also that
-	   the tree was built upside down, so obj->parent is really its parent
-	   in which the current node is a (link-node to a) field.
-	   
-	   x.y.z looks like this:
+	    x.y.z looks like this:
 	   
 	   x   y   z
 	    \ /   /
@@ -250,24 +245,20 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target
 	     Neat huh?  
 	       
 	   */
-       
-	   numregs_pushed += gencode_obj(comp, obj->parent, parent, is_target);  
-	   reg = popreg(comp->regstack); 	   
-	   
-	   assert(obj->obj.field != NULL); 
 
-       /* pass the parent to the field node, so "c" knows who "b" is in b.c. */	   
-	   gencode_obj(comp, obj->obj.field, parent, is_target);    
-	   field = popreg(comp->regstack);
-        	   
-	}
-
-	
     switch (obj->type) {
-      
+        case OBJECT_LINK:
+        {
+            *parent = obj;   	
+
+            gencode_obj(comp, obj->parent,parent, is_target);
+            numregs_pushed += gencode_obj(comp, obj->obj.field, parent, is_target);     
+            break;
+            
+        }
         case OBJECT_MAIN: 
-        {        	
-            fprintf(stderr, "main\n");
+        {   
+            m1_reg reg;     	
 
         	assert(obj->obj.field != NULL);
         	assert(obj->sym != NULL);
@@ -289,6 +280,10 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target
                             
             /* return a pointer to this node by OUT parameter. */
             *parent = obj;
+            
+            pushreg(comp->regstack, reg);
+            ++numregs_pushed;
+            
             break;
         }
         case OBJECT_FIELD: /* example: b in a.b */
@@ -296,16 +291,15 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target
         
             int offset = 42;
             
-            fprintf(stderr, "is_target = %d\n", is_target);
             if (offset > 0) {
                 if (is_target) {  /* lhs */
                  
-                    reg = gen_reg(comp, VAL_INT);
+                    m1_reg reg = gen_reg(comp, VAL_INT);
                     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", reg.no, offset);
                 }
                 else { /* rhs */
                     m1_reg parentreg = popreg(comp->regstack);
-                    reg = gen_reg(comp, VAL_INT);
+                    m1_reg reg = gen_reg(comp, VAL_INT);
                     fprintf(OUT, "\tderef\t%c%d, %c%d\n", reg_chars[(int)reg.type], reg.no, 
                                               reg_chars[(int)parentreg.type], parentreg.no);
                 }
@@ -318,44 +312,50 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target
             break;
         }
         case OBJECT_DEREF: /* b in a->b */
-        	gencode_obj(comp, obj->obj.field, parent, is_target);
+        {
+            m1_reg reg;
+            gencode_obj(comp, obj->obj.field, parent, is_target);
         	reg = popreg(comp->regstack);
         	fprintf(OUT, "\tadd_i <struct>, I%d\n", reg.no);
             break;
+        }
         case OBJECT_INDEX: /* b in a[b] */        
         {
-            
-            m1_reg offsetreg;
-            gencode_expr(comp, obj->obj.index);
-            offsetreg = popreg(comp->regstack);
-            
-            if (is_target) {
 
-                pushreg(comp->regstack, offsetreg);
+            gencode_expr(comp, obj->obj.index);
+                        
+            if (is_target) { /* x[42] = ... */
+
+                /* don't pop it, just count it */
                 ++numregs_pushed;
+            
+                
             }
-            else {
+            else { /* ... = x[42] */
+                m1_reg offsetreg = popreg(comp->regstack);
+
                 m1_reg parentreg = popreg(comp->regstack);
-                reg = gen_reg(comp, VAL_INT);
+                m1_reg reg = gen_reg(comp, VAL_INT);
+                
                 fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)reg.type], reg.no,
                                                             reg_chars[(int)parentreg.type], parentreg.no,
                                                             reg_chars[(int)offsetreg.type], offsetreg.no);   
+                pushreg(comp->regstack, reg);
+                ++numregs_pushed;                                                            
             }
             
             /* set parent OUT parameter to current node. */
-            *parent = obj;
-            
+            *parent = obj;            
+                    
+            ++numregs_pushed;
+
             break;            
         }
         default:
             break;
     }  
 		
-    pushreg(comp->regstack, reg);
-    ++numregs_pushed;
-    fprintf(stderr, "num obj regs: %u\n", numregs_pushed);
-    print_stack(comp->regstack, "gencode_obj()\n");
-	return numregs_pushed;
+    return numregs_pushed;
 		
 }
 
@@ -942,7 +942,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     if (fun == NULL) {
         fprintf(stderr, "Cant find function '%s'\n", f->name);
         ++comp->errors;
-        return reg;
+        return;
     }
     reg = gen_reg(comp, VAL_INT);
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", reg.no, fun->constindex);
