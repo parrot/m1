@@ -1,9 +1,0 @@
-.version 0
-.chunk "main"
-.constants
-0 &main
-.metadata
-.bytecode
-	set_imm I1, 0, 128
-	gc_alloc	I0, I1, 0
-	set 	I2, I0, x
