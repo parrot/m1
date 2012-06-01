@@ -65,19 +65,20 @@ delete_regstack(m1_regstack *stack) {
 
 void
 pushreg(m1_regstack *stack, m1_reg reg) {
-    print_stack(stack, "push");
+
     stack->store[stack->sp++] = reg;
+    print_stack(stack, "push (after)");
 }
 
 m1_reg
 popreg(m1_regstack *stack) {
-    print_stack(stack, "pop");
+    print_stack(stack, "pop (before)");
     return stack->store[--stack->sp];   
 }
 
 m1_reg
 topreg(m1_regstack *stack) {
-    print_stack(stack, "top");
+    print_stack(stack, "top (before)");
     return stack->store[stack->sp - 1];   
 }
 
