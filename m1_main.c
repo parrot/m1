@@ -23,6 +23,10 @@ main(int argc, char *argv[]) {
     yyscan_t     yyscanner;
     M1_compiler  comp;
     
+    if (argc <= 1) {
+        fprintf(stderr, "Usage: m1 <file>\n");
+        exit(EXIT_FAILURE);    
+    }
     
     fp = fopen(argv[1], "r");
     if (fp == NULL) {
