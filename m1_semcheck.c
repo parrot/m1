@@ -9,6 +9,9 @@
 
 static m1_type check_expr(M1_compiler *comp, m1_expression *e);
 static void check_block(M1_compiler *comp, m1_expression *expr);
+static m1_type check_obj(M1_compiler *comp, m1_object *obj);
+
+
 
 static void
 type_error(M1_compiler *comp, unsigned line, char *msg) {
@@ -24,7 +27,7 @@ warning(M1_compiler *comp, unsigned line, char *msg) {
 
 static void
 check_assign(M1_compiler *comp, m1_assignment *a) {
-    m1_type ltype = check_expr(comp, a->lhs);
+    m1_type ltype = check_obj(comp, a->lhs);
     m1_type rtype = check_expr(comp, a->rhs);
     
     if (ltype != rtype) {

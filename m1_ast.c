@@ -286,7 +286,7 @@ expr_set_assign(M1_compiler *comp, m1_expression *node, m1_expression *lhs, int 
 	a += b => a = a + b
 	*/
     node->expr.a      = (m1_assignment *)m1_malloc(sizeof(m1_assignment));
-    node->expr.a->lhs = lhs;
+    node->expr.a->lhs = lhs->expr.t;
     
     switch (assignop) {
     	case OP_ASSIGN: /* normal case */

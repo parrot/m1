@@ -41,7 +41,7 @@ typedef struct m1_struct {
 
 
 typedef struct m1_assignment {
-    struct m1_expression *lhs;
+    struct m1_object     *lhs;
     struct m1_expression *rhs;
     
 } m1_assignment;

@@ -38,7 +38,7 @@ in gencode_number().
 
 static m1_reg gencode_expr(M1_compiler *comp, m1_expression *e);
 static void gencode_block(M1_compiler *comp, m1_expression *block);
-
+static m1_reg gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent);
 
 static const char type_chars[4] = {'i', 'n', 's', 'p'};
 static const char reg_chars[4] = {'I', 'N', 'S', 'P'};
@@ -110,7 +110,7 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
     	set_imm Ix, y, z
 	
 	*/
-    m1_reg     reg;
+    m1_reg reg;
 
     assert(comp != NULL);
     assert(lit != NULL);
@@ -156,13 +156,14 @@ gencode_string(M1_compiler *comp, m1_literal *lit) {
 static m1_reg
 gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
 	m1_reg lhs, rhs;
+	m1_object *parent;
 	
 	debug("gencode_assign start...\n");
 	
 	assert(a != NULL);
 	
     rhs = gencode_expr(comp, a->rhs);
-    lhs = gencode_expr(comp, a->lhs);
+    lhs = gencode_obj(comp, a->lhs, &parent);
     
     /* copy the value held in register for rhs to the register of lhs */
     assert((lhs.type >= 0) && (lhs.type < 4));
@@ -303,8 +304,12 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent) {
         {
             int offset = 0;
             m1_reg offsetreg = gencode_expr(comp, obj->obj.index);
-            
-          //  fprintf(OUT, "\tderef\t%d, <array>, I%d\n", reg.no);
+            if (obj->is_target == 1) {
+              //  fprintf(OUT, "\tderef\t%d, <array>, I%d\n", reg.no);
+            }
+            else {
+                
+            }
             break;            
         }
         default:

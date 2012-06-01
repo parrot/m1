@@ -12,6 +12,8 @@ Sample AST walking code to print out the equivalent M1 code.
 
 #define OUT stderr
 
+static void eval_assign(m1_assignment *a);
+static void eval_obj(m1_object *o);
 static void eval_expr(m1_expression *e);
 
 static void
@@ -27,7 +29,7 @@ eval_int(int value) {
 
 static void
 eval_assign(m1_assignment *a) {
-    eval_expr(a->lhs);
+    eval_obj(a->lhs);
     fprintf(OUT, " = ");
     eval_expr(a->rhs);
     fprintf(OUT, ";");
