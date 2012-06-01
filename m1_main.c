@@ -40,13 +40,13 @@ main(int argc, char *argv[]) {
     comp.expect_usertype = 0; /* when not parsing a function's body, 
                                    then identifiers are types */   	
     comp.is_parsing_usertype = 1;
-    comp.yyscanner = yyscanner; /* yyscanner has a pointer to comp, and vice versa. */
                                        
     /* set up lexer and parser */   	
-    yylex_init(&yyscanner);
-    yyset_extra(&comp, yyscanner);
-    
+    yylex_init(&yyscanner);    
+    yyset_extra(&comp, yyscanner); 
     yyset_in(fp, yyscanner);
+    
+    comp.yyscanner = yyscanner; /* yyscanner has a pointer to comp, and vice versa. */
     
     yyparse(yyscanner, &comp);
     
