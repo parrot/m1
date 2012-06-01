@@ -38,7 +38,7 @@ in gencode_number().
 
 static m1_reg gencode_expr(M1_compiler *comp, m1_expression *e);
 static void gencode_block(M1_compiler *comp, m1_expression *block);
-static m1_reg gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target);
+static unsigned gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target);
 
 static const char type_chars[4] = {'i', 'n', 's', 'p'};
 static const char reg_chars[4] = {'I', 'N', 'S', 'P'};
@@ -167,21 +167,28 @@ static m1_reg
 gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
 	m1_reg lhs, rhs;
 	m1_object *parent;
-	
-	debug("gencode_assign start...\n");
-	
+	unsigned obj_reg_count;
+		
 	assert(a != NULL);
 	
-    rhs = gencode_expr(comp, a->rhs);
-    lhs = gencode_obj(comp, a->lhs, &parent, 1);
+    gencode_expr(comp, a->rhs);
+    rhs = popreg(comp->regstack);
     
-    /* copy the value held in register for rhs to the register of lhs */
-    assert((lhs.type >= 0) && (lhs.type < 4));
-    assert((rhs.type >= 0) && (rhs.type < 4));
+    obj_reg_count = gencode_obj(comp, a->lhs, &parent, 1);
     
-    fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
-                                            reg_chars[(int)rhs.type], rhs.no);
-    
+    if (obj_reg_count == 1) {
+        lhs = popreg(comp->regstack);    
+        fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
+                                                reg_chars[(int)rhs.type], rhs.no);
+    }
+    else if (obj_reg_count == 2) {
+        m1_reg r1 = popreg(comp->regstack);
+        m1_reg r2 = popreg(comp->regstack);        
+        fprintf(OUT, "\tset_ref\t%c%d, %c%d, %c%d\n", reg_chars[(int)r1.type], r1.no, 
+                                                      reg_chars[(int)r2.type], r2.no,
+                                                      reg_chars[(int)rhs.type], rhs.no);
+    }
+      
     pushreg(comp->regstack, lhs);
     
 	return lhs;
@@ -198,10 +205,10 @@ gencode_null(M1_compiler *comp) {
     return reg;
 }   
 
-static m1_reg
+static unsigned
 gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target) {
 	m1_reg reg;
-
+    unsigned numregs_pushed = 0;
 
 	assert(comp != NULL);
 	assert(comp->currentchunk != NULL);
@@ -248,12 +255,14 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target
 	       
 	   */
        
-	   reg = gencode_obj(comp, obj->parent, parent, is_target);  
-	   	   
+	   numregs_pushed += gencode_obj(comp, obj->parent, parent, is_target);  
+	   reg = popreg(comp->regstack); 	   
+	   
 	   assert(obj->obj.field != NULL); 
 
        /* pass the parent to the field node, so "c" knows who "b" is in b.c. */	   
-	   field = gencode_obj(comp, obj->obj.field, parent, is_target);    
+	   gencode_obj(comp, obj->obj.field, parent, is_target);    
+	   field = popreg(comp->regstack);
         	   
 	}
 
@@ -288,19 +297,22 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target
         }
         case OBJECT_FIELD: /* example: b in a.b */
         {            
-            /* XXX need to get a pointer to the m1_struct object that represents 
-            the parent (a in example) , so that we can look for the field (b in example).
-            The m1_structfield node for the field (b) has a field <offset> that must be 
-            added to the base address, if it's > 0.
+        
+            int offset = 42;
             
-            XXX2: study this in further detail. Need to use deref/set_ref. 
-            */
-            int offset = 0;
+            fprintf(stderr, "is_target = %d\n", is_target);
             if (offset > 0) {
-               m1_reg offsetreg = gen_reg(comp, VAL_INT);
-               
-               //fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", offsetreg.no, offset);
-	           //fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", reg.no, reg.no, offsetreg.no);
+                if (is_target) {  /* lhs */
+                 
+                    reg = gen_reg(comp, VAL_INT);
+                    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", reg.no, offset);
+                }
+                else { /* rhs */
+                    m1_reg parentreg = popreg(comp->regstack);
+                    reg = gen_reg(comp, VAL_INT);
+                    fprintf(OUT, "\tderef\t%c%d, %c%d\n", reg_chars[(int)reg.type], reg.no, 
+                                              reg_chars[(int)parentreg.type], parentreg.no);
+                }
             }
             
             /* set parent OUT parameter to the current node. */
@@ -310,27 +322,33 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target
             break;
         }
         case OBJECT_DEREF: /* b in a->b */
-        	reg = gencode_obj(comp, obj->obj.field, parent, is_target);
+        	gencode_obj(comp, obj->obj.field, parent, is_target);
+        	reg = popreg(comp->regstack);
         	fprintf(OUT, "\tadd_i <struct>, I%d\n", reg.no);
             break;
         case OBJECT_INDEX: /* b in a[b] */        
         {
             
-            m1_reg offsetreg = gencode_expr(comp, obj->obj.index);
+            m1_reg offsetreg;
+            gencode_expr(comp, obj->obj.index);
+            offsetreg = popreg(comp->regstack);
+            
+            if (is_target) {
+
+                pushreg(comp->regstack, offsetreg);
+                ++numregs_pushed;
+            }
+            else {
+                m1_reg parentreg = popreg(comp->regstack);
+                reg = gen_reg(comp, VAL_INT);
+                fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)reg.type], reg.no,
+                                                            reg_chars[(int)parentreg.type], parentreg.no,
+                                                            reg_chars[(int)offsetreg.type], offsetreg.no);   
+            }
             
             /* set parent OUT parameter to current node. */
             *parent = obj;
             
-            ///reg = gencode_obj(comp, obj->parent, parent, is_target);  
-            
-            if (is_target == 1) {
-                fprintf(OUT, "\tset_ref\t%c%d, %c%d\n", reg_chars[(int)reg.type], reg.no, 
-                                                        reg_chars[(int)offsetreg.type], offsetreg.no);
-            }
-            else {
-                fprintf(OUT, "\tderef\t%c%d, %c%d\n", reg_chars[(int)reg.type], reg.no, 
-                                                      reg_chars[(int)offsetreg.type], offsetreg.no);
-            }
             break;            
         }
         default:
@@ -338,7 +356,10 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target
     }  
 		
     pushreg(comp->regstack, reg);
-	return reg;
+    ++numregs_pushed;
+    fprintf(stderr, "num obj regs: %u\n", numregs_pushed);
+    print_stack(comp->regstack, "gencode_obj()\n");
+	return numregs_pushed;
 		
 }
 
@@ -498,8 +519,8 @@ static m1_reg
 gencode_deref(M1_compiler *comp, m1_object *o) {
 	m1_reg reg;
 
-    reg = gencode_obj(comp, o, NULL, 0);
-    
+    gencode_obj(comp, o, NULL, 0);
+    reg = popreg(comp->regstack);
     pushreg(comp->regstack, reg);
     
     return reg;
@@ -509,8 +530,8 @@ static m1_reg
 gencode_address(M1_compiler *comp, m1_object *o) {
 	m1_reg reg;
 
-    reg = gencode_obj(comp, o, NULL, 0);   
-    
+    gencode_obj(comp, o, NULL, 0);   
+    reg = popreg(comp->regstack);
     pushreg(comp->regstack, reg);
     
     return reg;
@@ -1080,62 +1101,63 @@ gencode_cast(M1_compiler *comp, m1_castexpr *expr) {
 
 static m1_reg
 gencode_expr(M1_compiler *comp, m1_expression *e) {
-    m1_reg reg;
+    
         
     if (e == NULL) {
     	debug("expr e is null in gencode_expr\n");
-        return reg;
+
     }
         
     switch (e->type) {
         case EXPR_NUMBER:
-            reg = gencode_number(comp, e->expr.l);
+            gencode_number(comp, e->expr.l);
             break;
         case EXPR_INT:
-            reg = gencode_int(comp, e->expr.l);
+            gencode_int(comp, e->expr.l);
             break;
         case EXPR_STRING:
-            reg = gencode_string(comp, e->expr.l);     
+            gencode_string(comp, e->expr.l);     
             break;
         case EXPR_BINARY:
-            reg = gencode_binary(comp, e->expr.b);
+            gencode_binary(comp, e->expr.b);
             break;
         case EXPR_UNARY:
-            reg = gencode_unary(comp, e->expr.u);
+            gencode_unary(comp, e->expr.u);
             break;
         case EXPR_FUNCALL:
-            reg = gencode_funcall(comp, e->expr.f);
+            gencode_funcall(comp, e->expr.f);
             break;
         case EXPR_ASSIGN:
-            reg = gencode_assign(comp, e->expr.a);
+            gencode_assign(comp, e->expr.a);
             break;
         case EXPR_IF:   
-            reg = gencode_if(comp, e->expr.i);
+            gencode_if(comp, e->expr.i);
             break;
         case EXPR_WHILE:
-            reg = gencode_while(comp, e->expr.w);
+            gencode_while(comp, e->expr.w);
             break;
         case EXPR_DOWHILE:
-            reg = gencode_dowhile(comp, e->expr.w);
+            gencode_dowhile(comp, e->expr.w);
             break;
         case EXPR_FOR:
-            reg = gencode_for(comp, e->expr.o);
+            gencode_for(comp, e->expr.o);
             break;
         case EXPR_RETURN:
-            reg = gencode_return(comp, e->expr.e);
+            gencode_return(comp, e->expr.e);
             break;
         case EXPR_NULL:
-            reg = gencode_null(comp);
+            gencode_null(comp);
             break;
         case EXPR_DEREF:
-            reg = gencode_deref(comp, e->expr.t);
+            gencode_deref(comp, e->expr.t);
             break;
         case EXPR_ADDRESS:
-            reg = gencode_address(comp, e->expr.t);
+            gencode_address(comp, e->expr.t);
             break;
         case EXPR_OBJECT: {
             m1_object *obj;               
-            reg = gencode_obj(comp, e->expr.t, &obj, 0);
+            gencode_obj(comp, e->expr.t, &obj, 0);
+            
             break;
         }
         case EXPR_BREAK:
@@ -1148,22 +1170,20 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             gencode_vardecl(comp, e->expr.v);            
             break;
         case EXPR_SWITCH:
-            reg = gencode_switch(comp, e->expr.s);
+            gencode_switch(comp, e->expr.s);
         	break;
         case EXPR_NEW:
-        	reg = gencode_new(comp, e->expr.n);
+        	gencode_new(comp, e->expr.n);
         	break;
         case EXPR_PRINT:
             gencode_print(comp, e->expr.e);   
             break; 
         case EXPR_CAST:
-            return gencode_cast(comp, e->expr.cast);
+            gencode_cast(comp, e->expr.cast);
         default:
             fprintf(stderr, "unknown expr type (%d)", e->type);   
             exit(EXIT_FAILURE);
     }   
-    pushreg(comp->regstack, reg);
-    return reg;
 }
 
 

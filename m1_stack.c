@@ -45,6 +45,19 @@ new_regstack(void) {
 }
 
 void
+print_stack(m1_regstack *stack, char *message) {
+    int i = stack->sp - 1;
+    static const char r[4] = {'I', 'N', 'S', 'P'};
+   
+    fprintf(stderr, "[printstack] %s\n", message);
+    while (i >= 0) {
+        fprintf(stderr, "%d | %c%d |\n", i, r[(int)stack->store[i].type], stack->store[i].no);
+        --i;   
+    }    
+    fprintf(stderr, "--------\n");
+}
+
+void
 delete_regstack(m1_regstack *stack) {
     free(stack);
     stack = NULL;   
@@ -52,16 +65,19 @@ delete_regstack(m1_regstack *stack) {
 
 void
 pushreg(m1_regstack *stack, m1_reg reg) {
+    print_stack(stack, "push");
     stack->store[stack->sp++] = reg;
 }
 
 m1_reg
 popreg(m1_regstack *stack) {
+    print_stack(stack, "pop");
     return stack->store[--stack->sp];   
 }
 
 m1_reg
 topreg(m1_regstack *stack) {
+    print_stack(stack, "top");
     return stack->store[stack->sp - 1];   
 }
 
