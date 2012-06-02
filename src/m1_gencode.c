@@ -296,17 +296,20 @@ OBJECT_LINK-------> L2
         }
         case OBJECT_FIELD: /* example: b in a.b */
         {            
-            m1_reg offsetreg;
-            int offset = 42;
-//            gencode_expr(comp, obj->obj.index);
+            m1_reg fieldreg;
+            /* XXX look up offset and load it into a reg. */
             
+            int offset = 42;
+            
+            fieldreg = gen_reg(comp, VAL_INT);
+            fprintf(stderr, "\tset_imm\tI%d, 0, %d\n", fieldreg.no, offset); 
+            
+            pushreg(comp->regstack, fieldreg);
             ++numregs_pushed;
             
             if (offset > 0) {
                 if (is_target) {  /* a.b = ... */
-                 
-//                    m1_reg reg = gen_reg(comp, VAL_INT);
-//                    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", reg.no, offset);
+                    /* reg. holding offset for field b is already pushed onto regstack, count it now. */
                     ++numregs_pushed;
 
                 }
