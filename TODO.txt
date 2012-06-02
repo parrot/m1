@@ -29,12 +29,14 @@ What's working?
 * if-statements
 * for-statements
 * break statements (in loops)
+* switch statements
+* boolean expressions (>, <)
 * !, && and || logical operators.
 * math expressions (+, -, /, etc.)
 * ==, !=, >, <, <=, >= comparison operators.
 * pre and postfix ++ and -- operators.
 * unary minus op.
-
+* array access (x[42] = 3; x = y[3])
 
 What's not working?
 -------------------
@@ -42,8 +44,6 @@ What's not working?
 * namespaces
 * PMC and struct definitions (incl methods)
 * return statements
-* switch statements
-* boolean expressions (e.g., >, <)
 * advanced field access (a.b, a->b, etc.)
 * pointers, objects (int *x;), null, new.m
 * arrays (and initializations)
