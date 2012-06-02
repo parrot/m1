@@ -250,7 +250,25 @@ OBJECT_LINK-------> L2
     the parent parameter. Then, node y sets the parent OUT parameter to itself
     (again, in this funciton gencode_obj), and then control goes up to L2,
     visiting z, passing a pointer to node "y" through the parent parameter.
-  	       
+  	  
+  	  
+  	  
+  	x[42] looks like this:
+  	
+           OBJECT_MAIN
+                |    
+                |   OBJECT_INDEX
+                |    |
+                V    V
+  	
+  	            x   42 
+  	             \  /
+  	              \/
+OBJECT_LINK-----> L1  
+  	    
+  	              ^
+  	              |
+  	             ROOT   
     */
 
     switch (obj->type) {
@@ -279,13 +297,7 @@ OBJECT_LINK-------> L2
         	reg.no   = obj->sym->regno;
         	reg.type = obj->sym->valtype; 
 
-            /*
-            fprintf(OUT, "\tset\t%c%d, ?? # load object %s's base address in reg\n", 
-                            reg_chars[(int)reg.type], 
-                            reg.no, 
-                            obj->obj.name);
-            */
-                            
+                      
             /* return a pointer to this node by OUT parameter. */
             *parent = obj;
             
