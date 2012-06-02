@@ -3,56 +3,76 @@ LEX   = flex
 YACC  = bison
 DEBUG = true
 
+O     = .o
+EXE   =
+
 ifeq ($(DEBUG), true)
-CFLAGS = -O0 -g -c -W -Wall
+CFLAGS = -O0 -g -W -Wall
 else
-CFLAGS = -O3 -c -W -Wall
+CFLAGS = -O3 -W -Wall
 endif
 
-m1: m1parser.o m1lexer.o m1_ast.o m1_eval.o m1_symtab.o m1_instr.o m1_gencode.o m1_semcheck.o m1_stack.o m1_main.o m1_decl.o
-	$(CC) -o m1 m1parser.o m1lexer.o m1_ast.o m1_eval.o m1_symtab.o m1_instr.o m1_gencode.o m1_semcheck.o m1_stack.o m1_main.o m1_decl.o
+M1_O_FILES = \
+	src/m1_ast$(O) \
+	src/m1parser$(O) \
+	src/m1lexer$(O) \
+	src/m1_symtab$(O) \
+	src/m1_semcheck$(O) \
+	src/m1_stack$(O) \
+	src/m1_decl$(O) \
+	src/m1_eval$(O) \
+	src/m1_instr$(O) \
+	src/m1_gencode$(O) \
+	src/m1_main$(O) \
 
-m1lexer.o: m1lexer.c
-	$(CC) $(CFLAGS) m1lexer.c
+m1: $(M1_O_FILES)
+	$(CC) -I$(@D) -o m1 $(M1_O_FILES)
 
-m1parser.o: m1parser.c
-	$(CC) $(CFLAGS) m1parser.c	
+src/m1lexer$(O): src/m1lexer.c
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1lexer.c
 
-m1parser.c: m1.y m1lexer.c
-	$(YACC) m1.y
+src/m1parser$(O): src/m1parser.c
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1parser.c	
 
-m1lexer.c: m1.l
-	$(LEX) m1.l	
+src/m1parser.c: src/m1.y src/m1lexer.c
+	$(YACC) src/m1.y
+	mv m1parser.c src/ 
+	mv m1parser.h src/ 
+
+src/m1lexer.c: src/m1.l
+	$(LEX) src/m1.l	
+	mv m1lexer.c src/ 
+	mv m1lexer.h src/ 
 	
-m1_ast.o: m1_ast.c m1_ast.h
-	$(CC) $(CFLAGS) m1_ast.c
+src/m1_ast$(O): src/m1_ast.c src/m1_ast.h
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_ast.c
 
-m1_eval.o: m1_eval.c m1_eval.h
-	$(CC) $(CFLAGS) m1_eval.c	
+src/m1_eval$(O): src/m1_eval.c src/m1_eval.h
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_eval.c	
 
-m1_symtab.o: m1_symtab.c m1_symtab.h
-	$(CC) $(CFLAGS) m1_symtab.c
+src/m1_symtab$(O): src/m1_symtab.c src/m1_symtab.h
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_symtab.c
 
-m1_instr.o: m1_instr.c m1_instr.h
-	$(CC) $(CFLAGS) m1_instr.c
+src/m1_instr$(O): src/m1_instr.c src/m1_instr.h
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_instr.c
 
-m1_gencode.o: m1_gencode.c m1_gencode.h
-	$(CC) $(CFLAGS) m1_gencode.c
+src/m1_gencode$(O): src/m1_gencode.c src/m1_gencode.h
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_gencode.c
 
-m1_semcheck.o: m1_semcheck.c m1_semcheck.h
-	$(CC) $(CFLAGS) m1_semcheck.c
+src/m1_semcheck$(O): src/m1_semcheck.c src/m1_semcheck.h
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_semcheck.c
 
-m1_stack.o: m1_stack.c m1_stack.h
-	$(CC) $(CFLAGS) m1_stack.c
+src/m1_stack$(O): src/m1_stack.c src/m1_stack.h
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_stack.c
 
-m1_main.o: m1_main.c
-	$(CC) $(CFLAGS) m1_main.c
+src/m1_main$(O): src/m1parser.h src/m1_main.c
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_main.c
 
-m1_decl.o: m1_decl.c m1_decl.h
-	$(CC) $(CFLAGS) m1_decl.c
+m1_decl$(O): src/m1_decl.c src/m1_decl.h
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_decl.c
 
 clean:
-	$(RM) -rf m1parser.c \
-		m1lexer.c \
-		*.o \
-		./m1
+	$(RM) -rf src/m1parser.c \
+		src/m1lexer.c \
+		src/*$(O) \
+		./m1$(EXE)
