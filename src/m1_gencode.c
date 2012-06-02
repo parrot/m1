@@ -4,13 +4,15 @@ Code generator.
 
 Visit each node, and generate instructions as appropriate.
 See m1_ast.h for an overview of the AST node types. For most
-nodes/functions, a m1_reg structure is returned, that holds the
-type and number of the register that will hold the result of
-the expression for which code was generated.
+nodes/functions, one (and sometimes more) m1_regs are pushed onto
+a stack (accessible through the compiler structure parameter), 
+that holds the type and number of the register that will hold 
+the result of the expression for which code was generated.
 
 Example: a node representing a floating point number will load
-the number in an N register, and return that register. This happens
-in gencode_number().
+the number in an N register, and push that register so that other
+functions can access it (i.e., popping it off the stack). 
+This happens in gencode_number().
 
 */
 #include <stdio.h>
@@ -122,13 +124,16 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
 
     reg = gen_reg(comp, VAL_INT);   
     
-    if (lit->sym->value.ival < (256 * 255) && lit->sym->value.ival >= 0) { /* XXX check these numbers. operands are 8 bit? */
+    /* If the value is small enough, load it with set_imm; otherwise, take it from the constants table.
+       set_imm X, Y, Z: set X to: 256 * Y + Z. All operands are 8 bit, so maximum value is 255. 
+     */
+    if (lit->sym->value.ival < (256 * 255) && lit->sym->value.ival >= 0) { 
         /* use set_imm X, N*256, remainder)   */
         int remainder = lit->sym->value.ival % 256;
         int num256    = (lit->sym->value.ival - remainder) / 256; 
         fprintf(OUT, "\tset_imm\tI%d, %d, %d\n", reg.no, num256, remainder);
     } 
-    else {
+    else { /* too big enough for set_imm, so load it from constants segment. */
         m1_reg constindex = gen_reg(comp, VAL_INT);
 
         fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
@@ -210,41 +215,43 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target
 	assert(comp != NULL);
     assert(comp->currentchunk != NULL);
     assert(&comp->currentchunk->locals != NULL);
-
-
-	/* handle OBJECT_LINK nodes differently as they are the key to the recursion. */
-	
-  	
 	   
-	    /* visit this node's parent recursively, depth-first. 
-	    parent parameter will return a pointer to it so it can
-	    be passed on when visiting the field. Note that this invocation
-	    is recursive, so THIS function will be called again. Note also that
-	    the tree was built upside down, so obj->parent is really its parent
-	    in which the current node is a (link-node to a) field.
+	/* visit this node's parent recursively, depth-first. 
+    parent parameter will return a pointer to it so it can
+    be passed on when visiting the field. Note that this invocation
+    is recursive, so THIS function will be called again. Note also that
+    the tree was built upside down, so obj->parent is really its parent
+    in which the current node is a (link-node to a) field.
 	   
-	    x.y.z looks like this:
+    x.y.z looks like this:
 	   
-	   x   y   z
-	    \ /   /
-	     L1  /
-	      \ /
-	       L2
-	        
-	       ^
-	       |
-	     Node L2 is the root in this tree. Both L1 and L2 are of type OBJECT_LINK.
-	     Node "x" is OBJECT_MAIN, whereas nodes "y" and "z" are OBJECT_FIELD.
-	     First this function (gencode_obj) goes all the way down to x, sets the
-	     OUT parameter "parent" to itself, then as the function returns, comes
-	     back to L1, then visits y, passing on a pointer to node for "x" through
-	     the parent parameter. Then, node y sets the parent OUT parameter to itself
-	     (again, in this funciton gencode_obj), and then control goes up to L2,
-	     visiting z, passing a pointer to node "y" through the parent parameter.
-	     
-	     Neat huh?  
+         	 OBJECT_MAIN 
+	            |
+	            |  OBJECT_FIELD
+	            |   |
+	            |   |   OBJECT_FIELD
+	            V   V   V
 	       
-	   */
+	            x   y   z
+	             \ /   /
+OBJECT_LINK-----> L1  /
+	               \ /
+OBJECT_LINK-------> L2
+	        
+	                 ^
+	                 |
+	                ROOT
+	       
+    Node L2 is the root in this tree. Both L1 and L2 are of type OBJECT_LINK.
+    Node "x" is OBJECT_MAIN, whereas nodes "y" and "z" are OBJECT_FIELD.
+    First this function (gencode_obj) goes all the way down to x, sets the
+    OUT parameter "parent" to itself, then as the function returns, comes
+    back to L1, then visits y, passing on a pointer to node for "x" through
+    the parent parameter. Then, node y sets the parent OUT parameter to itself
+    (again, in this funciton gencode_obj), and then control goes up to L2,
+    visiting z, passing a pointer to node "y" through the parent parameter.
+  	       
+    */
 
     switch (obj->type) {
         case OBJECT_LINK:
@@ -253,6 +260,14 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target
 
             gencode_obj(comp, obj->parent,parent, is_target);
             numregs_pushed += gencode_obj(comp, obj->obj.field, parent, is_target);     
+            
+            if (numregs_pushed == 2) {
+//                m1_reg r1 = popreg(comp->regstack);
+//                m1_reg r2 = popreg(comp->regstack);
+                fprintf(stderr, "num regs is 2!\n");
+                fprintf(OUT, "\tderef\n");
+//                 pushreg(comp->regstack, r2);   
+            }
             break;
             
         }
@@ -288,20 +303,31 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target
         }
         case OBJECT_FIELD: /* example: b in a.b */
         {            
-        
+            m1_reg offsetreg;
             int offset = 42;
+//            gencode_expr(comp, obj->obj.index);
+            
+            ++numregs_pushed;
             
             if (offset > 0) {
-                if (is_target) {  /* lhs */
+                if (is_target) {  /* a.b = ... */
                  
-                    m1_reg reg = gen_reg(comp, VAL_INT);
-                    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", reg.no, offset);
+//                    m1_reg reg = gen_reg(comp, VAL_INT);
+//                    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", reg.no, offset);
+                    ++numregs_pushed;
+
                 }
-                else { /* rhs */
-                    m1_reg parentreg = popreg(comp->regstack);
-                    m1_reg reg = gen_reg(comp, VAL_INT);
-                    fprintf(OUT, "\tderef\t%c%d, %c%d\n", reg_chars[(int)reg.type], reg.no, 
-                                              reg_chars[(int)parentreg.type], parentreg.no);
+                else { /* ... = a.b */
+                    
+                    m1_reg offsetreg = popreg(comp->regstack);
+                    m1_reg parentreg = popreg(comp->regstack); 
+                    m1_reg reg       = gen_reg(comp, VAL_INT);
+                
+                    fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)reg.type], reg.no,
+                                                            reg_chars[(int)parentreg.type], parentreg.no,
+                                                            reg_chars[(int)offsetreg.type], offsetreg.no);   
+                    pushreg(comp->regstack, reg);
+                    ++numregs_pushed;                                                           
                 }
             }
             
@@ -355,6 +381,7 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target
             break;
     }  
 		
+	/* return the number of registers that are pushed onto the stack in this function. */	
     return numregs_pushed;
 		
 }
