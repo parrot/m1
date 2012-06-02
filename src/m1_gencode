@@ -375,7 +375,6 @@ OBJECT_LINK-------> L2
     }  
 		
 	/* return the number of registers that are pushed onto the stack in this function. */	
-	fprintf(stderr, "gencode_obj() num regs pushed: %d\n", numregs_pushed);
     return numregs_pushed;
 		
 }

@@ -6,6 +6,7 @@ Needed by code generator to store labels for break statements, etc.
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "m1_stack.h"
 
 
@@ -24,16 +25,25 @@ delete_stack(m1_intstack *stack) {
 
 void 
 push(m1_intstack *stack, int value) {
+    assert(stack != NULL);
+    assert(stack->sp < STACKSIZE);
+    
     stack->store[stack->sp++] = value;
 }
 
 int 
 pop(m1_intstack *stack) {
+    assert(stack != NULL);
+    assert(stack->sp > 0);
+    
     return stack->store[--stack->sp];
 }
 
 int 
 top(m1_intstack *stack) {
+    assert(stack != NULL);
+    assert(stack->sp > 0);
+    
     return stack->store[stack->sp - 1];    
 }
 
@@ -59,29 +69,40 @@ print_stack(m1_regstack *stack, char *message) {
 
 void
 delete_regstack(m1_regstack *stack) {
+    assert(stack != NULL);
     free(stack);
     stack = NULL;   
 }
 
 void
 pushreg(m1_regstack *stack, m1_reg reg) {
-
+    assert(stack != NULL);
+    assert(stack->sp < STACKSIZE);
+    
     stack->store[stack->sp++] = reg;
     print_stack(stack, "push (after)");
 }
 
 m1_reg
 popreg(m1_regstack *stack) {
+    m1_reg r;
     
-    m1_reg r = stack->store[--stack->sp];   
+    assert(stack != NULL);
+    assert(stack->sp > 0);
+    
+    r = stack->store[--stack->sp];   
     print_stack(stack, "pop (after)");
     return r;
 }
 
 m1_reg
 topreg(m1_regstack *stack) {
-   
-    m1_reg r = stack->store[stack->sp - 1];   
+    m1_reg r;
+    
+    assert(stack != NULL);
+    assert(stack->sp > 0);
+    
+    r = stack->store[stack->sp - 1];   
     print_stack(stack, "top (after)");
     return r;
 }
