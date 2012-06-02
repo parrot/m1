@@ -1100,7 +1100,7 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
 static void
 gencode_vardecl(M1_compiler *comp, m1_var *v) {
     
-    if (v->init) {
+    if (v->init) { /* generate code only for initializations. */
        m1_reg     reg;
        m1_symbol *s;
        
@@ -1119,6 +1119,39 @@ gencode_vardecl(M1_compiler *comp, m1_var *v) {
                                               s->regno, 
                                               reg_chars[(int)reg.type], 
                                               reg.no);
+    }
+    
+    if (v->size > 1) { /* for arrays */
+        m1_symbol *s;
+        int size_per_item = 4; /* fix this. */
+
+        int num256;
+        int remainder;
+        int size;
+
+        s = v->sym;
+        assert(s != NULL);
+        
+        if (s->regno == NO_REG_ALLOCATED_YET) {
+            m1_reg r = gen_reg(comp, s->valtype);
+            s->regno = r.no;
+        }
+        
+        /* calculate total size of array. If larger than 255,
+         * split it up into 2 parts n and m, where total size is n *256 + m.
+         */
+        size = v->size * size_per_item;
+        
+        if (size > 255) {
+            remainder = size % 256;   
+            num256    = (size - remainder) / 256;
+        }
+        else {
+            remainder = size;
+            num256    = 0;   
+        }
+        
+        fprintf(OUT, "\tgc_alloc\tI%d, %d, %d\n", s->regno, num256, remainder);
     }
        
 }

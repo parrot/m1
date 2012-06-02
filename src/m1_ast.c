@@ -381,9 +381,10 @@ make_var(M1_compiler *comp, char *name, m1_expression *init, unsigned size) {
 
 m1_var *
 var(M1_compiler *comp, char *varname, m1_expression *init) {
+    /* a single var is just size 1. */
 	m1_var *v = make_var(comp, varname, init, 1);
     
-    
+
 	v->sym = sym_new_symbol(&(comp->currentchunk->locals),  /* enter in current chunk's symbol table */
 	                       varname, 
 	                       comp->parsingtype);              /* type of this variable */
@@ -395,9 +396,16 @@ var(M1_compiler *comp, char *varname, m1_expression *init) {
 }
 
 m1_var *
-array(M1_compiler *comp, char *name, unsigned size, m1_expression *init) {
+array(M1_compiler *comp, char *varname, unsigned size, m1_expression *init) {
     /* XXX not sure about type of init */
-	return make_var(comp, name, init, size);
+    m1_var *v = make_var(comp, varname, init, size);
+    v->sym = sym_new_symbol(&(comp->currentchunk->locals),  /* enter in current chunk's symbol table */
+	                       varname, 
+	                       comp->parsingtype);              /* type of this variable */
+	
+	assert(v->sym != NULL);
+    v->sym->var = v;
+	return v;
 }
 
 m1_expression *
