@@ -1121,12 +1121,12 @@ gencode_vardecl(M1_compiler *comp, m1_var *v) {
                                               reg.no);
     }
     
-    if (v->size > 1) { /* for arrays */
+    if (v->size > 1) { /* generate code to allocate memory on the heap for arrays */
         m1_symbol *s;
-        int size_per_item = 4; /* fix this. */
-
-        int num256;
-        int remainder;
+        m1_reg memsize;
+        
+        
+        int size_per_item = 4; /* XXX fix this. Size of one element in the array. */
         int size;
 
         s = v->sym;
@@ -1137,21 +1137,26 @@ gencode_vardecl(M1_compiler *comp, m1_var *v) {
             s->regno = r.no;
         }
         
-        /* calculate total size of array. If larger than 255,
-         * split it up into 2 parts n and m, where total size is n *256 + m.
+        /* calculate total size of array. If smaller than 256*255,
+         * then load the value with set_imm, otherwise from the 
+         * constants segment.
          */
         size = v->size * size_per_item;
         
-        if (size > 255) {
-            remainder = size % 256;   
-            num256    = (size - remainder) / 256;
+        memsize = gen_reg(comp, VAL_INT); /* reg to hold num of bytes to allocate */
+        
+        if (size < (256*255)) {
+            int remainder = size % 256;   
+            int num256    = (size - remainder) / 256;
+            fprintf(OUT, "\tset_imm\tI%d, %d, %d\n", memsize.no, num256, remainder);
         }
         else {
-            remainder = size;
-            num256    = 0;   
+            m1_symbol *sizesym = sym_find_int(&comp->currentchunk->constants, size);
+            assert(sizesym != NULL);
+            fprintf(OUT, "\tderef\tI%d, CONSTS, %d\n", memsize.no, sizesym->constindex);
         }
         
-        fprintf(OUT, "\tgc_alloc\tI%d, %d, %d\n", s->regno, num256, remainder);
+        fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", s->regno, memsize.no);
     }
        
 }
@@ -1380,7 +1385,11 @@ gencode(M1_compiler *comp, m1_chunk *ast) {
                         
     fprintf(OUT, ".version 0\n");
     
-    while (iter != NULL) {        
+    while (iter != NULL) {     
+        /* set pointer to current chunk, so that the code generator 
+           has access to anything that belongs to the chunk. 
+         */
+        comp->currentchunk = iter;   
         gencode_chunk(comp, iter);
         iter = iter->next;   
     }

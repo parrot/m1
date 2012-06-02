@@ -8,14 +8,14 @@
 
 
 typedef struct m1_chunk {
-    m1_valuetype          rettype;
-    char                 *name;
-    struct m1_chunk      *next;
-    struct m1_expression *block;
+    m1_valuetype          rettype;      /* return type of chunk */
+    char                 *name;         /* name of this chunk */    
+    struct m1_chunk      *next;         /* chunks are stored in a list. */
+    struct m1_expression *block;        /* list of statements. */
     /* TODO: add parameters */
     
-    struct m1_symboltable locals;
-    struct m1_symboltable constants;
+    struct m1_symboltable locals;       /* local vars in this chunk */
+    struct m1_symboltable constants;    /* constants used in this chunk */
         
 } m1_chunk;
 
@@ -283,36 +283,16 @@ typedef struct m1_expression {
 
 extern m1_chunk *chunk(M1_compiler *comp, int rettype, char *name, m1_expression *block);
 
-
-
-extern m1_expression *expression(M1_compiler *comp, m1_expr_type type);
-extern void expr_set_num(M1_compiler *comp, m1_expression *e, double v);
-extern void expr_set_int(M1_compiler *comp, m1_expression *e, int v);
-
-
-extern void expr_set_unexpr(M1_compiler *comp, m1_expression *node, m1_expression *exp, m1_unop op);             
-       
+extern m1_expression *expression(M1_compiler *comp, m1_expr_type type);       
 extern m1_expression *funcall(M1_compiler *comp, char *name);
-
-
-extern void expr_set_expr(m1_expression *node, m1_expression *expr);
-extern void expr_set_obj(m1_expression *node, m1_object *obj);
-
-
-extern void expr_set_assign(M1_compiler *comp, m1_expression *node, 
-                            m1_expression *lhs, int assignop, m1_expression *rhs);
-
-extern void obj_set_ident(m1_object *node, char *ident);
-extern void obj_set_index(m1_object *node, m1_expression *index);
-
             
 extern m1_object *object(M1_compiler *comp, m1_object_type type);            
+extern void obj_set_ident(m1_object *node, char *ident);
 
 extern m1_structfield * structfield(M1_compiler *comp, char *name, m1_valuetype type);
 
 extern m1_struct *newstruct(M1_compiler *comp, char *name, m1_structfield *fields);
 
-extern void expr_set_string(M1_compiler *comp, m1_expression *node, char *str);
 
 extern m1_expression *ifexpr(M1_compiler *comp, m1_expression *cond, m1_expression *ifblock, m1_expression *elseblock);
 extern m1_expression *whileexpr(M1_compiler *comp, m1_expression *cond, m1_expression *block);

@@ -16,6 +16,13 @@ AST node constructors
 
 extern int yyget_lineno(yyscan_t yyscanner);
 
+static void expr_set_unexpr(M1_compiler *comp, m1_expression *node, m1_expression *exp, m1_unop op);             
+static void expr_set_expr(m1_expression *node, m1_expression *expr);
+static void expr_set_obj(m1_expression *node, m1_object *obj);
+static void expr_set_assign(M1_compiler *comp, m1_expression *node, m1_expression *lhs, int assignop, m1_expression *rhs);
+
+static void obj_set_index(m1_object *node, m1_expression *index);
+
 static void *
 m1_malloc(size_t size) {
     void *mem = calloc(1, size);
@@ -60,7 +67,7 @@ new_literal(m1_valuetype type) {
     return l;    
 }
 
-void 
+static void 
 expr_set_num(M1_compiler *comp, m1_expression *e, double v) {
     assert(e->type == EXPR_NUMBER); 
 
@@ -69,7 +76,7 @@ expr_set_num(M1_compiler *comp, m1_expression *e, double v) {
     e->expr.l->sym = sym_enter_num(&comp->currentchunk->constants, v);   
 }
 
-void 
+static void 
 expr_set_int(M1_compiler *comp, m1_expression *e, int v) {
     assert(e->type == EXPR_INT);
 
@@ -165,13 +172,13 @@ unexpr(M1_compiler *comp, m1_expression *node, m1_unop op) {
     return e;   
 }
 
-void
+static void
 expr_set_unexpr(M1_compiler *comp, m1_expression *node, m1_expression *exp, m1_unop op) {
     assert(node->type == EXPR_UNARY);   
     node->expr.u = unexpr(comp, exp, op);
 }
 
-void 
+static void 
 expr_set_funcall(m1_expression *node, m1_funcall *f) {
     assert(node->type == EXPR_FUNCALL);   
     node->expr.f = f;
@@ -274,17 +281,17 @@ expr_set_if(M1_compiler *comp, m1_expression *node, m1_expression *cond,
     node->expr.i->elseblock = elseblock;
 }
 
-void 
+static void 
 expr_set_expr(m1_expression *node, m1_expression *expr) {
     node->expr.e = expr;   
 }
 
-void 
+static void 
 expr_set_obj(m1_expression *node, m1_object *obj) {
     node->expr.t = obj;    
 }
 
-void 
+static void 
 expr_set_assign(M1_compiler *comp, m1_expression *node, m1_expression *lhs, int assignop, m1_expression *rhs) {
 	/*
 	a = b  => normal case
