@@ -185,10 +185,10 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
                                                 reg_chars[(int)rhs.type], rhs.no);
     }
     else if (obj_reg_count == 2) {
-        m1_reg r1 = popreg(comp->regstack);
-        m1_reg r2 = popreg(comp->regstack);        
-        fprintf(OUT, "\tset_ref\t%c%d, %c%d, %c%d\n", reg_chars[(int)r1.type], r1.no, 
-                                                      reg_chars[(int)r2.type], r2.no,
+        m1_reg index  = popreg(comp->regstack);
+        m1_reg parent = popreg(comp->regstack);        
+        fprintf(OUT, "\tset_ref\t%c%d, %c%d, %c%d\n", reg_chars[(int)parent.type], parent.no, 
+                                                      reg_chars[(int)index.type], index.no,
                                                       reg_chars[(int)rhs.type], rhs.no);
     }
     fprintf(stderr, "obj reg count = %d\n", obj_reg_count);
@@ -302,7 +302,7 @@ OBJECT_LINK-------> L2
             int offset = 42;
             
             fieldreg = gen_reg(comp, VAL_INT);
-            fprintf(stderr, "\tset_imm\tI%d, 0, %d\n", fieldreg.no, offset); 
+            fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", fieldreg.no, offset); 
             
             pushreg(comp->regstack, fieldreg);
             ++numregs_pushed;
