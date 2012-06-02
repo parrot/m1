@@ -72,7 +72,7 @@ m1_decl$(O): src/m1_decl.c src/m1_decl.h
 	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_decl.c
 
 clean:
-	$(RM) -rf src/m1parser.c \
-		src/m1lexer.c \
+	$(RM) -rf src/m1parser.* \
+		src/m1lexer.* \
 		src/*$(O) \
 		./m1$(EXE)
