@@ -44,14 +44,15 @@ What's not working?
 * namespaces
 * PMC and struct definitions (incl methods)
 * return statements
-* advanced field access (a.b, a->b, etc.)
 * pointers, objects (int *x;), null, new.m
 * arrays (and initializations)
 * self, super
 * type checking (separate phase of compiler)
 * import statement.
 * try/catch statement (needed?)
-
+* nested scopes (symboltables).
+* complex arrays (multidimensional)
+* offsets for field access (a.b)
 
 
 short-term roadmap:
@@ -60,10 +61,10 @@ short-term roadmap:
 * implement function calls properly (including returning from a function) HIGH PRIORITY
 * [FIXED?] finish up control statements (if, while, dowhile, break)
 * implement "new" statement for allocating PMC and struct instances. This includes implementing pointers
-* implement field access (x.y = 1)
+* [FIXED?] implement field access (x.y = 1)
 * look into vtable implementation for PMCs for calling member functions x.y();
 * think about a module management system. No preprocessor please. Maybe similar to Java's import statement. This might include namespaces, and also private and public scopes for modules (keywords needed?)
-
+* generate instructions (struct instances) rather than print directly to stdout. This will allow analysis and optimization.
 
 random list of items:
 ---------------------

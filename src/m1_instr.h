@@ -50,8 +50,8 @@ typedef enum m0_instr_code {
 extern char const * const m0_instr_names[];
 
 typedef struct m0_operand {
-    char value;
-    char type;    
+    unsigned char value;
+    unsigned char type;    
 } m0_operand;
 
 typedef enum m0_instr_flag {
@@ -67,15 +67,18 @@ typedef enum m0_instr_flag {
 } m0_instr_flag;
 
 typedef struct m0_instr {
-    char opcode;
-    char flags; /* maximum of 8 flags */
-    unsigned int label; /* most instructions won't have one */
+    char              opcode;
+    char              flags;       /* maximum of 8 flags */
+    unsigned int      label;       /* most instructions won't have one */
     struct m0_operand operands[3];
     
     struct m0_instr *next;
 } m0_instr;
 
-extern m0_instr *instr(char op, char arg1, char type1, char arg2, char type2, char arg3, char type3);
+extern m0_instr *instr(char op, unsigned char arg1, unsigned char type1, 
+               unsigned char arg2, unsigned char type2, 
+               unsigned char arg3, unsigned char type3);
+
 
 #endif
 

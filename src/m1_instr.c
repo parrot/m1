@@ -51,6 +51,7 @@ char const * const m0_instr_names[] = {
 
 #define OUT stdout
 
+/*
 static void
 write_noop(m0_instr *i) {
     fprintf(OUT, "noop");    
@@ -250,34 +251,49 @@ static void
 write_exit(m0_instr *i) {
     fprintf(OUT, "exit");    
 }
+*/
 
-/*
 static int
 numops(m0_instr *i) {
     return 0;   
 }
-*/
-/*
+
+
 static void
 write_instr(m0_instr *i) {
     switch (numops(i)) {
         case 0:
+            fprintf(OUT, "\t%s\n", m0_instr_names[i->opcode]);
             break;
-        case 1:
-        
-            fprintf(OUT, "\t%s\t%c%d, x, x\n", m0_instr_names[i->opcode], i->operands[0].type, i->operands[0].value);   
-            break;
-            
+        case 1:        
+            fprintf(OUT, "\t%s\t%c%d, x, x\n", m0_instr_names[i->opcode], 
+                                               i->operands[0].type, i->operands[0].value);   
+            break;            
         case 2:
-        
+            fprintf(OUT, "\t%s\t%c%d, %c%d, x\n", m0_instr_names[i->opcode], 
+                                                  i->operands[0].type, i->operands[0].value,
+                                                  i->operands[1].type, i->operands[1].value);           
+            break;
         case 3:
-        
+            fprintf(OUT, "\t%s\t%c%d, %cd, %c%d\n", m0_instr_names[i->opcode], 
+                                                    i->operands[0].type, i->operands[0].value,
+                                                    i->operands[1].type, i->operands[1].value,
+                                                    i->operands[2].type, i->operands[2].value);   
+            break;
         default:
             break;
     }
 }
-*/
 
+void
+write_instructions(m0_instr *i) {
+    while (i != NULL) {
+        write_instr(i);
+        i = i->next;   
+    }
+       
+}
+/*
 void
 write_instructions(m0_instr *i) {
     while (i != NULL) {
@@ -334,9 +350,13 @@ write_instructions(m0_instr *i) {
         i = i->next;   
     }   
 }
+*/
 
 m0_instr *
-instr(char op, char arg1, char type1, char arg2, char type2, char arg3, char type3) {
+instr(char op, unsigned char arg1, unsigned char type1, 
+               unsigned char arg2, unsigned char type2, 
+               unsigned char arg3, unsigned char type3) 
+{
     
     m0_instr *i = (m0_instr *)calloc(1, sizeof (m0_instr));
     if (i == NULL) {
