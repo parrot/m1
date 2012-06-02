@@ -345,7 +345,9 @@ OBJECT_LINK-------> L2
                         
             if (is_target) { /* x[42] = ... */
 
-                /* don't pop it, just count it */
+                /* don't pop it, just count it as it was pushed onto regstack
+                   by gencode_expr(). It will be popped by the calling function. 
+                */
                 ++numregs_pushed;
             
                 
