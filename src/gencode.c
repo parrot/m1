@@ -186,8 +186,10 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
 
     if (obj_reg_count == 1) {
         lhs = popreg(comp->regstack);    
+        
         fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
                                                 reg_chars[(int)rhs.type], rhs.no);
+        
     }
     else if (obj_reg_count == 2) {
         m1_reg index  = popreg(comp->regstack);
@@ -1125,7 +1127,7 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
 
 static void
 gencode_var(M1_compiler *comp, m1_var *v) {    
-    if (v->init) { /* generate code only for initializations. */
+    if (v->init) { /* generate code for initializations. */
        m1_reg     reg;
        m1_symbol *sym;
        
@@ -1136,7 +1138,7 @@ gencode_var(M1_compiler *comp, m1_var *v) {
        assert(v->sym != NULL);
        sym = v->sym;       
        
-       /* check for first usage of this variable; may not have a reg allocated yet. */       
+       
        if (sym->regno == NO_REG_ALLOCATED_YET) {
             sym->regno = reg.no;
        }
@@ -1152,6 +1154,7 @@ gencode_var(M1_compiler *comp, m1_var *v) {
         sym = v->sym;
         assert(sym != NULL);
         
+        fprintf(stderr, "array type; %d\n", sym->valtype);
         if (sym->regno == NO_REG_ALLOCATED_YET) {
             m1_reg reg = gen_reg(comp, sym->valtype);
             sym->regno = reg.no;
