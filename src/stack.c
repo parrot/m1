@@ -57,6 +57,8 @@ new_regstack(void) {
 
 void
 print_stack(m1_regstack *stack, char *message) {
+    assert(stack != NULL);
+    assert(message != NULL);
 #if STACKDEBUG     
     int i = stack->sp - 1;
     static const char r[4] = {'I', 'N', 'S', 'P'};

@@ -21,6 +21,7 @@ type_error(M1_compiler *comp, unsigned line, char *msg) {
 
 static void
 warning(M1_compiler *comp, unsigned line, char *msg) {
+    assert(comp != NULL);
     fprintf(stderr, "Warning (line %d): %s\n", line, msg);   
 }
 
@@ -262,13 +263,14 @@ check_unary(M1_compiler *comp, m1_unexpr *u) {
 
 static void
 check_break(M1_compiler *comp) {
-    
+    assert(comp != NULL);
 }
 
 static m1_type
 check_funcall(M1_compiler *comp, m1_funcall *f) {
     m1_type rettype;
-    
+    assert(comp != NULL);
+    assert(f != NULL);
     return rettype;
 }
 

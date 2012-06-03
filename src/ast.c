@@ -7,6 +7,7 @@ AST node constructors
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 #include "ast.h"
 #include "symtab.h"
@@ -378,6 +379,8 @@ newstruct(M1_compiler *comp, char *name, m1_structfield *fields) {
 m1_expression *
 vardecl(M1_compiler *comp, char *type, m1_var *v) {
 	m1_expression *expr = expression(comp, EXPR_VARDECL);
+	assert(type != NULL);
+	assert(v != NULL);
 	
 	expr->expr.v  = v;
 
@@ -458,6 +461,7 @@ dowhileexpr(M1_compiler *comp, m1_expression *cond, m1_expression *block) {
 
 unsigned 
 field_size(struct m1_structfield *field) {
+    assert(field != NULL);
 	/*
 	switch (field->type) {
 		case VAL_INT:
@@ -528,9 +532,12 @@ castexpr(M1_compiler *comp, char *type, m1_expression *castedexpr) {
 
 m1_structfield *
 struct_find_field(M1_compiler *comp, m1_struct *structdef, char *fieldname) {
-    m1_structfield *sfield;
-    sfield = structdef->fields;
+    m1_structfield *sfield = NULL;
     
+    assert(comp != NULL);
+    sfield = structdef->fields;
+
+        
     while (sfield != NULL) {
         if (strcmp(sfield->name, fieldname) == 0) /* found! */
         {

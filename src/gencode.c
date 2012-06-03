@@ -58,7 +58,7 @@ gen_reg(M1_compiler *comp, m1_valuetype type) {
     m1_reg reg;
     
     assert(comp != NULL);
-    assert((type >=0) && (type < 4));
+    assert(type < 4);
     
     reg.type = type;
 	reg.no   = comp->regs[type]++;   
@@ -322,6 +322,7 @@ OBJECT_LINK-----> L1
             
             /* pass comp, a pointer to the struct decl of this obj's parent, and this obj's name. */
             field    = struct_find_field(comp, (*parent)->sym->typedecl->d.s, obj->obj.name);
+            assert(field != NULL); /* XXX need to check in semcheck. */
             offset   = field->offset;                        
             fieldreg = gen_reg(comp, VAL_INT); /* reg for storing offset of field. */
 
@@ -564,21 +565,16 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
 
 static void
 gencode_deref(M1_compiler *comp, m1_object *o) {
-	m1_reg reg;
-
     gencode_obj(comp, o, NULL, 0);   
 }
 
 static void
 gencode_address(M1_compiler *comp, m1_object *o) {
-	m1_reg reg;
-
     gencode_obj(comp, o, NULL, 0);       
 }
 
 static void
 gencode_return(M1_compiler *comp, m1_expression *e) {
-	m1_reg reg;
     gencode_expr(comp, e);
 }
 
@@ -961,7 +957,7 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     if (postfix == 0) { 
         /* prefix; return reg containing value before adding 1 */
     	reg.no = target.no; 
-    	fprintf(OUT, "\tset\tI%d, %Id, x\n", reg.no, target.no);
+    	fprintf(OUT, "\tset\tI%d, I%d, x\n", reg.no, target.no);
 
     }	
     else {
@@ -1027,8 +1023,15 @@ gencode_new(M1_compiler *comp, m1_newexpr *expr) {
 	m1_reg reg     = gen_reg(comp, VAL_INT);
 	m1_reg sizereg = gen_reg(comp, VAL_INT);
 	
+
 	unsigned size  = 128; /* fix; should be size of object requested */
-	
+    
+    m1_decl *typedecl = type_find_def(comp, expr->type);
+    if (typedecl == NULL) {
+        fprintf(stderr, "Cannot find type '%s' requested for in new-statement\n", expr->type);   
+    }
+    
+		
 	fprintf(OUT, "\tset_imm I%d, 0, %d\n", sizereg.no, size);
 	fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", reg.no, sizereg.no);
 	
@@ -1331,6 +1334,7 @@ Generate the metadata segment.
 */
 static void
 gencode_metadata(m1_chunk *c) {
+    assert(c != NULL);
 	fprintf(OUT, ".metadata\n");	
 }
 

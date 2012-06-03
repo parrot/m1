@@ -49,6 +49,9 @@ m1_symbol *
 sym_new_symbol(m1_symboltable *table, char *varname, char *typename) {
     m1_symbol *sym = (m1_symbol *)calloc(1, sizeof(m1_symbol));
     
+    assert(varname != NULL);
+    assert(typename != NULL);
+    
     if (sym == NULL) {
         fprintf(stderr, "cant alloc mem for new sym %s", varname);
         exit(EXIT_FAILURE);   
