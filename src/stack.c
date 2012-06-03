@@ -9,6 +9,7 @@ Needed by code generator to store labels for break statements, etc.
 #include <assert.h>
 #include "stack.h"
 
+#define STACKDEBUG  0
 
 m1_intstack *
 new_intstack(void) {
@@ -56,6 +57,7 @@ new_regstack(void) {
 
 void
 print_stack(m1_regstack *stack, char *message) {
+#if STACKDEBUG     
     int i = stack->sp - 1;
     static const char r[4] = {'I', 'N', 'S', 'P'};
    
@@ -65,6 +67,7 @@ print_stack(m1_regstack *stack, char *message) {
         --i;   
     }    
     fprintf(stderr, "--------\n");
+#endif    
 }
 
 void

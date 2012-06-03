@@ -19,6 +19,7 @@ This happens in gencode_number().
 #include <stdlib.h>
 #include <ctype.h>
 #include <assert.h>
+#include <string.h>
 #include "gencode.h"
 #include "ast.h"
 #include "compiler.h"
@@ -301,17 +302,6 @@ OBJECT_LINK-----> L1
         	reg.no   = obj->sym->regno;
         	reg.type = obj->sym->valtype; 
 
-            /* this is OBJECT_MAIN, which is the start of an aggregate expression;
-               example; in a.b.c, a is OBJECT_MAIN, b and c are OBJECT_FIELD. 
-               Therefore, a is declared as a struct. Find its declaration. */
-            
-            obj->decl = type_find_def(comp, obj->sym->name);   
-            if (obj->decl == NULL) {
-                fprintf(stderr, "can't find declaration type of %s\n", obj->sym->name);   
-            }
-            else {
-                fprintf(stderr, "found declaration for %s\n", obj->sym->name);
-            }
                       
             /* return a pointer to this node by OUT parameter. */
             *parent = obj;
@@ -323,19 +313,23 @@ OBJECT_LINK-----> L1
         }
         case OBJECT_FIELD: /* example: b in a.b */
         {            
-            m1_reg fieldreg;
-            /* XXX look up offset and load it into a reg. */
+            m1_reg          fieldreg;            
+            int             offset;                        
+            m1_structfield *field;
             
-            int offset = 42;
-            m1_decl *structdecl;
+            assert((*parent)->sym != NULL);
+            assert((*parent)->sym->typedecl != NULL);
             
-            //structdecl = type_find_def(comp, (*parent)->name);
-            
+            /* pass comp, a pointer to the struct decl of this obj's parent, and this obj's name. */
+            field    = struct_find_field(comp, (*parent)->sym->typedecl->d.s, obj->obj.name);
+            offset   = field->offset;                        
             fieldreg = gen_reg(comp, VAL_INT); /* reg for storing offset of field. */
-            fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", fieldreg.no, offset); 
-            
+
+            /* load the offset into a reg. and make it available through the regstack. */
+            fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", fieldreg.no, offset);             
             pushreg(comp->regstack, fieldreg);
             ++numregs_pushed;
+            
             
             if (offset > 0) {
                 if (is_target) {  /* a.b = ... */
@@ -1187,11 +1181,11 @@ gencode_cast(M1_compiler *comp, m1_castexpr *expr) {
     gencode_expr(comp, expr->expr);
     reg = popreg(comp->regstack);
     
-    if (expr->type == VAL_INT) {
+    if (strcmp(expr->type, "int") == 0) {
         result = gen_reg(comp, VAL_INT);
         fprintf(OUT, "\tntoi\tI%d, %c%d, x\n", result.no, reg_chars[(int)reg.type], reg.no);
     }
-    else if (expr->type == VAL_FLOAT) {
+    else if (strcmp(expr->type, "num") == 0) {
         result = gen_reg(comp, VAL_FLOAT);
         fprintf(OUT, "\titon\tN%d, %c%d, x\n", result.no, reg_chars[(int)reg.type], reg.no);
     }

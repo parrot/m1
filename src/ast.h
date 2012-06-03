@@ -138,7 +138,7 @@ typedef struct m1_unexpr {
 
 typedef struct m1_castexpr {
     struct m1_expression *expr;
-    int type;    
+    char *type;    
 } m1_castexpr;
 
 typedef enum m1_object_type {
@@ -170,7 +170,6 @@ typedef struct m1_object {
     struct m1_symbol   *sym;        /* pointer to this object's declaration. */ 
     unsigned            line;       /* line number of symbol that this object is representing. */
     
-    struct m1_decl     *decl;       /* pointer to its declaration, if it's a struct. */
     struct m1_object   *parent;     /* pointer to its parent (in a.b.c, a is b's parent) */
       
 } m1_object;
@@ -329,8 +328,9 @@ extern m1_case *switchcase(M1_compiler *comp, int selector, m1_expression *block
 extern m1_expression *newexpr(M1_compiler *copm, char *type);
 
 extern m1_object *lhsobj(M1_compiler *comp, m1_object *parent, m1_object *field);
-extern m1_expression *castexpr(M1_compiler *comp, int type, m1_expression *castedexpr);
+extern m1_expression *castexpr(M1_compiler *comp, char *type, m1_expression *castedexpr);
 
+extern m1_structfield *struct_find_field(M1_compiler *comp, m1_struct *structdef, char *fieldname);
 
 #endif
 

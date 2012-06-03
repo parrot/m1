@@ -30,6 +30,7 @@ init_compiler(M1_compiler *comp) {
                                    then identifiers are types */   	
     comp->is_parsing_usertype = 1;
     
+    /* register built-in types in type declaration module. */
     type_enter_type(comp, "void", DECL_VOID, 0);
     type_enter_type(comp, "int", DECL_INT, 4);
     type_enter_type(comp, "num", DECL_NUM, 8);

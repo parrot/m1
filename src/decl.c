@@ -3,8 +3,14 @@
 #include <string.h>
 #include <assert.h>
 #include "decl.h"
+#include "ast.h"
 
 
+/*
+
+Find the declaration for type <typename>.
+
+*/
 m1_decl *
 type_find_def(M1_compiler *comp, char *typename) {
     m1_decl *iter;
@@ -18,6 +24,7 @@ type_find_def(M1_compiler *comp, char *typename) {
         assert(typename != NULL);
         
         if (strcmp(iter->name, typename) == 0) { /* found! */
+            fprintf(stderr, "Found type %s\n", typename);
             return iter;
         }
         iter = iter->next;    
@@ -26,6 +33,14 @@ type_find_def(M1_compiler *comp, char *typename) {
     return NULL;    
 }
 
+
+
+
+/*
+
+Enter a new struct declaration that goes by name <structname>.
+
+*/
 m1_decl *
 type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structdef) {
     m1_decl *decl = (m1_decl *)calloc(1, sizeof(m1_decl));    

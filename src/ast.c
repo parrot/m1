@@ -408,7 +408,13 @@ var(M1_compiler *comp, char *varname, m1_expression *init) {
 		
 	assert(v->sym != NULL);
 		
-	v->sym->typedecl   = type_find_def(comp, comp->parsingtype);
+	v->sym->typedecl = type_find_def(comp, comp->parsingtype);
+	if (v->sym->typedecl != NULL) {
+	   fprintf(stderr, "[var] %s is of type %s\n", varname, v->sym->typedecl->name);
+	}
+	else {
+	   fprintf(stderr, "[var] can't find type declaration for %s\n", varname);  
+	}
     assert(v->sym->typedecl != NULL); 		
     
 	v->sym->var  = v; /* set the symbol node's (representing the variable declaration) 
@@ -508,12 +514,30 @@ newexpr(M1_compiler *comp, char *type) {
 }
 
 m1_expression *
-castexpr(M1_compiler *comp, int type, m1_expression *castedexpr) {
+castexpr(M1_compiler *comp, char *type, m1_expression *castedexpr) {
     m1_expression *expr = expression(comp, EXPR_CAST);
     m1_castexpr *cast   = (m1_castexpr *)m1_malloc(sizeof(m1_castexpr));
     cast->type          = type;
     cast->expr          = castedexpr;
     expr->expr.cast     = cast;
     return expr;   
+}
+
+
+
+
+m1_structfield *
+struct_find_field(M1_compiler *comp, m1_struct *structdef, char *fieldname) {
+    m1_structfield *sfield;
+    sfield = structdef->fields;
+    
+    while (sfield != NULL) {
+        if (strcmp(sfield->name, fieldname) == 0) /* found! */
+        {
+            return sfield;
+        }
+        sfield = sfield->next;   
+    }
+    return sfield;        
 }
 

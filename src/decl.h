@@ -1,6 +1,7 @@
 #ifndef __M1_DECL_H__
 #define __M1_DECL_H__
 
+
 #include "compiler.h"
 
 typedef enum m1_decl_type {
@@ -35,6 +36,8 @@ typedef struct m1_decl {
 extern m1_decl *type_find_def(M1_compiler *comp, char *typename);
 extern m1_decl *type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structdef);
 extern m1_decl *type_enter_type(M1_compiler *comp, char *typename, m1_decl_type type, unsigned size);
+
+
 
 #endif
 
