@@ -55,7 +55,7 @@ link_sym(m1_symboltable *table, m1_symbol *sym) {
 }
 
 m1_symbol *
-sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *typename) {
+sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *typename, unsigned size) {
     m1_symbol *sym = (m1_symbol *)calloc(1, sizeof(m1_symbol));
     
     assert(varname != NULL);
@@ -65,9 +65,12 @@ sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *ty
         fprintf(stderr, "cant alloc mem for new sym %s", varname);
         exit(EXIT_FAILURE);   
     }
+    
+    sym->size       = size;
     sym->name       = varname; /* name of this symbol */
     sym->regno      = NO_REG_ALLOCATED_YET; /* need to allocate a register later. */  
     sym->next       = NULL;    /* symbols are stored in a list */
+    
     
     /* find the type declaration for the specified type. 
     XXX perhaps do this in semcheck after the parsing is finished? 

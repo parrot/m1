@@ -394,7 +394,8 @@ var(M1_compiler *comp, char *varname, m1_expression *init) {
 	v->sym = sym_new_symbol(comp,
 	                        &(comp->currentchunk->locals),  /* enter in current chunk's sym.tab. */
 	                        varname, 
-	                        comp->parsingtype);              /* type of this variable */
+	                        comp->parsingtype, /* type of this variable */
+	                        1);              
 		
 	assert(v->sym != NULL);
 		
@@ -422,7 +423,8 @@ array(M1_compiler *comp, char *varname, unsigned size, m1_expression *init) {
                             &(comp->currentchunk->locals),  /* enter in current chunk's symbol table */
 	                        varname, 
 	                        //comp->parsingtype);              /* type of this variable */
-	                        "int"); /* arrays are implemented as pointers. */
+	                        "int", /* arrays are implemented as pointers. */
+	                        size); 
 	
 	assert(v->sym != NULL);
     v->sym->var = v;

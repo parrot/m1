@@ -62,6 +62,7 @@ typedef struct m1_symbol {
     m1_value          value;    /* for const declarations. */
     m1_valuetype      valtype;  /* selector of value union. */
     
+    unsigned          size;     /* 1 for normal symbols; > 1 for arrays. */
     int               regno;    /* allocated register */
     int               scope;    /* scope of this symbol. */
     int               constindex;   /* index in const segment that holds this symbol's value. */
@@ -98,7 +99,7 @@ extern m1_symbol *sym_find_num(m1_symboltable *table, double val);
 extern m1_symbol *sym_find_int(m1_symboltable *table, int val);
 extern m1_symbol *sym_find_chunk(m1_symboltable *table, char *name);
 
-extern m1_symbol *sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *name, char *typename);
+extern m1_symbol *sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *name, char *typename, unsigned size);
 extern m1_symbol *sym_lookup_symbol(m1_symboltable *table, char *name);
 
 extern void print_symboltable(m1_symboltable *table);

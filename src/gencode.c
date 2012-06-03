@@ -305,6 +305,7 @@ OBJECT_LINK-----> L1
                 fprintf(stderr, "Reg of %s is %d\n", obj->sym->name, obj->sym->regno);        	
         	}
 */        	
+            fprintf(stderr, "symbol %s has size %d\n", obj->sym->name, obj->sym->size);
         	reg.no   = obj->sym->regno;
         	reg.type = obj->sym->typedecl->valtype; 
 
@@ -389,7 +390,7 @@ OBJECT_LINK-----> L1
             else { /* ... = x[42] */
                 m1_reg offsetreg = popreg(comp->regstack); /* containing the index. */
                 m1_reg parentreg = popreg(comp->regstack); /* containing the struct or array */
-                m1_reg result    = gen_reg(comp, VAL_INT); /* to store the result. */ 
+                m1_reg result    = gen_reg(comp, VAL_INT); /* to store the result. */ /* XXX FIX THIS ; must be base type of an array, so string[] is string, but the type for the array itself is I (or P?) as that's a reference to an object. */
                 
                 fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)result.type], result.no,
                                                             reg_chars[(int)parentreg.type], parentreg.no,
