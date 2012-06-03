@@ -184,14 +184,12 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
 
     if (obj_reg_count == 1) {
         lhs = popreg(comp->regstack);    
-        fprintf(stderr, "obj reg count 1, type of lhs: %c\n", reg_chars[(int)lhs.type]);
         fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
                                                 reg_chars[(int)rhs.type], rhs.no);
     }
     else if (obj_reg_count == 2) {
         m1_reg index  = popreg(comp->regstack);
         m1_reg parent = popreg(comp->regstack);
-        fprintf(stderr, "obj reg count 2\n");
         fprintf(OUT, "\tset_ref\t%c%d, %c%d, %c%d\n", reg_chars[(int)parent.type], parent.no, 
                                                       reg_chars[(int)index.type], index.no,
                                                       reg_chars[(int)rhs.type], rhs.no);
@@ -289,9 +287,7 @@ OBJECT_LINK-----> L1
         }
         case OBJECT_MAIN: 
         {   
-            m1_reg reg;   
-            
-            fprintf(stderr, "OBJECT_MAIN\n");  	
+            m1_reg reg;              
 
         	assert(obj->obj.field != NULL);
         	assert(obj->sym != NULL);
@@ -302,12 +298,11 @@ OBJECT_LINK-----> L1
         	if (obj->sym->regno == NO_REG_ALLOCATED_YET) {
                 m1_reg r = gen_reg(comp, obj->sym->typedecl->valtype); 
                 obj->sym->regno = r.no;
-
         	}  
-        	else {
+/*        	else {
                 fprintf(stderr, "Reg of %s is %d\n", obj->sym->name, obj->sym->regno);        	
         	}
-        	
+*/        	
         	reg.no   = obj->sym->regno;
         	reg.type = obj->sym->typedecl->valtype; 
 
@@ -1144,22 +1139,10 @@ gencode_var(M1_compiler *comp, m1_var *v) {
        assert(v->sym != NULL);
        sym = v->sym;       
        
-       /* check for first usage of this variable; may not have a reg allocated yet. */
-       
+       /* check for first usage of this variable; may not have a reg allocated yet. */       
        if (sym->regno == NO_REG_ALLOCATED_YET) {
             sym->regno = reg.no;
        }
-/*
-       if (sym->regno == NO_REG_ALLOCATED_YET) {
-            m1_reg temp = gen_reg(comp, sym->valtype);
-            sym->regno  = temp.no;
-       }
-       fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[sym->valtype], 
-                                              sym->regno, 
-                                              reg_chars[(int)reg.type], 
-                                              reg.no);
-
-*/
     }
     
     if (v->size > 1) { /* generate code to allocate memory on the heap for arrays */

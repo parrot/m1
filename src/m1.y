@@ -834,7 +834,7 @@ type    : native_type
         ;
         
 native_type : "int"     { $$ = "int"; }
-            | "num"     { $$ = "double"; }
+            | "num"     { $$ = "num"; }
             | "string"  { $$ = "string"; }
             | "bool"    { $$ = "bool"; }
             ;
