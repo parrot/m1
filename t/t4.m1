@@ -1,7 +1,11 @@
+struct X {
+    int y;   
+}
 int foo() {
+    X x = new X();
 	x.y = 1;
 	
 	if (3 > 1 && 4 > 2) {
-	
+	   print("ok..1\n");
 	}	
 }

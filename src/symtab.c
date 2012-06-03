@@ -57,8 +57,8 @@ sym_new_symbol(m1_symboltable *table, char *varname, char *typename) {
         exit(EXIT_FAILURE);   
     }
     sym->name       = varname; /* name of this symbol */
-    sym->regno      = NO_REG_ALLOCATED_YET;    
-    sym->next       = NULL;
+    sym->regno      = NO_REG_ALLOCATED_YET; /* need to allocate a register later. */  
+    sym->next       = NULL;    /* symbols are stored in a list */
     sym->typedecl   = NULL;
     
     link_sym(table, sym);
