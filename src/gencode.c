@@ -24,6 +24,7 @@ This happens in gencode_number().
 #include "compiler.h"
 #include "stack.h"
 #include "symtab.h"
+#include "decl.h"
 
 #include "ann.h"
 
@@ -274,6 +275,7 @@ OBJECT_LINK-----> L1
     switch (obj->type) {
         case OBJECT_LINK:
         {
+            /* set OUT parameter to this node (that's currently visited, obj) */
             *parent = obj;   	
 
             gencode_obj(comp, obj->parent,parent, is_target);
@@ -284,7 +286,8 @@ OBJECT_LINK-----> L1
         }
         case OBJECT_MAIN: 
         {   
-            m1_reg reg;     	
+            m1_reg reg;   
+              	
 
         	assert(obj->obj.field != NULL);
         	assert(obj->sym != NULL);
@@ -294,9 +297,21 @@ OBJECT_LINK-----> L1
                 m1_reg r = gen_reg(comp, obj->sym->valtype); 
                 obj->sym->regno = r.no;
         	}  
+        	
         	reg.no   = obj->sym->regno;
         	reg.type = obj->sym->valtype; 
 
+            /* this is OBJECT_MAIN, which is the start of an aggregate expression;
+               example; in a.b.c, a is OBJECT_MAIN, b and c are OBJECT_FIELD. 
+               Therefore, a is declared as a struct. Find its declaration. */
+            
+            obj->decl = type_find_def(comp, obj->sym->name);   
+            if (obj->decl == NULL) {
+                fprintf(stderr, "can't find declaration type of %s\n", obj->sym->name);   
+            }
+            else {
+                fprintf(stderr, "found declaration for %s\n", obj->sym->name);
+            }
                       
             /* return a pointer to this node by OUT parameter. */
             *parent = obj;
@@ -312,8 +327,11 @@ OBJECT_LINK-----> L1
             /* XXX look up offset and load it into a reg. */
             
             int offset = 42;
+            m1_decl *structdecl;
             
-            fieldreg = gen_reg(comp, VAL_INT);
+            //structdecl = type_find_def(comp, (*parent)->name);
+            
+            fieldreg = gen_reg(comp, VAL_INT); /* reg for storing offset of field. */
             fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", fieldreg.no, offset); 
             
             pushreg(comp->regstack, fieldreg);

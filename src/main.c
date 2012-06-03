@@ -12,10 +12,31 @@
 #include "semcheck.h"
 #include "stack.h"
 #include "gencode.h"
+#include "decl.h"
 
 #include <assert.h>
 
 extern int yyparse(yyscan_t yyscanner, struct M1_compiler * const comp);
+
+
+static void
+init_compiler(M1_compiler *comp) {
+   	memset(comp, 0, sizeof(M1_compiler)); 
+   	
+    comp->breakstack = new_intstack();   
+    comp->regstack   = new_regstack();	
+    
+    comp->expect_usertype = 0; /* when not parsing a function's body, 
+                                   then identifiers are types */   	
+    comp->is_parsing_usertype = 1;
+    
+    type_enter_type(comp, "void", DECL_VOID, 0);
+    type_enter_type(comp, "int", DECL_INT, 4);
+    type_enter_type(comp, "num", DECL_NUM, 8);
+    type_enter_type(comp, "bool", DECL_BOOL, 4); /* bools are stored in ints. */
+    type_enter_type(comp, "string", DECL_STRING, 4);  /* strings are pointers, so size is 4. */
+    
+}
 
 int
 main(int argc, char *argv[]) {
@@ -35,13 +56,7 @@ main(int argc, char *argv[]) {
     }
    
     /* set up compiler */
-   	memset(&comp, 0, sizeof(M1_compiler)); 
-    comp.breakstack = new_intstack();   
-    comp.regstack   = new_regstack();	
-    
-    comp.expect_usertype = 0; /* when not parsing a function's body, 
-                                   then identifiers are types */   	
-    comp.is_parsing_usertype = 1;
+    init_compiler(&comp);
                                        
     /* set up lexer and parser */   	
     yylex_init(&yyscanner);    

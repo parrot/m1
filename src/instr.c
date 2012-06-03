@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 char const * const m0_instr_names[] = {
     "noop",
@@ -255,6 +256,7 @@ write_exit(m0_instr *i) {
 
 static int
 numops(m0_instr *i) {
+    assert(i != NULL);
     return 0;   
 }
 
@@ -263,19 +265,19 @@ static void
 write_instr(m0_instr *i) {
     switch (numops(i)) {
         case 0:
-            fprintf(OUT, "\t%s\n", m0_instr_names[i->opcode]);
+            fprintf(OUT, "\t%s\n", m0_instr_names[(int)i->opcode]);
             break;
         case 1:        
-            fprintf(OUT, "\t%s\t%c%d, x, x\n", m0_instr_names[i->opcode], 
+            fprintf(OUT, "\t%s\t%c%d, x, x\n", m0_instr_names[(int)i->opcode], 
                                                i->operands[0].type, i->operands[0].value);   
             break;            
         case 2:
-            fprintf(OUT, "\t%s\t%c%d, %c%d, x\n", m0_instr_names[i->opcode], 
+            fprintf(OUT, "\t%s\t%c%d, %c%d, x\n", m0_instr_names[(int)i->opcode], 
                                                   i->operands[0].type, i->operands[0].value,
                                                   i->operands[1].type, i->operands[1].value);           
             break;
         case 3:
-            fprintf(OUT, "\t%s\t%c%d, %cd, %c%d\n", m0_instr_names[i->opcode], 
+            fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", m0_instr_names[(int)i->opcode], 
                                                     i->operands[0].type, i->operands[0].value,
                                                     i->operands[1].type, i->operands[1].value,
                                                     i->operands[2].type, i->operands[2].value);   

@@ -125,18 +125,18 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
         
 %type <sval> TK_IDENT
              TK_STRING_CONST
-
+             return_type 
+             type 
+             native_type 
+             TK_USERTYPE
+             
 %type <chunk> function_definition 
               function_init
               chunks 
               chunk 
               TOP
-
-%type <ival> return_type 
-             type 
-             native_type 
-             TK_INT
-             TK_USERTYPE
+             
+%type <ival> TK_INT
              m0_op
              m0_arg                       
              assignop
@@ -669,6 +669,7 @@ lhs     : lhs_obj
 lhs_obj : TK_IDENT
             { 
               M1_compiler *comp = yyget_extra(yyscanner);
+              /* look up identifier's declaration. */
               m1_symbol *sym    = sym_lookup_symbol(&comp->currentchunk->locals, $1);
               
               if (sym == NULL) {
@@ -808,7 +809,7 @@ binexpr     : expression '=' expression /* to allow writing: a = b = c; */
             ;
            
 return_type : type    { $$ = $1; }
-            | "void"  { $$ = VAL_INT; /* XXX fix later. */ }
+            | "void"  { $$ = "void"; /* XXX fix later. */ }
             ;
             
 type    : native_type   
@@ -824,16 +825,16 @@ type    : native_type
                     needs to know it's a pointer. so fix this later.
                     XXXX
                   */
-                 comp->parsingtype = VAL_INT; 
+                 comp->parsingtype = $1; 
                  $$ = $1; 
               }
                        
         ;
         
-native_type : "int"     { $$ = VAL_INT; }
-            | "num"     { $$ = VAL_FLOAT; }
-            | "string"  { $$ = VAL_STRING; }
-            | "bool"    { $$ = VAL_INT; }
+native_type : "int"     { $$ = "int"; }
+            | "num"     { $$ = "double"; }
+            | "string"  { $$ = "string"; }
+            | "bool"    { $$ = "bool"; }
             ;
             
 

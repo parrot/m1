@@ -36,12 +36,14 @@ m1_malloc(size_t size) {
 
 /*@modiefies nothing @*/ 
 m1_chunk *
-chunk(M1_compiler *comp, int rettype, NOTNULL(char *name), m1_expression *block) {
+chunk(M1_compiler *comp, char *rettype, NOTNULL(char *name), m1_expression *block) {
     m1_chunk *c = (m1_chunk *)m1_malloc(sizeof(m1_chunk));
     c->rettype  = rettype;
     c->name     = name;
     c->block    = block;
     c->next     = NULL;
+    
+    assert(comp != NULL);
     
     return c;   
 }
@@ -169,6 +171,9 @@ unexpr(M1_compiler *comp, m1_expression *node, m1_unop op) {
     m1_unexpr *e = (m1_unexpr *)m1_malloc(sizeof(m1_unexpr));
     e->expr      = node;
     e->op        = op;    
+    
+    assert(comp != NULL);
+    
     return e;   
 }
 
@@ -176,12 +181,6 @@ static void
 expr_set_unexpr(M1_compiler *comp, m1_expression *node, m1_expression *exp, m1_unop op) {
     assert(node->type == EXPR_UNARY);   
     node->expr.u = unexpr(comp, exp, op);
-}
-
-static void 
-expr_set_funcall(m1_expression *node, m1_funcall *f) {
-    assert(node->type == EXPR_FUNCALL);   
-    node->expr.f = f;
 }
 
 m1_expression *
@@ -197,7 +196,7 @@ funcall(M1_compiler *comp, char *name) {
 
 
 static m1_const *
-const_decl(m1_valuetype type, char *name, m1_expression *expr) {
+const_decl(char *type, char *name, m1_expression *expr) {
     m1_const *c = (m1_const *)m1_malloc(sizeof(m1_const));
     c->type     = type;
     c->name     = name;
@@ -208,7 +207,7 @@ const_decl(m1_valuetype type, char *name, m1_expression *expr) {
 
 
 m1_expression *
-constdecl(M1_compiler *comp, m1_valuetype type, char *name, m1_expression *e) {
+constdecl(M1_compiler *comp, char *type, char *name, m1_expression *e) {
 	m1_expression *expr = expression(comp, EXPR_CONSTDECL);
 	expr->expr.c = const_decl(type, name, e);
 	return expr;	
@@ -266,6 +265,7 @@ returnexpr(M1_compiler *comp, m1_expression *retexp) {
 
 static void 
 expr_set_while(M1_compiler *comp, m1_expression *node, m1_expression *cond, m1_expression *block) {
+    assert(comp != NULL);
     node->expr.w        = (m1_whileexpr *)m1_malloc(sizeof(m1_whileexpr));    
     node->expr.w->cond  = cond;
     node->expr.w->block = block;                            
@@ -275,6 +275,7 @@ static void
 expr_set_if(M1_compiler *comp, m1_expression *node, m1_expression *cond, 
             m1_expression *ifblock, m1_expression *elseblock) 
 {
+    assert(comp != NULL);
     node->expr.i = (m1_ifexpr *)m1_malloc(sizeof(m1_ifexpr));              
     node->expr.i->cond      = cond;
     node->expr.i->ifblock   = ifblock;
@@ -329,6 +330,8 @@ m1_object *
 object(M1_compiler *comp, m1_object_type type) {
     m1_object *obj = (m1_object *)m1_malloc(sizeof(m1_object));
     obj->type      = type;
+    
+    assert(comp != NULL);
     return obj;    
 }
 
@@ -339,14 +342,18 @@ lhsobj(M1_compiler *comp, m1_object *parent, m1_object *field) {
     
     lhsobj->obj.field = field;
     lhsobj->parent    = parent;
+    
+    assert(comp != NULL);
     return lhsobj;   
 }
 
 m1_structfield *
-structfield(M1_compiler *comp, char *name, m1_valuetype type) {
+structfield(M1_compiler *comp, char *name, char *type) {
     m1_structfield *fld = (m1_structfield *)m1_malloc(sizeof(m1_structfield));
     fld->name           = name;
     fld->type           = type;
+    
+    assert(comp != NULL);
     return fld;   
 }
 
@@ -363,17 +370,18 @@ newstruct(M1_compiler *comp, char *name, m1_structfield *fields) {
      */
     str->size = fields->offset + field_size(fields);
     
+    assert(comp != NULL);
     return str;   
 }
 
 
 m1_expression *
-vardecl(M1_compiler *comp, m1_valuetype type, m1_var *v) {
+vardecl(M1_compiler *comp, char *type, m1_var *v) {
 	m1_expression *expr = expression(comp, EXPR_VARDECL);
 	
 	expr->expr.v  = v;
 
-
+    /* XXX set type */
 	return expr;	
 }
 
@@ -383,6 +391,8 @@ make_var(M1_compiler *comp, char *name, m1_expression *init, unsigned size) {
     v->name   = name;
     v->init   = init;
     v->size   = size;
+    
+    assert(comp != NULL);
     return v;    	
 }
 
@@ -391,14 +401,18 @@ var(M1_compiler *comp, char *varname, m1_expression *init) {
     /* a single var is just size 1. */
 	m1_var *v = make_var(comp, varname, init, 1);
     
-
-	v->sym = sym_new_symbol(&(comp->currentchunk->locals),  /* enter in current chunk's symbol table */
+    /* enter this var. declaration into the symbol table; store a pointer to the symbol in this var. */
+	v->sym = sym_new_symbol(&(comp->currentchunk->locals),  /* enter in current chunk's sym.tab. */
 	                       varname, 
 	                       comp->parsingtype);              /* type of this variable */
 		
 	assert(v->sym != NULL);
 		
-	v->sym->var = v;
+	v->sym->typedecl   = type_find_def(comp, comp->parsingtype);
+    assert(v->sym->typedecl != NULL); 		
+    
+	v->sym->var  = v; /* set the symbol node's (representing the variable declaration) 
+	                    pointer to this declaration AST node. */
 	return v;
 }
 
@@ -438,20 +452,23 @@ dowhileexpr(M1_compiler *comp, m1_expression *cond, m1_expression *block) {
 
 unsigned 
 field_size(struct m1_structfield *field) {
+	/*
 	switch (field->type) {
 		case VAL_INT:
 			return 4;
 		case VAL_FLOAT:
 			return 8;
-		case VAL_STRING: /* pointer? */
+		case VAL_STRING: 
 			return 4;
-		case VAL_CHUNK: /* pointer */
+		case VAL_CHUNK: 
 			return 4;
         case VAL_ADDRESS:
             return 4;
-		default: /* look up size of type. XXX */
-			return 4; /* fix this */	
-	}	
+		default: 
+			return 4; 
+	}
+	*/	
+	return 4;
 }
 
 static void
@@ -476,6 +493,9 @@ switchcase(M1_compiler *comp, int selector, m1_expression *block) {
 	c->selector = selector;
 	c->block    = block;
 	c->next     = NULL;
+	
+    assert(comp != NULL);	
+    
 	return c;
 }
 

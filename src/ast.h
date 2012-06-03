@@ -2,13 +2,14 @@
 #define __M1_AST_H__
 
 #include "symtab.h"
+#include "decl.h"
 #include "instr.h"
 #include "compiler.h"
 
 
 
 typedef struct m1_chunk {
-    m1_valuetype          rettype;      /* return type of chunk */
+    char                 *rettype;      /* return type of chunk */
     char                 *name;         /* name of this chunk */    
     struct m1_chunk      *next;         /* chunks are stored in a list. */
     struct m1_expression *block;        /* list of statements. */
@@ -21,7 +22,7 @@ typedef struct m1_chunk {
 
 typedef struct m1_structfield {
     char        *name; 
-    m1_valuetype type;     
+    char        *type;     
     unsigned     offset;
     
     struct m1_structfield *next;
@@ -160,16 +161,17 @@ typedef enum m1_object_type {
 typedef struct m1_object {
     
     union {
-        char                 *name;  /* for name, field or deref access */
-        struct m1_expression *index; /* for array index */        
-        struct m1_object     *field; /* if this is a linking node representing "a.b" */
+        char                 *name;  /* for name, field or deref access, in a.b.c for instance. */
+        struct m1_expression *index; /* for array index (a[42]) */        
+        struct m1_object     *field; /* if this is a linking node (OBJECT_LINK) representing "a.b" as a whole. */
     } obj;
     
-    enum m1_object_type type; /* selector for union */
-    struct m1_symbol   *sym;        
-    unsigned            line; 
+    enum m1_object_type type;       /* selector for union */
+    struct m1_symbol   *sym;        /* pointer to this object's declaration. */ 
+    unsigned            line;       /* line number of symbol that this object is representing. */
     
-    struct m1_object   *parent;  
+    struct m1_decl     *decl;       /* pointer to its declaration, if it's a struct. */
+    struct m1_object   *parent;     /* pointer to its parent (in a.b.c, a is b's parent) */
       
 } m1_object;
 
@@ -208,7 +210,7 @@ typedef struct m1_forexpr {
 
 /* const declarations */
 typedef struct m1_const {
-    m1_valuetype          type;
+    char                 *type;
     char                 *name;
     struct m1_expression *value;
 } m1_const;
@@ -281,7 +283,7 @@ typedef struct m1_expression {
 } m1_expression;
 
 
-extern m1_chunk *chunk(M1_compiler *comp, int rettype, char *name, m1_expression *block);
+extern m1_chunk *chunk(M1_compiler *comp, char *rettype, char *name, m1_expression *block);
 
 extern m1_expression *expression(M1_compiler *comp, m1_expr_type type);       
 extern m1_expression *funcall(M1_compiler *comp, char *name);
@@ -289,7 +291,7 @@ extern m1_expression *funcall(M1_compiler *comp, char *name);
 extern m1_object *object(M1_compiler *comp, m1_object_type type);            
 extern void obj_set_ident(m1_object *node, char *ident);
 
-extern m1_structfield * structfield(M1_compiler *comp, char *name, m1_valuetype type);
+extern m1_structfield *structfield(M1_compiler *comp, char *name, char *type);
 
 extern m1_struct *newstruct(M1_compiler *comp, char *name, m1_structfield *fields);
 
@@ -313,8 +315,8 @@ extern m1_object *arrayindex(M1_compiler *comp, m1_expression *index);
 extern m1_object *objectfield(M1_compiler *comp, char *field);
 extern m1_object *objectderef(M1_compiler *comp, char *field);
 extern m1_expression *printexpr(M1_compiler *comp, m1_expression *e);
-extern m1_expression *constdecl(M1_compiler *comp, m1_valuetype type, char *name, m1_expression *expr);
-extern m1_expression *vardecl(M1_compiler *comp, m1_valuetype type, m1_var *v);
+extern m1_expression *constdecl(M1_compiler *comp, char *type, char *name, m1_expression *expr);
+extern m1_expression *vardecl(M1_compiler *comp, char *type, m1_var *v);
 
 extern m1_var *var(M1_compiler *comp, char *name, m1_expression *init);
 extern m1_var *array(M1_compiler *comp, char *name, unsigned size, m1_expression *init);

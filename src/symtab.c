@@ -46,16 +46,15 @@ link_sym(m1_symboltable *table, m1_symbol *sym) {
 }
 
 m1_symbol *
-sym_new_symbol(m1_symboltable *table, char *name, int type) {
+sym_new_symbol(m1_symboltable *table, char *varname, char *typename) {
     m1_symbol *sym = (m1_symbol *)calloc(1, sizeof(m1_symbol));
     
     if (sym == NULL) {
-        fprintf(stderr, "cant alloc mem for new sym %s", name);
+        fprintf(stderr, "cant alloc mem for new sym %s", varname);
         exit(EXIT_FAILURE);   
     }
-    sym->name       = name; /* name of this symbol */
-    sym->regno      = NO_REG_ALLOCATED_YET;
-    sym->valtype    = type; 
+    sym->name       = varname; /* name of this symbol */
+    sym->regno      = NO_REG_ALLOCATED_YET;    
     sym->next       = NULL;
     
     link_sym(table, sym);

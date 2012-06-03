@@ -48,3 +48,23 @@ type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structd
     
     return decl;
 }
+
+/* 
+
+Interface for declaring basic types. 
+
+*/
+m1_decl *
+type_enter_type(M1_compiler *comp, char *typename, m1_decl_type type, unsigned size) {
+    m1_decl *decl = (m1_decl *)calloc(1, sizeof(m1_decl));
+    
+    decl->name   = typename;
+    decl->type   = type;
+    decl->d.size = size;
+    
+    decl->next = comp->declarations;
+    comp->declarations = decl;
+    
+    return decl;        
+}
+
