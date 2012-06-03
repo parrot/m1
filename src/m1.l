@@ -245,24 +245,28 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 %%
 
 /* declare these functions in order to be able to prevent warnings
-   on unused yyscanner argument. Assert that they are not-NULL to
-   prevent this warning, so they're used.
+   on unused yyscanner argument. Assert that they are not-NULL or
+   NULL to prevent this warning, so they're used.
+   
+   XXX Later on, when we're doing our own memory allocation, yyscanner
+   gives access to M1_compiler, which will keep track of memory.
  */
 
 void *
 yyalloc(yy_size_t size, yyscan_t yyscanner) {
-    assert(yyscanner != NULL);
+    assert(yyscanner != NULL || yyscanner == NULL);
     return malloc(size);
 }
 
 void *
 yyrealloc(void *mem, yy_size_t newsize, yyscan_t yyscanner) {
-    assert(yyscanner != NULL);
+    assert(yyscanner != NULL || yyscanner == NULL);
     return realloc(mem, newsize);
 }
 
 void 
 yyfree(void * mem, yyscan_t yyscanner) {
+    assert(yyscanner != NULL || yyscanner == NULL);
     free(mem);
     mem = NULL;   
 }

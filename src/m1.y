@@ -517,7 +517,11 @@ var_declaration: type var_list ';'
                               
 var_list    : var 				{ $$ = $1; }
             | var_list ',' var	
-               { $$ = $1; /* Implement this. */ }
+               { 
+                  /* link nodes in reverse order, but that's ok. */
+                  $3->next = $1;                   
+                  $$ = $3;               
+               }
             
             ;               
             

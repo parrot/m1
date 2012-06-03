@@ -222,6 +222,7 @@ typedef struct m1_var {
     unsigned              size; /* 1 for non-arrays, larger for arrays */
     struct m1_symbol     *sym;  /* pointer to symbol in symboltable */
     
+    struct m1_var        *next; /* var nodes are stored as a list. */
 } m1_var;
 
 

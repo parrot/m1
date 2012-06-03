@@ -1113,8 +1113,7 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
 }
 
 static void
-gencode_vardecl(M1_compiler *comp, m1_var *v) {
-    
+gencode_var(M1_compiler *comp, m1_var *v) {    
     if (v->init) { /* generate code only for initializations. */
        m1_reg     reg;
        m1_symbol *s;
@@ -1174,6 +1173,18 @@ gencode_vardecl(M1_compiler *comp, m1_var *v) {
         fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", s->regno, memsize.no);
     }
        
+}
+
+
+
+static void
+gencode_vardecl(M1_compiler *comp, m1_var *v) {
+    /* There may be a list of m1_vars. */
+    m1_var *iter = v;
+    while (iter != NULL) {
+        gencode_var(comp, iter);
+        iter = iter->next;   
+    }   
 }
 
 static void
