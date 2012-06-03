@@ -9,7 +9,7 @@ file_suffixe=${1##*.}
 [ $file_suffixe = 'm1' ] || { echo "file suffixe is not 'm1'"; exit 1; }
 
 ./m1 $1 2>/dev/null > $filename.m0
-[ -s $filename.m0 ] || { echo "nok..$filename.m0 is empty"; exit 1; }
+[ -s $filename.m0 ] || { echo "nok..$filename.m1 outputs empty file $filename.m0"; exit 1; }
 ./m0_assembler.pl $filename.m0
 ./m0 $filename.m0b || { echo "nok..run $1 exits unexpectedly"; exit 1; }
 echo "\nok..run $1 exits normally"
