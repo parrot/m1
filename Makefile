@@ -68,7 +68,7 @@ src/stack$(O): src/stack.c src/stack.h
 src/main$(O): src/m1parser.h src/main.c
 	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/main.c
 
-decl$(O): src/decl.c src/decl.h
+src/decl$(O): src/decl.c src/decl.h
 	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/decl.c
 
 test: m1$(EXE) t/*.m1
