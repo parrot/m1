@@ -7,7 +7,8 @@ struct Object {
 int main() {
     Object o = new Object();
     o.x = 42;
-
+    o.y = 43;
     
     print(o.x);
+    print(o.y);
 }
