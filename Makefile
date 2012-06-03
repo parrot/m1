@@ -83,4 +83,4 @@ clean:
 		src/m1lexer.* \
 		src/*$(O) \
 		./m1$(EXE) \
-		t/*.m0
+		t/*.m0*
