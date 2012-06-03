@@ -7,7 +7,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "m1_symtab.h"
+#include "symtab.h"
 
 
 

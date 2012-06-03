@@ -7,7 +7,7 @@ Needed by code generator to store labels for break statements, etc.
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "m1_stack.h"
+#include "stack.h"
 
 
 m1_intstack *

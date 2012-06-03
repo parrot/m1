@@ -8,11 +8,11 @@ AST node constructors
 #include <stdio.h>
 #include <assert.h>
 
-#include "m1_ast.h"
-#include "m1_symtab.h"
-#include "m1_compiler.h"
+#include "ast.h"
+#include "symtab.h"
+#include "compiler.h"
 
-#include "m1_ann.h"
+#include "ann.h"
 
 extern int yyget_lineno(yyscan_t yyscanner);
 

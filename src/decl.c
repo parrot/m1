@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "m1_decl.h"
+#include "decl.h"
 
 
 m1_decl *

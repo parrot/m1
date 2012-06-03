@@ -1,4 +1,4 @@
-#include "m1_instr.h"
+#include "instr.h"
 
 #include <stdlib.h>
 #include <stdio.h>

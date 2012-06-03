@@ -3,7 +3,7 @@
 Code generator.
 
 Visit each node, and generate instructions as appropriate.
-See m1_ast.h for an overview of the AST node types. For most
+See ast.h for an overview of the AST node types. For most
 nodes/functions, one (and sometimes more) m1_regs are pushed onto
 a stack (accessible through the compiler structure parameter), 
 that holds the type and number of the register that will hold 
@@ -19,13 +19,13 @@ This happens in gencode_number().
 #include <stdlib.h>
 #include <ctype.h>
 #include <assert.h>
-#include "m1_gencode.h"
-#include "m1_ast.h"
-#include "m1_compiler.h"
-#include "m1_stack.h"
-#include "m1_symtab.h"
+#include "gencode.h"
+#include "ast.h"
+#include "compiler.h"
+#include "stack.h"
+#include "symtab.h"
 
-#include "m1_ann.h"
+#include "ann.h"
 
 #define OUT	stdout
 

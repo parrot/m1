@@ -1,7 +1,7 @@
 #ifndef __M1_DECL_H__
 #define __M1_DECL_H__
 
-#include "m1_compiler.h"
+#include "compiler.h"
 
 typedef enum m1_decl_type {
     DECL_STRUCT,

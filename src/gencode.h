@@ -1,9 +1,9 @@
 #ifndef __M1_GENCODE_H__
 #define __M1_GENCODE_H__
 
-#include "m1_ast.h"
-#include "m1_symtab.h"
-#include "m1_compiler.h"
+#include "ast.h"
+#include "symtab.h"
+#include "compiler.h"
 
 /* to pass registers; I42 -> no=42, type='I' */
 typedef struct m1_reg {

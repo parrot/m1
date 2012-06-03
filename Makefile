@@ -13,17 +13,17 @@ CFLAGS = -O3 -W -Wall
 endif
 
 M1_O_FILES = \
-	src/m1_ast$(O) \
 	src/m1parser$(O) \
 	src/m1lexer$(O) \
-	src/m1_symtab$(O) \
-	src/m1_semcheck$(O) \
-	src/m1_stack$(O) \
-	src/m1_decl$(O) \
-	src/m1_eval$(O) \
-	src/m1_instr$(O) \
-	src/m1_gencode$(O) \
-	src/m1_main$(O) \
+	src/ast$(O) \
+	src/symtab$(O) \
+	src/semcheck$(O) \
+	src/stack$(O) \
+	src/decl$(O) \
+	src/eval$(O) \
+	src/instr$(O) \
+	src/gencode$(O) \
+	src/main$(O) \
 
 m1: $(M1_O_FILES)
 	$(CC) -I$(@D) -o m1 $(M1_O_FILES)
@@ -44,32 +44,32 @@ src/m1lexer.c: src/m1.l
 	mv m1lexer.c src/ 
 	mv m1lexer.h src/ 
 	
-src/m1_ast$(O): src/m1_ast.c src/m1_ast.h
-	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_ast.c
+src/ast$(O): src/ast.c src/ast.h
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/ast.c
 
-src/m1_eval$(O): src/m1_eval.c src/m1_eval.h
-	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_eval.c	
+src/eval$(O): src/eval.c src/eval.h
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/eval.c	
 
-src/m1_symtab$(O): src/m1_symtab.c src/m1_symtab.h
-	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_symtab.c
+src/symtab$(O): src/symtab.c src/symtab.h
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/symtab.c
 
-src/m1_instr$(O): src/m1_instr.c src/m1_instr.h
-	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_instr.c
+src/instr$(O): src/instr.c src/instr.h
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/instr.c
 
-src/m1_gencode$(O): src/m1_gencode.c src/m1_gencode.h
-	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_gencode.c
+src/gencode$(O): src/gencode.c src/gencode.h
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/gencode.c
 
-src/m1_semcheck$(O): src/m1_semcheck.c src/m1_semcheck.h
-	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_semcheck.c
+src/semcheck$(O): src/semcheck.c src/semcheck.h
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/semcheck.c
 
-src/m1_stack$(O): src/m1_stack.c src/m1_stack.h
-	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_stack.c
+src/stack$(O): src/stack.c src/stack.h
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/stack.c
 
-src/m1_main$(O): src/m1parser.h src/m1_main.c
-	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_main.c
+src/main$(O): src/m1parser.h src/main.c
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/main.c
 
-m1_decl$(O): src/m1_decl.c src/m1_decl.h
-	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1_decl.c
+decl$(O): src/decl.c src/decl.h
+	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/decl.c
 
 clean:
 	$(RM) -rf src/m1parser.* \

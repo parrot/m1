@@ -1,9 +1,9 @@
 #ifndef __M1_AST_H__
 #define __M1_AST_H__
 
-#include "m1_symtab.h"
-#include "m1_instr.h"
-#include "m1_compiler.h"
+#include "symtab.h"
+#include "instr.h"
+#include "compiler.h"
 
 
 

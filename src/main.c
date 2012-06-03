@@ -8,10 +8,10 @@
 #define YY_DECL
 #include "m1lexer.h"
 
-#include "m1_compiler.h"
-#include "m1_semcheck.h"
-#include "m1_stack.h"
-#include "m1_gencode.h"
+#include "compiler.h"
+#include "semcheck.h"
+#include "stack.h"
+#include "gencode.h"
 
 #include <assert.h>
 

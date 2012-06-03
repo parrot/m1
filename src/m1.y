@@ -10,10 +10,10 @@
 #define YY_DECL
 #include "m1lexer.h"
 
-#include "m1_ast.h"
-#include "m1_instr.h"
-#include "m1_compiler.h"
-#include "m1_decl.h"
+#include "ast.h"
+#include "instr.h"
+#include "compiler.h"
+#include "decl.h"
 
 
 extern int yylex(YYSTYPE *yylval, yyscan_t yyscanner);

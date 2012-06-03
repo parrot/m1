@@ -1,7 +1,7 @@
 #ifndef __M1_STACK_H__
 #define __M1_STACK_H__
 
-#include "m1_gencode.h"
+#include "gencode.h"
 
 /* XXX make this flexible later */
 #define STACKSIZE   128

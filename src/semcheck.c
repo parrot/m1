@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "m1_symtab.h"
-#include "m1_semcheck.h"
-#include "m1_ast.h"
+#include "symtab.h"
+#include "semcheck.h"
+#include "ast.h"
 
 #include <assert.h>
 

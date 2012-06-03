@@ -2,8 +2,8 @@
     
 #include <string.h>
 #include "m1parser.h"
-#include "m1_compiler.h"
-#include "m1_decl.h"
+#include "compiler.h"
+#include "decl.h"
 
 #define YY_EXTRA_TYPE  struct M1_compiler *
 

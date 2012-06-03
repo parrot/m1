@@ -4,8 +4,8 @@ Sample AST walking code to print out the equivalent M1 code.
 
 */
 
-#include "m1_eval.h"
-#include "m1_symtab.h"
+#include "eval.h"
+#include "symtab.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
