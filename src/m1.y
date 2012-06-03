@@ -515,7 +515,8 @@ var_declaration: type var_list ';'
                     { $$ = vardecl(yyget_extra(yyscanner), $1, $2); }            
                ;         
                               
-var_list    : var 				{ $$ = $1; }
+var_list    : var 				
+               { $$ = $1; }
             | var_list ',' var	
                { 
                   /* link nodes in reverse order, but that's ok. */

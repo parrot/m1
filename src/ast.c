@@ -20,9 +20,7 @@ extern int yyget_lineno(yyscan_t yyscanner);
 static void expr_set_unexpr(M1_compiler *comp, m1_expression *node, m1_expression *exp, m1_unop op);             
 static void expr_set_expr(m1_expression *node, m1_expression *expr);
 static void expr_set_obj(m1_expression *node, m1_object *obj);
-static void expr_set_assign(M1_compiler *comp, m1_expression *node, m1_expression *lhs, int assignop, m1_expression *rhs);
 
-static void obj_set_index(m1_object *node, m1_expression *index);
 
 static void *
 m1_malloc(size_t size) {
@@ -58,6 +56,7 @@ expression(M1_compiler *comp, m1_expr_type type) {
     
     e        = (m1_expression *)m1_malloc(sizeof(m1_expression));
     e->type  = type;
+    /* set the current line number for error reporting. */
     e->line  = yyget_lineno(comp->yyscanner);
     return e;   
 }
@@ -66,42 +65,33 @@ expression(M1_compiler *comp, m1_expr_type type) {
 static m1_literal *
 new_literal(m1_valuetype type) {
     m1_literal *l = (m1_literal *)m1_malloc(sizeof(m1_literal));
-    l->type = type;
+    l->type       = type;
     return l;    
 }
-
-static void 
-expr_set_num(M1_compiler *comp, m1_expression *e, double v) {
-    assert(e->type == EXPR_NUMBER); 
-
-    e->expr.l = new_literal(VAL_FLOAT);
-    e->expr.l->value.fval = v;
-    e->expr.l->sym = sym_enter_num(&comp->currentchunk->constants, v);   
-}
-
-static void 
-expr_set_int(M1_compiler *comp, m1_expression *e, int v) {
-    assert(e->type == EXPR_INT);
-
-    e->expr.l = new_literal(VAL_INT);
-    e->expr.l->value.ival = v;
-    e->expr.l->sym = sym_enter_int(&comp->currentchunk->constants, v);
-
-}
-
 
 
 m1_expression *
 number(M1_compiler *comp, double value) {
 	m1_expression *expr = expression(comp, EXPR_NUMBER);
-	expr_set_num(comp, expr, value);
+	
+	/* make a new literal node */
+	expr->expr.l             = new_literal(VAL_FLOAT);
+    expr->expr.l->value.fval = value;
+    /* store the constant in the constants segment. */
+    expr->expr.l->sym        = sym_enter_num(&comp->currentchunk->constants, value);   
+    
 	return expr;	
 }
 
 m1_expression *
 integer(M1_compiler *comp, int value) {
 	m1_expression *expr = expression(comp, EXPR_INT);
-	expr_set_int(comp, expr, value);
+    /* make a new literal node. */
+	expr->expr.l             = new_literal(VAL_INT);
+    expr->expr.l->value.ival = value;
+    /* store the constant in the constants segment. */
+    expr->expr.l->sym        = sym_enter_int(&comp->currentchunk->constants, value);
+
 	return expr;	
 }
 m1_expression *
@@ -116,7 +106,7 @@ string(M1_compiler *comp, char *str) {
     assert(comp->currentchunk != NULL);
     assert(&comp->currentchunk->constants != NULL);
     
-    
+    /* store the string in the constants segment. */
     expr->expr.l->sym = sym_enter_str(&comp->currentchunk->constants, str, 0);
 
 	return expr;	
@@ -125,7 +115,9 @@ string(M1_compiler *comp, char *str) {
 m1_object *
 arrayindex(M1_compiler *comp, m1_expression *index) {
 	m1_object *obj = object(comp, OBJECT_INDEX);
-	obj_set_index(obj, index);
+
+	obj->obj.index = index;
+	
 	return obj;	
 }
 
@@ -245,9 +237,29 @@ inc_or_dec(M1_compiler *comp, m1_expression *obj, m1_unop optype) {
 
 m1_expression *
 assignexpr(M1_compiler *comp, m1_expression *lhs, int assignop, m1_expression *rhs) {
-	m1_expression *expr = expression(comp, EXPR_ASSIGN); 
-	expr_set_assign(comp, expr, lhs, assignop, rhs);
-    return expr;
+	m1_expression *node = expression(comp, EXPR_ASSIGN); 
+	
+    /*
+	a = b  => normal case
+	a += b => a = a + b
+	*/
+    node->expr.a      = (m1_assignment *)m1_malloc(sizeof(m1_assignment));
+    node->expr.a->lhs = lhs->expr.t; /* unwrap the m1_object representing lhs from its m1_expression wrapper. */
+    
+    switch (assignop) {
+    	case OP_ASSIGN: /* normal case */
+    		node->expr.a->rhs = rhs;        
+    		break;
+    	default: /* all other cases, such as: 
+    	            a +=b => a = a + b; 
+    	            make a new binary expression node for a + b 
+    	          */
+    		node->expr.a->rhs = binexpr(comp, lhs, assignop, rhs);
+    		break;
+    }
+
+
+    return node;
 }
 
 m1_expression *
@@ -293,28 +305,6 @@ expr_set_obj(m1_expression *node, m1_object *obj) {
     node->expr.t = obj;    
 }
 
-static void 
-expr_set_assign(M1_compiler *comp, m1_expression *node, m1_expression *lhs, int assignop, m1_expression *rhs) {
-	/*
-	a = b  => normal case
-	a += b => a = a + b
-	*/
-    node->expr.a      = (m1_assignment *)m1_malloc(sizeof(m1_assignment));
-    node->expr.a->lhs = lhs->expr.t; /* unwrap the m1_object representing lhs from its m1_expression wrapper. */
-    
-    switch (assignop) {
-    	case OP_ASSIGN: /* normal case */
-    		node->expr.a->rhs = rhs;        
-    		break;
-    	default: /* all other cases, such as: 
-    	            a +=b => a = a + b; 
-    	            make a new binary expression node for a + b 
-    	          */
-    		node->expr.a->rhs = binexpr(comp, lhs, assignop, rhs);
-    		break;
-    }
-
-}
 
 
 void 
@@ -322,10 +312,6 @@ obj_set_ident(m1_object *node, char *ident) {
     node->obj.name = ident;    
 }
 
-void 
-obj_set_index(m1_object *node, m1_expression *index) {
-    node->obj.index = index;
-}
 
 m1_object *
 object(M1_compiler *comp, m1_object_type type) {
