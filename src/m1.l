@@ -1,6 +1,8 @@
 %{
     
 #include <string.h>
+#include <assert.h>
+#include <stdlib.h>
 #include "m1parser.h"
 #include "compiler.h"
 #include "decl.h"
@@ -8,6 +10,8 @@
 #define YY_EXTRA_TYPE  struct M1_compiler *
 
 extern int yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str);
+
+
 
 %}
 
@@ -25,6 +29,12 @@ extern int yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str);
 %option pointer
 %option noyy_top_state
 
+/* override memory allocation function with Parrot's memory functions;
+ * don't generate built-ins.
+ */
+%option noyyalloc
+%option noyyrealloc
+%option noyyfree
 
 %x M0_PARSING
 %x MULTLINECOMMENT
@@ -230,5 +240,31 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 <M0_PARSING>"print_i"     { return KW_PRINT_I; }
 <M0_PARSING>"print_n"     { return KW_PRINT_N; }
 <M0_PARSING>"exit"        { return KW_EXIT; }
+
+
+%%
+
+/* declare these functions in order to be able to prevent warnings
+   on unused yyscanner argument. Assert that they are not-NULL to
+   prevent this warning, so they're used.
+ */
+
+void *
+yyalloc(yy_size_t size, yyscan_t yyscanner) {
+    assert(yyscanner != NULL);
+    return malloc(size);
+}
+
+void *
+yyrealloc(void *mem, yy_size_t newsize, yyscan_t yyscanner) {
+    assert(yyscanner != NULL);
+    return realloc(mem, newsize);
+}
+
+void 
+yyfree(void * mem, yyscan_t yyscanner) {
+    free(mem);
+    mem = NULL;   
+}
 
 

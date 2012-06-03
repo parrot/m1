@@ -202,7 +202,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
         
 %token  KW_M0		    "M0"
         TK_NL   
-        M0_NUMBER
+        M0_INT_CONST
         KW_NOOP         "noop"
         KW_GOTO         "goto"
         KW_GOTO_IF      "goto_if"
@@ -810,7 +810,7 @@ binexpr     : expression '=' expression /* to allow writing: a = b = c; */
             ;
            
 return_type : type    { $$ = $1; }
-            | "void"  { $$ = "void"; /* XXX fix later. */ }
+            | "void"  { $$ = "void"; }
             ;
             
 type    : native_type   
@@ -821,11 +821,7 @@ type    : native_type
               } 
         | TK_USERTYPE
               {
-                 M1_compiler *comp = yyget_extra(yyscanner);
-                 /* pointers are implemented as ints, but type checker
-                    needs to know it's a pointer. so fix this later.
-                    XXXX
-                  */
+                 M1_compiler *comp = yyget_extra(yyscanner);         
                  comp->parsingtype = $1; 
                  $$ = $1; 
               }
@@ -864,7 +860,7 @@ m0_instr    : m0_op m0_arg ',' m0_arg ',' m0_arg
                 { $$ = NULL; /*instr($1, 0, 0, 0); */}
             ;                            
             
-m0_arg      : M0_NUMBER  { $$=0; }
+m0_arg      : M0_INT_CONST  { $$=0; }
             
             /* add other argument types for M0 instructions */
             ;
