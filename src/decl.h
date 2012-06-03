@@ -17,7 +17,7 @@ typedef enum m1_decl_type {
 } m1_decl_type;
 
 typedef struct m1_decl {
-    char           *name;    /* name of declared type. */
+    char *name;    /* name of declared type. */
     
     union {
         struct m1_struct *s;     /* struct declaration. */

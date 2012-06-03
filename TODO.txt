@@ -20,6 +20,7 @@ areas are particularly welcome:
 * Just review the code, and ask questions to clarify. These will be rewarded with documentation that explains it. 
 * Implement the semantic checking phase.
 
+
 What's working?
 ---------------
 * simple declarations and initializations (int x; int y = 1;).
@@ -81,3 +82,5 @@ random list of items:
 * free all memory after done.
 * an optimizer, perhaps implemented in yet another bison-based grammar; based on certain patterns of intructions that are generated, some instructions can be removed. 
 * A register allocator (linear-scan algorithm), to minimize register usage.
+* add a "make splint" target?
+* add "const" keyword where-ever possible.

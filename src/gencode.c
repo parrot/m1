@@ -83,9 +83,7 @@ gencode_number(M1_compiler *comp, m1_literal *lit) {
 	/*
 	deref Nx, CONSTS, <const_id>
 	*/
-    m1_reg     reg,
-               constindex;
-
+    m1_reg     reg, constindex;
     
     assert(comp != NULL);
     assert(lit != NULL);
@@ -330,7 +328,8 @@ OBJECT_LINK-----> L1
             ++numregs_pushed;
             
             
-            if (offset > 0) {
+            /* XXX if offset = 0. special case? */
+          //  if (offset > 0) {
                 if (is_target) {  /* a.b = ... */
                     /* reg. holding offset for field b is already pushed onto regstack, count it now. */
                     ++numregs_pushed;
@@ -348,7 +347,7 @@ OBJECT_LINK-----> L1
                     pushreg(comp->regstack, reg);
                     ++numregs_pushed;                                                           
                 }
-            }
+           // }
             
             /* set parent OUT parameter to the current node. */
             *parent = obj;
@@ -1296,6 +1295,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             break; 
         case EXPR_CAST:
             gencode_cast(comp, e->expr.cast);
+            break;
         default:
             fprintf(stderr, "unknown expr type (%d)", e->type);   
             exit(EXIT_FAILURE);
@@ -1398,7 +1398,6 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     
     fprintf(OUT, ".bytecode\n");    
     
-    debug("gencode_block\n");
     /* generate code for statements */
     gencode_block(comp, c->block);
 }

@@ -5,9 +5,9 @@ struct Object {
 }
 
 int main() {
-    Object o;
-    o = new Object();
-    print(o);
+    Object o = new Object();
     o.x = 42;
-    o.y = 3;
+
+    
+    print(o.x);
 }
