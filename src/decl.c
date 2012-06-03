@@ -83,3 +83,37 @@ type_enter_type(M1_compiler *comp, char *typename, m1_decl_type type, unsigned s
     return decl;        
 }
 
+/*
+
+Get the size of the type in <decl>.
+
+*/
+unsigned
+type_get_size(m1_decl *decl) {
+    int size;
+    switch (decl->type) {
+        case DECL_STRUCT:
+        case DECL_PMC:
+            size = decl->d.s->size;
+            break;
+        case DECL_ENUM:
+            fprintf(stderr, "Why do you need to know the size of an enum?\n");
+            assert(0);
+            break;
+        /* built-in types: */    
+        case DECL_INT:
+        case DECL_NUM:
+        case DECL_STRING:
+        case DECL_BOOL:
+            size = decl->d.size;
+            break;
+        case DECL_VOID:
+            fprintf(stderr, "Cannot find size for type 'void'\n");
+            assert(0);
+            break;
+        default:
+            break;
+    }      
+    return size;
+}
+

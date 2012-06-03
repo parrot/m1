@@ -62,8 +62,6 @@ gen_reg(M1_compiler *comp, m1_valuetype type) {
     
     reg.type = type;
 	reg.no   = comp->regs[type]++;   
-    fprintf(stderr, "generating regi %d for type %d\n", reg.no, type);
-    
  
     return reg;
 }
@@ -178,9 +176,13 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
     gencode_expr(comp, a->rhs);
     rhs = popreg(comp->regstack);
     
-    obj_reg_count = gencode_obj(comp, a->lhs, &parent, 1);
-    fprintf(stderr, "gencode obj returned %d\n", obj_reg_count);
+    obj_reg_count = gencode_obj(comp, a->lhs, &parent, 1);    
     
+    /* the number of registers that are available is always 1 or 2. 1 for the simple case,
+       and 2 for field access (x.y and x[1]). 
+    */
+    assert (obj_reg_count == 1 || obj_reg_count == 2);
+
     if (obj_reg_count == 1) {
         lhs = popreg(comp->regstack);    
         fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
@@ -192,11 +194,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
         fprintf(OUT, "\tset_ref\t%c%d, %c%d, %c%d\n", reg_chars[(int)parent.type], parent.no, 
                                                       reg_chars[(int)index.type], index.no,
                                                       reg_chars[(int)rhs.type], rhs.no);
-    }
-    fprintf(stderr, "obj reg count = %d\n", obj_reg_count);
-    assert (obj_reg_count == 1 || obj_reg_count == 2);
-      
-     
+    }          
 }
 
 static void
@@ -355,7 +353,6 @@ OBJECT_LINK-----> L1
             /* set parent OUT parameter to the current node. */
             *parent = obj;
             
-            fprintf(stderr, "parent: %s\n", (*parent)->obj.name); 
             break;
         }
         case OBJECT_DEREF: /* b in a->b */
@@ -381,15 +378,14 @@ OBJECT_LINK-----> L1
                 
             }
             else { /* ... = x[42] */
-                m1_reg offsetreg = popreg(comp->regstack);
-
-                m1_reg parentreg = popreg(comp->regstack);
-                m1_reg reg = gen_reg(comp, VAL_INT);
+                m1_reg offsetreg = popreg(comp->regstack); /* containing the index. */
+                m1_reg parentreg = popreg(comp->regstack); /* containing the struct or array */
+                m1_reg result    = gen_reg(comp, VAL_INT); /* to store the result. */ 
                 
-                fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)reg.type], reg.no,
+                fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)result.type], result.no,
                                                             reg_chars[(int)parentreg.type], parentreg.no,
                                                             reg_chars[(int)offsetreg.type], offsetreg.no);   
-                pushreg(comp->regstack, reg);
+                pushreg(comp->regstack, result);
                 ++numregs_pushed;                                                            
             }
             
@@ -405,7 +401,6 @@ OBJECT_LINK-----> L1
     }  
 		
 	/* return the number of registers that are pushed onto the stack in this function. */	
-	fprintf(stderr, "gencode_obj() num regs pushed: %d\n", numregs_pushed);
     return numregs_pushed;
 		
 }
@@ -498,6 +493,7 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
         endlabel   = gen_label(comp),
         blocklabel = gen_label(comp);
         
+    push(comp->breakstack, endlabel);
     
     if (i->init)
         gencode_expr(comp, i->init);
@@ -509,8 +505,7 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
         gencode_expr(comp, i->cond);
         reg = popreg(comp->regstack);
         fprintf(OUT, "\tgoto_if L%d, %c%d\n", blocklabel, reg_chars[(int)reg.type], reg.no);
-    }
-   
+    }   
 
     fprintf(OUT, "\tgoto L%d\n", endlabel);
     
@@ -524,6 +519,8 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
     
     fprintf(OUT, "\tgoto L%d\n", startlabel);
     fprintf(OUT, "L%d:\n", endlabel);
+    
+    (void)pop(comp->breakstack);
     
 }
 
@@ -592,21 +589,24 @@ gencode_or(M1_compiler *comp, m1_binexpr *b) {
 	
 	endlabel = gen_label(comp);
 	
-	
+	/* generate code for left and get the register holding the result. */
 	gencode_expr(comp, b->left);	
 	left = popreg(comp->regstack);
+	
 	/* if left was not true, then need to evaluate right, otherwise short-cut. */
 	fprintf(OUT, "\tgoto_if L%d, %c%d\n", endlabel, reg_chars[(int)left.type], left.no);
 	
+	/* generate code for right, and get the register holding the result. */
 	gencode_expr(comp, b->right);	
 	right = popreg(comp->regstack);
 	
+	/* copy the result from evaluating <right> into the reg. for left, and make it available on stack. */
 	fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[(int)left.type], left.no, 
 	                                       reg_chars[(int)right.type], right.no);
-	fprintf(OUT, "L%d:\n", endlabel);
-	
 	pushreg(comp->regstack, left);
 	
+	fprintf(OUT, "L%d:\n", endlabel);
+		
 }
 
 static void
@@ -668,6 +668,7 @@ ne_eq_common(M1_compiler *comp, m1_binexpr *b, int is_eq_op) {
     
     gencode_expr(comp, b->left);
     left = popreg(comp->regstack);
+    
     gencode_expr(comp, b->right);
     right = popreg(comp->regstack);
     
@@ -701,7 +702,7 @@ gencode_eq(M1_compiler *comp, m1_binexpr *b) {
 
 static void
 gencode_lt(M1_compiler *comp, m1_binexpr *b) {
-    /* for LT (<) operator, use the ISGE opcode, but swap its arguments. */
+    /* for LT (<) operator, use the ISGT opcode, but swap its arguments. */
     m1_reg result = gen_reg(comp, VAL_INT);
     m1_reg left, right;
     
@@ -720,7 +721,7 @@ gencode_lt(M1_compiler *comp, m1_binexpr *b) {
 
 static void
 gencode_le(M1_compiler *comp, m1_binexpr *b) {
-    /* for LE (<=) operator, use the ISGT opcode, but swap its arguments. */
+    /* for LE (<=) operator, use the ISGE opcode, but swap its arguments. */
     m1_reg result = gen_reg(comp, VAL_INT);
     m1_reg left, right;
     
@@ -985,7 +986,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
 	m1_reg offsetreg;
     m1_symbol *fun = sym_find_chunk(&comp->currentchunk->constants, f->name);
     
-    if (fun == NULL) {
+    if (fun == NULL) { /* XXX need to check in semcheck */
         fprintf(stderr, "Cant find function '%s'\n", f->name);
         ++comp->errors;
         return;
@@ -1014,7 +1015,8 @@ gencode_print(M1_compiler *comp, m1_expression *expr) {
     one = gen_reg(comp, VAL_INT);
     
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n",  one.no);
-	fprintf(OUT, "\tprint_%c\tI%d, %c%d, x\n", type_chars[(int)reg.type], one.no, reg_chars[(int)reg.type], reg.no);
+	fprintf(OUT, "\tprint_%c\tI%d, %c%d, x\n", type_chars[(int)reg.type], one.no, 
+	                                           reg_chars[(int)reg.type], reg.no);
 		
 }
 
@@ -1027,10 +1029,12 @@ gencode_new(M1_compiler *comp, m1_newexpr *expr) {
 	unsigned size  = 128; /* fix; should be size of object requested */
     
     m1_decl *typedecl = type_find_def(comp, expr->type);
-    if (typedecl == NULL) {
-        fprintf(stderr, "Cannot find type '%s' requested for in new-statement\n", expr->type);   
-    }
     
+    if (typedecl == NULL) { /* XXX need to check in semcheck. */
+        fprintf(stderr, "Cannot find type '%s' requested for in new-statement\n", expr->type);   
+        
+    }
+    size = type_get_size(typedecl);
 		
 	fprintf(OUT, "\tset_imm I%d, 0, %d\n", sizereg.no, size);
 	fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", reg.no, sizereg.no);
@@ -1118,11 +1122,12 @@ gencode_var(M1_compiler *comp, m1_var *v) {
        m1_reg     reg;
        m1_symbol *s;
        
+       /* generate code for initialisation) */
        gencode_expr(comp, v->init);     
        reg = popreg(comp->regstack);
-       
-       s = v->sym;
-       
+              
+       assert(v->sym != NULL);
+       s = v->sym;       
        
        /* check for first usage of this variable; may not have a reg allocated yet. */
        if (s->regno == NO_REG_ALLOCATED_YET) {
@@ -1136,19 +1141,18 @@ gencode_var(M1_compiler *comp, m1_var *v) {
     }
     
     if (v->size > 1) { /* generate code to allocate memory on the heap for arrays */
-        m1_symbol *s;
-        m1_reg memsize;
-        
+        m1_symbol *sym;
+        m1_reg     memsize;        
         
         int size_per_item = 4; /* XXX fix this. Size of one element in the array. */
         int size;
 
-        s = v->sym;
-        assert(s != NULL);
+        sym = v->sym;
+        assert(sym != NULL);
         
-        if (s->regno == NO_REG_ALLOCATED_YET) {
-            m1_reg r = gen_reg(comp, s->valtype);
-            s->regno = r.no;
+        if (sym->regno == NO_REG_ALLOCATED_YET) {
+            m1_reg reg = gen_reg(comp, sym->valtype);
+            sym->regno = reg.no;
         }
         
         /* calculate total size of array. If smaller than 256*255,
@@ -1170,7 +1174,7 @@ gencode_var(M1_compiler *comp, m1_var *v) {
             fprintf(OUT, "\tderef\tI%d, CONSTS, %d\n", memsize.no, sizesym->constindex);
         }
         
-        fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", s->regno, memsize.no);
+        fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", sym->regno, memsize.no);
     }
        
 }
@@ -1195,6 +1199,7 @@ gencode_cast(M1_compiler *comp, m1_castexpr *expr) {
     gencode_expr(comp, expr->expr);
     reg = popreg(comp->regstack);
     
+    /* XXX do these type checks in semcheck. */
     if (strcmp(expr->type, "int") == 0) {
         result = gen_reg(comp, VAL_INT);
         fprintf(OUT, "\tntoi\tI%d, %c%d, x\n", result.no, reg_chars[(int)reg.type], reg.no);
@@ -1214,11 +1219,9 @@ gencode_cast(M1_compiler *comp, m1_castexpr *expr) {
 
 static void
 gencode_expr(M1_compiler *comp, m1_expression *e) {
-    
-        
+            
     if (e == NULL) {
     	debug("expr e is null in gencode_expr\n");
-
     }
         
     switch (e->type) {
@@ -1267,10 +1270,10 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
         case EXPR_ADDRESS:
             gencode_address(comp, e->expr.t);
             break;
-        case EXPR_OBJECT: {
-            m1_object *obj;               
-            gencode_obj(comp, e->expr.t, &obj, 0);
-            
+        case EXPR_OBJECT: 
+        {
+            m1_object *obj; /* temp. storage. */
+            gencode_obj(comp, e->expr.t, &obj, 0);            
             break;
         }
         case EXPR_BREAK:
