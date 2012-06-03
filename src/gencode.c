@@ -703,7 +703,7 @@ gencode_lt(M1_compiler *comp, m1_binexpr *b) {
     gencode_expr(comp, b->right);
     right = popreg(comp->regstack);
     
-    fprintf(OUT, "\tisge_%c I%d, %c%d, %c%d\n", type_chars[(int)left.type], result.no, 
+    fprintf(OUT, "\tisgt_%c I%d, %c%d, %c%d\n", type_chars[(int)left.type], result.no, 
                                                 reg_chars[(int)right.type], right.no,
                                                 reg_chars[(int)left.type], left.no);
 
@@ -722,7 +722,7 @@ gencode_le(M1_compiler *comp, m1_binexpr *b) {
     gencode_expr(comp, b->right);
     right = popreg(comp->regstack);
     
-    fprintf(OUT, "\tisgt_%c I%d, %c%d, %c%d\n", type_chars[(int)left.type], result.no, 
+    fprintf(OUT, "\tisge_%c I%d, %c%d, %c%d\n", type_chars[(int)left.type], result.no, 
                                                 reg_chars[(int)right.type], right.no,
                                                 reg_chars[(int)left.type], left.no);
 
