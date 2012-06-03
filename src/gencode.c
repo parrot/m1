@@ -158,6 +158,7 @@ gencode_string(M1_compiler *comp, m1_literal *lit) {
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constidxreg.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", reg.no, constidxreg.no);
     
+    fprintf(stderr, "pushing reg with string on stack: %c%d\n", reg_chars[(int)reg.type], reg.no);
     pushreg(comp->regstack, reg);
 
 }
@@ -183,16 +184,21 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
 
     if (obj_reg_count == 1) {
         lhs = popreg(comp->regstack);    
+        fprintf(stderr, "obj reg count 1, type of lhs: %c\n", reg_chars[(int)lhs.type]);
         fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
                                                 reg_chars[(int)rhs.type], rhs.no);
     }
     else if (obj_reg_count == 2) {
         m1_reg index  = popreg(comp->regstack);
-        m1_reg parent = popreg(comp->regstack);        
+        m1_reg parent = popreg(comp->regstack);
+        fprintf(stderr, "obj reg count 2\n");
         fprintf(OUT, "\tset_ref\t%c%d, %c%d, %c%d\n", reg_chars[(int)parent.type], parent.no, 
                                                       reg_chars[(int)index.type], index.no,
                                                       reg_chars[(int)rhs.type], rhs.no);
-    }          
+    }    
+    else {
+        assert(0);
+    }      
 }
 
 static void
@@ -284,19 +290,26 @@ OBJECT_LINK-----> L1
         case OBJECT_MAIN: 
         {   
             m1_reg reg;   
-              	
+            
+            fprintf(stderr, "OBJECT_MAIN\n");  	
 
         	assert(obj->obj.field != NULL);
         	assert(obj->sym != NULL);
+        	assert(obj->sym->typedecl != NULL);
 
+             
         	/* if symbol has not register allocated yet, do it now. */
         	if (obj->sym->regno == NO_REG_ALLOCATED_YET) {
-                m1_reg r = gen_reg(comp, obj->sym->valtype); 
+                m1_reg r = gen_reg(comp, obj->sym->typedecl->valtype); 
                 obj->sym->regno = r.no;
+
         	}  
+        	else {
+                fprintf(stderr, "Reg of %s is %d\n", obj->sym->name, obj->sym->regno);        	
+        	}
         	
         	reg.no   = obj->sym->regno;
-        	reg.type = obj->sym->valtype; 
+        	reg.type = obj->sym->typedecl->valtype; 
 
                       
             /* return a pointer to this node by OUT parameter. */
@@ -396,6 +409,8 @@ OBJECT_LINK-----> L1
             break;            
         }
         default:
+            fprintf(stderr, "unknown object type in gencode_obj()\n");
+            assert(0);
             break;
     }  
 		
@@ -1010,6 +1025,7 @@ gencode_print(M1_compiler *comp, m1_expression *expr) {
     
     gencode_expr(comp, expr);
     reg = popreg(comp->regstack);
+    fprintf(stderr, "[print] popped reg from stack %c%d\n", reg_chars[(int)reg.type], reg.no);
     
     one = gen_reg(comp, VAL_INT);
     
@@ -1119,24 +1135,31 @@ static void
 gencode_var(M1_compiler *comp, m1_var *v) {    
     if (v->init) { /* generate code only for initializations. */
        m1_reg     reg;
-       m1_symbol *s;
+       m1_symbol *sym;
        
        /* generate code for initialisation) */
        gencode_expr(comp, v->init);     
        reg = popreg(comp->regstack);
               
        assert(v->sym != NULL);
-       s = v->sym;       
+       sym = v->sym;       
        
        /* check for first usage of this variable; may not have a reg allocated yet. */
-       if (s->regno == NO_REG_ALLOCATED_YET) {
-            m1_reg r = gen_reg(comp, s->valtype);
-            s->regno = r.no;
+       
+       if (sym->regno == NO_REG_ALLOCATED_YET) {
+            sym->regno = reg.no;
        }
-       fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[s->valtype], 
-                                              s->regno, 
+/*
+       if (sym->regno == NO_REG_ALLOCATED_YET) {
+            m1_reg temp = gen_reg(comp, sym->valtype);
+            sym->regno  = temp.no;
+       }
+       fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[sym->valtype], 
+                                              sym->regno, 
                                               reg_chars[(int)reg.type], 
                                               reg.no);
+
+*/
     }
     
     if (v->size > 1) { /* generate code to allocate memory on the heap for arrays */

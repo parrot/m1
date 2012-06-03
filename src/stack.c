@@ -9,7 +9,7 @@ Needed by code generator to store labels for break statements, etc.
 #include <assert.h>
 #include "stack.h"
 
-#define STACKDEBUG  0
+#define STACKDEBUG  1
 
 m1_intstack *
 new_intstack(void) {

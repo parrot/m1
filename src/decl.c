@@ -53,9 +53,9 @@ type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structd
         exit(EXIT_FAILURE);   
     }
     
-    decl->name = structname;
-    decl->d.s  = structdef;
-    decl->type = DECL_STRUCT;
+    decl->name     = structname;
+    decl->d.s      = structdef;
+    decl->decltype = DECL_STRUCT;
     
     /* link in list of declarations */
     decl->next = comp->declarations;
@@ -64,6 +64,7 @@ type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structd
     return decl;
 }
 
+
 /* 
 
 Interface for declaring basic types. 
@@ -71,12 +72,29 @@ Interface for declaring basic types.
 */
 m1_decl *
 type_enter_type(M1_compiler *comp, char *typename, m1_decl_type type, unsigned size) {
-    m1_decl *decl = (m1_decl *)calloc(1, sizeof(m1_decl));
+    m1_decl *decl  = (m1_decl *)calloc(1, sizeof(m1_decl));    
+    decl->name     = typename;
+    decl->decltype = type;    
+    decl->d.size   = size;
     
-    decl->name   = typename;
-    decl->type   = type;
-    decl->d.size = size;
-    
+    switch (type) {
+        case DECL_INT:
+            decl->valtype = VAL_INT;
+            break;
+        case DECL_BOOL:
+            decl->valtype = VAL_INT;
+            break;
+        case DECL_NUM:
+            decl->valtype = VAL_FLOAT;
+            break;
+        case DECL_STRING:
+            decl->valtype = VAL_STRING;
+            break;
+        default:
+            decl->valtype = VAL_INT; /* structs and PMCs are stored as pointers. */
+            break;
+    }
+
     decl->next = comp->declarations;
     comp->declarations = decl;
     
@@ -91,7 +109,8 @@ Get the size of the type in <decl>.
 unsigned
 type_get_size(m1_decl *decl) {
     int size;
-    switch (decl->type) {
+    assert(decl != NULL);
+    switch (decl->decltype) {
         case DECL_STRUCT:
         case DECL_PMC:
             size = decl->d.s->size;
@@ -112,6 +131,7 @@ type_get_size(m1_decl *decl) {
             assert(0);
             break;
         default:
+            assert(0);
             break;
     }      
     return size;

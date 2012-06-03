@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-
+#include "compiler.h"
 #include "symtab.h"
 
 
@@ -46,7 +46,7 @@ link_sym(m1_symboltable *table, m1_symbol *sym) {
 }
 
 m1_symbol *
-sym_new_symbol(m1_symboltable *table, char *varname, char *typename) {
+sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *typename) {
     m1_symbol *sym = (m1_symbol *)calloc(1, sizeof(m1_symbol));
     
     assert(varname != NULL);
@@ -59,7 +59,8 @@ sym_new_symbol(m1_symboltable *table, char *varname, char *typename) {
     sym->name       = varname; /* name of this symbol */
     sym->regno      = NO_REG_ALLOCATED_YET; /* need to allocate a register later. */  
     sym->next       = NULL;    /* symbols are stored in a list */
-    sym->typedecl   = NULL;
+    sym->typedecl   = type_find_def(comp, typename);
+    
     
     link_sym(table, sym);
     

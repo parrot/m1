@@ -3,6 +3,7 @@
 
 
 #include "compiler.h"
+#include "symtab.h"
 
 typedef enum m1_decl_type {
     DECL_STRUCT,
@@ -16,16 +17,20 @@ typedef enum m1_decl_type {
         
 } m1_decl_type;
 
+
+
+
 typedef struct m1_decl {
     char *name;    /* name of declared type. */
     
-    union {
-        struct m1_struct *s;     /* struct declaration. */
-        struct m1_enum   *e;     /* enum declaration */
-        unsigned          size;  /* size of basic type whenever DECL_INT, DECL_FLOAT, DECL_STRING. */
+    union { 
+        struct m1_struct *s;    /* struct declaration. */
+        struct m1_enum   *e;    /* enum declaration */
+        unsigned          size; /* size of basic type whenever DECL_INT, DECL_FLOAT, DECL_STRING. */
     } d;
     
-    m1_decl_type    type;   /* selector for union d */
+    m1_decl_type    decltype;   /* selector for union d */
+    m1_valuetype    valtype;    /* type of register to hold this in. */
     
     struct m1_decl *next;   /* declarations are stored in a list. */
     

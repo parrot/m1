@@ -1,7 +1,8 @@
 #ifndef __M1_SYMTAB_H__
 #define __M1_SYMTAB_H__
 
-#include "decl.h"
+
+#include "compiler.h"
 
 #define NO_REG_ALLOCATED_YET    (-1)
 
@@ -14,6 +15,10 @@ typedef enum m1_valuetype {
 	VAL_USERTYPE
 	
 } m1_valuetype;
+
+
+/* define m1_valuetype first before #including decl.h, which needs m1_valuetype. */
+#include "decl.h"
 
 typedef union m1_value {
 	char  *sval;
@@ -58,7 +63,7 @@ extern m1_symbol *sym_find_num(m1_symboltable *table, double val);
 extern m1_symbol *sym_find_int(m1_symboltable *table, int val);
 extern m1_symbol *sym_find_chunk(m1_symboltable *table, char *name);
 
-extern m1_symbol *sym_new_symbol(m1_symboltable *table, char *name, char *typename);
+extern m1_symbol *sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *name, char *typename);
 extern m1_symbol *sym_lookup_symbol(m1_symboltable *table, char *name);
 
 extern void print_symboltable(m1_symboltable *table);

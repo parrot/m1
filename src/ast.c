@@ -391,13 +391,16 @@ var(M1_compiler *comp, char *varname, m1_expression *init) {
 	m1_var *v = make_var(comp, varname, init, 1);
     
     /* enter this var. declaration into the symbol table; store a pointer to the symbol in this var. */
-	v->sym = sym_new_symbol(&(comp->currentchunk->locals),  /* enter in current chunk's sym.tab. */
-	                       varname, 
-	                       comp->parsingtype);              /* type of this variable */
+	v->sym = sym_new_symbol(comp,
+	                        &(comp->currentchunk->locals),  /* enter in current chunk's sym.tab. */
+	                        varname, 
+	                        comp->parsingtype);              /* type of this variable */
 		
 	assert(v->sym != NULL);
 		
+	/* get a pointer to the type declaration */	
 	v->sym->typedecl = type_find_def(comp, comp->parsingtype);
+
 	if (v->sym->typedecl != NULL) {
 	   fprintf(stderr, "[var] %s is of type %s\n", varname, v->sym->typedecl->name);
 	}
@@ -415,9 +418,10 @@ m1_var *
 array(M1_compiler *comp, char *varname, unsigned size, m1_expression *init) {
     /* XXX not sure about type of init */
     m1_var *v = make_var(comp, varname, init, size);
-    v->sym = sym_new_symbol(&(comp->currentchunk->locals),  /* enter in current chunk's symbol table */
-	                       varname, 
-	                       comp->parsingtype);              /* type of this variable */
+    v->sym = sym_new_symbol(comp,
+                            &(comp->currentchunk->locals),  /* enter in current chunk's symbol table */
+	                        varname, 
+	                        comp->parsingtype);              /* type of this variable */
 	
 	assert(v->sym != NULL);
     v->sym->var = v;
