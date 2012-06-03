@@ -25,8 +25,8 @@ M1_O_FILES = \
 	src/gencode$(O) \
 	src/main$(O) \
 
-m1: $(M1_O_FILES)
-	$(CC) -I$(@D) -o m1 $(M1_O_FILES)
+m1$(EXE): $(M1_O_FILES)
+	$(CC) -I$(@D) -o m1$(EXE) $(M1_O_FILES)
 
 src/m1lexer$(O): src/m1lexer.c
 	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1lexer.c
@@ -71,8 +71,16 @@ src/main$(O): src/m1parser.h src/main.c
 decl$(O): src/decl.c src/decl.h
 	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/decl.c
 
+test: m1$(EXE) t/*.m1
+	for file in `ls t/*.m1`; \
+	do \
+	    echo $$file; \
+	    ./run_m1.sh $$file; \
+	done
+
 clean:
 	$(RM) -rf src/m1parser.* \
 		src/m1lexer.* \
 		src/*$(O) \
-		./m1$(EXE)
+		./m1$(EXE) \
+		t/*.m0
