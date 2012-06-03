@@ -6,6 +6,18 @@
 
 #define NO_REG_ALLOCATED_YET    (-1)
 
+/* The valuetype enumeration lists essential the
+   register types as needed in the M0 interpreter.
+   This is different from a variable's type, which
+   may be an object (a struct or PMC class's instance).
+
+   Obviously, the built-in types each have their specialized
+   valuetype, such as integers (VAL_INT) and so on.
+   
+   XXX Not sure about VALCHUNK VAL_ADDRESS and VAL_USERTYPE;
+   may unify these. Will they map to P or I registers?
+ */
+
 typedef enum m1_valuetype {
 	VAL_INT,
 	VAL_FLOAT,
@@ -17,8 +29,6 @@ typedef enum m1_valuetype {
 } m1_valuetype;
 
 
-/* define m1_valuetype first before #including decl.h, which needs m1_valuetype. */
-#include "decl.h"
 
 typedef union m1_value {
 	char  *sval;
@@ -27,6 +37,26 @@ typedef union m1_value {
 	
 } m1_value;
 
+
+/* Structure for representing symbols in the symbol table, as well as constant
+   declarations, which are just symbols in a "constants" symboltable. 
+   
+   The symbol struct has a pointer to a declaration node of a variable.
+   So, for this declaration:
+   
+        int x;
+   
+   a var AST node is created, to represent the symbol in the AST, and a
+   m1_symbol node is created, which is entered into the symbol table.
+   Not all fields are always used. Only constants use the <constindex> field.
+   Only variables get an allocated register in <regno>.
+   
+   The field <typedecl> is a pointer to the m1_decl node that represents
+   the type of this symbol. Since symbols are stored by name (in a symboltable)
+   these are easier to locate than m1_var nodes, which are just nodes in the
+   abstract syntax tree (and therefore cannot easily be located).
+   
+ */
 typedef struct m1_symbol {
     char             *name;     /* name of this symbol */
     m1_value          value;    /* for const declarations. */
@@ -42,6 +72,11 @@ typedef struct m1_symbol {
     
 } m1_symbol;
 
+
+
+/* A symboltable is just a list of symbols, and a constant-counter, in case the 
+   symbol represents a constant.   
+ */
 typedef struct m1_symboltable {
     struct m1_symbol *syms;
     int    constindex; /* one symboltable per constants segment, therefore keep

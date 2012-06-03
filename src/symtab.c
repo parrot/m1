@@ -8,7 +8,7 @@
 #include <assert.h>
 #include "compiler.h"
 #include "symtab.h"
-
+#include "decl.h"
 
 
 m1_symboltable *
@@ -31,12 +31,21 @@ static void
 link_sym(m1_symboltable *table, m1_symbol *sym) {
     m1_symbol *iter;
     
+    assert(table != NULL);
+    assert(sym != NULL);
+    
     iter = table->syms;
+    
     if (iter == NULL) {
         table->syms = sym;
     }
     else {
-        /* go to end of list, and hook on symbol at the end */
+        
+        /* go to end of list, and hook on symbol at the end 
+        This is needed because the symbols in the constants segment 
+        must be stored in-order. XXX Make this more efficient.
+        
+        */
         while (iter->next != NULL) {
             iter = iter->next;
         }      
@@ -59,6 +68,10 @@ sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *ty
     sym->name       = varname; /* name of this symbol */
     sym->regno      = NO_REG_ALLOCATED_YET; /* need to allocate a register later. */  
     sym->next       = NULL;    /* symbols are stored in a list */
+    
+    /* find the type declaration for the specified type. 
+    XXX perhaps do this in semcheck after the parsing is finished? 
+    */
     sym->typedecl   = type_find_def(comp, typename);
     
     
@@ -108,12 +121,12 @@ sym_enter_str(m1_symboltable *table, char *str, int scope) {
     
     sym = sym_find_str(table, str);
     
-    if (sym) {
-     
+    if (sym) {     
     	return sym;
     }
     	
    	sym = (m1_symbol *)calloc(1, sizeof(m1_symbol));
+   	
     if (sym == NULL) {
         fprintf(stderr, "cant alloc mem for sym");
         exit(EXIT_FAILURE);

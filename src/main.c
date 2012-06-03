@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 /* m1parser.h needs to be included /before/ m1lexer.h. */
 #include "m1parser.h"
-
 /* prevent declaration of yyparse in m1lexer.h. */
 #define YY_DECL
 #include "m1lexer.h"
@@ -14,7 +14,7 @@
 #include "gencode.h"
 #include "decl.h"
 
-#include <assert.h>
+
 
 extern int yyparse(yyscan_t yyscanner, struct M1_compiler * const comp);
 

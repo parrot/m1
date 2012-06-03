@@ -166,15 +166,17 @@ gencode_string(M1_compiler *comp, m1_literal *lit) {
 
 static void
 gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
-	m1_reg lhs, rhs;
-	m1_object *parent;
-	unsigned obj_reg_count;
+	m1_reg     lhs,    /* register holding result of left hand side  */
+	           rhs;    /* register holding result of right hand side */
+	m1_object *parent; /* pointer storage needed for code generation of LHS. */
+	unsigned   obj_reg_count; /* number of regs holding result of LHS (can be aggregate/indexed) */
 		
 	assert(a != NULL);
 	
     gencode_expr(comp, a->rhs);
     rhs = popreg(comp->regstack);
     
+    /* generate code for LHS and get number of registers that hold the result */
     obj_reg_count = gencode_obj(comp, a->lhs, &parent, 1);    
     
     /* the number of registers that are available is always 1 or 2. 1 for the simple case,
@@ -194,9 +196,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
                                                       reg_chars[(int)index.type], index.no,
                                                       reg_chars[(int)rhs.type], rhs.no);
     }    
-    else {
-        assert(0);
-    }      
+          
 }
 
 static void
@@ -1008,13 +1008,11 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     fprintf(OUT, "\tderef\tP%d, CONSTS, I%d\n", pmcreg.no, reg.no);
     fprintf(OUT, "\tgoto_chunk\tP%d, I%d, x\n", pmcreg.no, offsetreg.no);
        
-
 }
 
 
 static void
 gencode_print(M1_compiler *comp, m1_expression *expr) {
-
     m1_reg reg;
     m1_reg one;
     
@@ -1099,9 +1097,8 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
     
     push(comp->breakstack, endlabel); /* for break statements to jump to. */    
 
-
-    caseiter = expr->cases;
-    
+    /* iterate over cases and generate code for each. */
+    caseiter = expr->cases;    
     while (caseiter != NULL) {
         int testlabel;
         
@@ -1109,11 +1106,11 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
      
         testlabel = gen_label(comp);
         fprintf(OUT, "\tgoto_if L%d, I%d\n", testlabel, test.no);
-
+        /* generate code for this case's block. */
         gencode_block(comp, caseiter->block);
-        
+        /* next test label. */
         fprintf(OUT, "L%d:\n", testlabel);
-
+        
         caseiter = caseiter->next;   
     }
     

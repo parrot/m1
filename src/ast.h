@@ -7,7 +7,7 @@
 #include "compiler.h"
 
 
-
+/* structure to represent a function. */
 typedef struct m1_chunk {
     char                 *rettype;      /* return type of chunk */
     char                 *name;         /* name of this chunk */    
@@ -29,6 +29,7 @@ typedef struct m1_structfield {
     
 } m1_structfield;
 
+/* structure that holds an M1 struct definition */
 typedef struct m1_struct {
     char    *name;
     unsigned numfields;
@@ -36,7 +37,7 @@ typedef struct m1_struct {
     
     struct m1_structfield *fields;
     
-    struct m1_struct *structs;
+//    struct m1_struct      *structs;
     
 } m1_struct;
 
@@ -141,6 +142,7 @@ typedef struct m1_castexpr {
     char *type;    
 } m1_castexpr;
 
+/* object types. */
 typedef enum m1_object_type {
     OBJECT_LINK,  /* node linking a and b in a.b */
     OBJECT_MAIN,  /* a in a.b  */
@@ -155,7 +157,9 @@ typedef enum m1_object_type {
 
 /* struct to represent an element or link between two elements
    in aggregates. In a.b.c, each element (a, b, c) is represented
-   by one m1_object node.
+   by one m1_object node. Links, between a and b, and b and c are ALSO
+   represented by a m1_object node. Yes, that's a lot of nodes for 
+   an expression like "a.b.c" (5 in total).
    
  */
 typedef struct m1_object {
@@ -174,17 +178,20 @@ typedef struct m1_object {
       
 } m1_object;
 
+/*
 typedef enum m1_lhsobj_type {
-    LHS_INDEX, /* a[b] */
-    LHS_FIELD  /* a.b */
+    LHS_INDEX, // a[b] 
+    LHS_FIELD  // a.b 
     
 } m1_lhsobj_type;
-
+*/
+/*
 typedef struct m1_lhsobj {
     struct m1_lhsobj *obj;
     struct m1_lhsobj *field;
       
 } m1_lhs_obj;
+*/
 
 /* for while and do-while statements */
 typedef struct m1_whileexpr {
@@ -226,14 +233,16 @@ typedef struct m1_var {
 } m1_var;
 
 
+/* structure to represent a single case of a switch statement. */
 typedef struct m1_case {
-	int selector;
-	struct m1_expression *block;
-	
-	struct m1_case *next;
+	int                   selector;
+	struct m1_expression *block;	
+	struct m1_case       *next;
 	
 } m1_case;
 
+
+/* structure to represent a switch statement. */
 typedef struct m1_switch {
 	struct m1_expression *selector;
 	struct m1_case       *cases;
