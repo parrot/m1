@@ -9,6 +9,4 @@ int main() {
         print("\n");   
         x--;
     }
-    print("\n");
-           
 }
