@@ -3,19 +3,13 @@
 
 int foo() {
     
-   print(1);
+    print(1);
+    int a;
+    int x;
+    int y;
+    int i;
     
-    int x[10];
-      *x= &e;
-    x[1] = 2;
-    x[1][1] = 2;
-    x[1][2].x = 2;
-    x[1].g[1]->d = 3;
-
     a = 1 ? 2 : 3;
-    a.b.c=1;
-    x[1] = 2;
-    x->y = 2;
     
     do {
         x = 1 * 2 + 8 ^ 9;
@@ -50,6 +44,6 @@ int foo() {
 
 struct foo {
     int x;  
-};
+}
 
 
