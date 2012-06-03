@@ -37,22 +37,21 @@ What's working?
 * pre and postfix ++ and -- operators.
 * unary minus op.
 * array access (x[42] = 3; x = y[3])
+* field access (x.y = 3; )
 
 What's not working?
 -------------------
 * function calls (mostly the returns); parameters/arguments.
 * namespaces
-* PMC and struct definitions (incl methods)
+* PMC definitions (incl methods)
 * return statements
 * pointers, objects (int *x;), null, new.m
-* arrays (and initializations)
 * self, super
 * type checking (separate phase of compiler)
 * import statement.
 * try/catch statement (needed?)
 * nested scopes (symboltables).
 * complex arrays (multidimensional)
-* offsets for field access (a.b)
 
 
 short-term roadmap:
@@ -70,7 +69,6 @@ random list of items:
 ---------------------
 * implement parameter and argument handling
 * implement namespaces and their handling
-* implement pointers properly in the parser
 * implement structs or other aggregate types; PMCs native?
 * any other keywords? e.g., continue? 
 * implement semantic checker (a thorough one!)
