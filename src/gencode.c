@@ -1114,7 +1114,60 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     fprintf(OUT, "\tset_ref \tP%d, I%d, I%d\n", cf_reg.no, pc_reg.no, cont_offset.no); 
 
     fprintf(OUT, "\tset\tCF, P%d, x\n", cf_reg.no);
-           
+     
+     
+    /* XXX TODO: generate these instructions as well: 
+    post_set:
+    */
+/*    
+    # put the name of the target chunk into S0
+    set_imm P0, 0, 3
+    deref   P0, CONSTS, P0
+    # put the target PC into I0
+    set_imm I0, 0, 0
+    goto_chunk P0, I0, x
+*/
+
+    /*
+    # We're back, so fix the parent call frame's PC and activate it.
+    # The current CF's CHUNK, CONSTS, etc are updated by goto_chunk, so use
+    # those values to update PCF.
+    */
+    
+    /*
+    retpc:
+    restore_cf:
+    */
+    
+/*
+    # set PCF[CHUNK] to the current call frame's CHUNK
+    set_imm  I9,  0,  CHUNK
+    set_ref  PCF, I9, CHUNK
+    # set PCF[CONSTS] to the current call frame's CONSTS
+    set_imm  I9,  0,  CONSTS 
+    set_ref  PCF, I9, CONSTS
+    # set PCF[MDS] to the current call frame's MDS
+    set_imm  I9,  0,  MDS
+    set_ref  PCF, I9, MDS
+    # set PCF[BCS] to the current call frame's BCS
+    set_imm  I9,  0,  BCS
+    set_ref  PCF, I9, BCS
+
+*/
+    /* set_cf_pc: */
+    /*
+    # Set PCF[PC] to the invoke_cf + 1 so that when we invoke PCF with
+    # "set CF, PCF, x", control flow will continue at the next instruction.
+    set_imm I1,  0,  5
+    add_i   I1,  PC, I1
+    set_imm I9,  0,  PC
+    set_ref PCF, I9, I1
+    set_imm I9,  0,  CF
+    set_ref PCF, I9, PCF
+
+invoke_cf:
+    set     CF, PCF, x    
+    */       
 }
 
 
@@ -1480,7 +1533,7 @@ gencode_block(M1_compiler *comp, m1_expression *block) {
 }
 
 static void
-gencode_chunk_return(M1_compiler *comp) {
+gencode_chunk_return(M1_compiler *comp, m1_chunk *ch) {
     /*
     # figure out return PC and chunk
     # P0 is the parent call frame
@@ -1497,13 +1550,15 @@ gencode_chunk_return(M1_compiler *comp) {
     
     /* XXX only generate in non-main functions. */
     /*
-    m1_reg t = gen_reg(comp, VAL_INT);
+    
+    m1_reg t         = gen_reg(comp, VAL_INT);
+    m1_reg parent_cf = gen_reg(comp, VAL_CHUNK);
     fprintf(OUT, "\tset_imm\tI%d, 0, PCF\n", t.no);
-    fprintf(OUT, "\tderef\tP0, CF, I%d\n", t.no);
+    fprintf(OUT, "\tderef\tP%d, CF, I%d\n", parent_cf.no, t.no);
     
     m1_reg t2 = gen_reg(comp, VAL_INT);
     fprintf(OUT, "\tset_imm\tI%d, 0, RETPC\n", t2.no);
-    fprintf(OUT, "\tderef\tI%d, P0, I%d\n", t2.no, t2.no);
+    fprintf(OUT, "\tderef\tI%d, P%d, I%d\n", t2.no, parent_cf.no, t2.no);
     
     fprintf(OUT, "\tset_imm\tI%d, 0, CHUNK\n", t.no);
     fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", t.no, t.no);
@@ -1551,7 +1606,7 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     gencode_block(comp, c->block);
     
     /* helper function to generate instructions to return. */
-    gencode_chunk_return(comp);
+    gencode_chunk_return(comp, c);
 }
 
 /*
