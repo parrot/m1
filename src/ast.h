@@ -66,7 +66,8 @@ typedef enum m1_expr_type {
     EXPR_ASSIGN,
     EXPR_BINARY,
     EXPR_BREAK,
-    EXPR_CAST,    
+    EXPR_CAST,
+    EXPR_CHAR,    
     EXPR_CONSTDECL,
     EXPR_DEREF,     /* *x */
     EXPR_DOWHILE,
@@ -318,6 +319,8 @@ extern m1_expression *objectexpr(M1_compiler *comp, m1_object *obj, m1_expr_type
 extern m1_expression *binexpr(M1_compiler *comp, m1_expression *e1, m1_binop op, m1_expression *e2);
 extern m1_expression *number(M1_compiler *comp, double value);
 extern m1_expression *integer(M1_compiler *comp, int value);
+extern m1_expression *character(M1_compiler *comp, char ch);
+
 extern m1_expression *string(M1_compiler *comp, char *str);
 extern m1_expression *unaryexpr(M1_compiler *comp, m1_unop op, m1_expression *e);
 extern m1_object *arrayindex(M1_compiler *comp, m1_expression *index);

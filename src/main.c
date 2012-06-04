@@ -36,6 +36,7 @@ init_compiler(M1_compiler *comp) {
     type_enter_type(comp, "num", DECL_NUM, 8);
     type_enter_type(comp, "bool", DECL_BOOL, 4); /* bools are stored in ints. */
     type_enter_type(comp, "string", DECL_STRING, 4);  /* strings are pointers, so size is 4. */
+    type_enter_type(comp, "char", DECL_CHAR, 4); /* XXX can this be 1? what about padding in structs? */
     
 }
 

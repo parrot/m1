@@ -87,7 +87,7 @@ gencode_number(M1_compiler *comp, m1_literal *lit) {
     
     assert(comp != NULL);
     assert(lit != NULL);
-    assert(lit->type = VAL_FLOAT);
+    assert(lit->type == VAL_FLOAT);
     assert(lit->sym != NULL);
        
     reg        = gen_reg(comp, VAL_FLOAT);
@@ -99,7 +99,30 @@ gencode_number(M1_compiler *comp, m1_literal *lit) {
     
     pushreg(comp->regstack, reg);
     
-}   
+} 
+
+static void
+gencode_char(M1_compiler *comp, m1_literal *lit) {
+	/*
+	deref Nx, CONSTS, <const_id>
+	*/
+    m1_reg     reg, constindex;
+    
+    assert(comp != NULL);
+    assert(lit != NULL);
+    assert(lit->type == VAL_INT);
+    assert(lit->sym != NULL);
+       
+    reg        = gen_reg(comp, VAL_INT);
+    constindex = gen_reg(comp, VAL_INT);
+   
+        
+    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
+    fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", reg.no, constindex.no);
+    
+    pushreg(comp->regstack, reg);
+    
+}  
 
 static void
 gencode_int(M1_compiler *comp, m1_literal *lit) {
@@ -1269,7 +1292,10 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             break;
         case EXPR_CAST:
             gencode_cast(comp, e->expr.cast);
-            break;            
+            break;   
+        case EXPR_CHAR:
+            gencode_char(comp, e->expr.l);
+            break;         
         case EXPR_CONSTDECL:
             /* do nothing. constants are compiled away */
         	break;            

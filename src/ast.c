@@ -71,6 +71,15 @@ new_literal(m1_valuetype type) {
 
 
 m1_expression *
+character(M1_compiler *comp, char ch) {
+    m1_expression *expr      = expression(comp, EXPR_CHAR);
+    expr->expr.l             = new_literal(VAL_INT);
+    expr->expr.l->value.ival = (int)ch;
+    expr->expr.l->sym        = sym_enter_int(&comp->currentchunk->constants, (int)ch);
+    return expr;    
+}
+
+m1_expression *
 number(M1_compiler *comp, double value) {
 	m1_expression *expr = expression(comp, EXPR_NUMBER);
 	

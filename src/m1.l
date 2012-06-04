@@ -104,6 +104,7 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "break"                 { return KW_BREAK; }
 "case"                  { return KW_CASE; }
 "catch"                 { return KW_CATCH; }
+"char"                  { return KW_CHAR; }
 "const"                 { return KW_CONST; }
 "continue"              { return KW_CONTINUE; }
 "default"               { return KW_DEFAULT; }
@@ -152,6 +153,11 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
                           return TK_STRING_CONST;
                         }
 
+\'.\'                   { /* match chars. */
+                           yylval->cval = yytext[0];
+                           return TK_CHAR;
+                        }
+                        
 [1-9]{DIGIT}*|"0"       { 
                            yylval->ival = atoi(yytext); 
                            return TK_INT; 

@@ -36,6 +36,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 %}
 
 %union {
+    char                     cval;
     char                    *sval;
     int                      ival;
     double                   fval;
@@ -55,9 +56,11 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 
 %token  TK_IDENT
         TK_NUMBER
+        TK_CHAR
         KW_NUM          "num"
         KW_INT          "int"
         KW_STRING       "string"
+        KW_CHAR         "char"
         TK_INT          
         KW_STRUCT       "struct"
         TK_INC          "++"
@@ -141,6 +144,8 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              m0_op
              m0_arg                       
              assignop
+             
+%type <cval> TK_CHAR
 
 %type <fval> TK_NUMBER
 
@@ -716,12 +721,13 @@ constexpr   : TK_NUMBER
             | TK_INT
                 { $$ = integer(yyget_extra(yyscanner), $1); }  
             | TK_STRING_CONST
-                {  $$ = string(yyget_extra(yyscanner), $1); }
+                { $$ = string(yyget_extra(yyscanner), $1); }
             | "true"
                 { $$ = expression(yyget_extra(yyscanner), EXPR_TRUE); }
             | "false"
                 { $$ = expression(yyget_extra(yyscanner), EXPR_FALSE); }
-
+            | TK_CHAR
+                { $$ = character(yyget_extra(yyscanner), $1); } 
             ;
             
 expression  : constexpr 
@@ -837,6 +843,7 @@ native_type : "int"     { $$ = "int"; }
             | "num"     { $$ = "num"; }
             | "string"  { $$ = "string"; }
             | "bool"    { $$ = "bool"; }
+            | "char"    { $$ = "char"; }
             ;
             
 

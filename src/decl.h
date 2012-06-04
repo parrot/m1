@@ -17,7 +17,8 @@ typedef enum m1_decl_type {
     DECL_NUM,           /* declaration type for num type */   
     DECL_STRING,        /* declaration type for string type */
     DECL_BOOL,          /* declaration type for bool type */
-    DECL_VOID           /* declaration type for void type */
+    DECL_VOID,          /* declaration type for void type */
+    DECL_CHAR           /* declaration type for char type */
         
 } m1_decl_type;
 
