@@ -6,7 +6,7 @@
 
 #define NO_REG_ALLOCATED_YET    (-1)
 
-/* The valuetype enumeration lists essential the
+/* The valuetype enumeration lists essentially the
    register types as needed in the M0 interpreter.
    This is different from a variable's type, which
    may be an object (a struct or PMC class's instance).

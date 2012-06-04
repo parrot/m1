@@ -743,7 +743,7 @@ subexpr     : '(' expression ')'
             
 
             
-newexpr     : "new" TK_IDENT '(' arguments ')'
+newexpr     : "new" TK_USERTYPE '(' arguments ')'
                 { $$ = newexpr(yyget_extra(yyscanner), $2); }
             ;         
             

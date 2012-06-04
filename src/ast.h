@@ -259,8 +259,8 @@ typedef struct m1_literal {
 } m1_literal;
 
 typedef struct m0_block {
-    struct m0_instr *instr;
-    
+    struct m0_instr       *instr;
+       
 } m0_block;
 
 /* to represent statements */
