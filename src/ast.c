@@ -375,11 +375,11 @@ vardecl(M1_compiler *comp, char *type, m1_var *v) {
 }
 
 static m1_var *
-make_var(M1_compiler *comp, char *name, m1_expression *init, unsigned size) {
-    m1_var *v = (m1_var *)m1_malloc(sizeof(m1_var));
-    v->name   = name;
-    v->init   = init;
-    v->size   = size;
+make_var(M1_compiler *comp, char *name, m1_expression *init, unsigned num_elems) {
+    m1_var *v    = (m1_var *)m1_malloc(sizeof(m1_var));
+    v->name      = name;
+    v->init      = init;
+    v->num_elems = num_elems;
     
     assert(comp != NULL);
     return v;    	
@@ -395,7 +395,7 @@ var(M1_compiler *comp, char *varname, m1_expression *init) {
 	                        &(comp->currentchunk->locals),  /* enter in current chunk's sym.tab. */
 	                        varname, 
 	                        comp->parsingtype, /* type of this variable */
-	                        1);              
+	                        1);      /* size 1 */        
 		
 	assert(v->sym != NULL);
 		
@@ -527,8 +527,10 @@ struct_find_field(M1_compiler *comp, m1_struct *structdef, char *fieldname) {
     m1_structfield *sfield = NULL;
     
     assert(comp != NULL);
+    assert(structdef != NULL);
+    assert(fieldname != NULL);
+    
     sfield = structdef->fields;
-
         
     while (sfield != NULL) {
         if (strcmp(sfield->name, fieldname) == 0) /* found! */

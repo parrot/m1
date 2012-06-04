@@ -13,10 +13,13 @@ int main() {
     s[9] = "----0-----0------\n"; 
 
     int i = 1;
-    while(1) {
+    int numiter = 100;
+    while(numiter--) {
         i = i % 10;
         print(s[i]);
+
         i++;
+
     }
 
     

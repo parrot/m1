@@ -475,10 +475,12 @@ gencode_while(M1_compiler *comp, m1_whileexpr *w) {
 static void
 gencode_dowhile(M1_compiler *comp, m1_whileexpr *w) {
 	/*
-	START:
-	<code for block>
-	<code for cond>
-	goto_if START
+	
+	LSTART:
+	  <code for block>
+	  cond = <code for cond>
+	  goto_if LSTART, cond
+	  
 	*/
     m1_reg reg;
     
@@ -556,7 +558,7 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
 	/*
 	
       result1 = <evaluate condition>
-	  goto_if result1, L1
+	  goto_if L1, result1
 	  <code for elseblock>
 	  goto L2
     L1:
@@ -607,10 +609,11 @@ static void
 gencode_or(M1_compiler *comp, m1_binexpr *b) {
 	/*
 	  left = <evaluate left>
-	  goto_if left, END
+	  goto_if LEND, left
 	  right = <evaluate right>
 	  left = right 
-	END:
+	LEND:
+	
 	*/
 	m1_reg left, right;
 	int endlabel;
@@ -641,12 +644,12 @@ static void
 gencode_and(M1_compiler *comp, m1_binexpr *b) {
 	/*
 	  left = <evaluate left>
-	  goto_if left, evalright
-	  goto END
-	evalright:
+	  goto_if LRIGHT, left, 
+	  goto LEND
+	LRIGHT:
 	  right = <evaluate right>
 	  left = right
-	END:
+	LEND:
 	*/
 	m1_reg left, right;
 	int endlabel  = gen_label(comp);
@@ -775,6 +778,7 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
     	   right,
     	   target;
     
+    /* evaluate left and get result from stack */
     gencode_expr(comp, b->left);
     left = popreg(comp->regstack);
 
@@ -924,7 +928,6 @@ gencode_not(M1_compiler *comp, m1_unexpr *u) {
       set_imm Ix, 0, 1
     L2:
       set reg, Ix
-    #done
     
     */
     label1 = gen_label(comp);
@@ -941,7 +944,6 @@ gencode_not(M1_compiler *comp, m1_unexpr *u) {
     pushreg(comp->regstack, temp);
    
 }
-
 
 
 static void
@@ -981,8 +983,8 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     gencode_expr(comp, u->expr);
     reg = popreg(comp->regstack);
     
-    one    = gen_reg(comp, VAL_INT);
-    target = gen_reg(comp, VAL_INT);
+    one    = gen_reg(comp, VAL_INT); /* register for holding constant 1. */
+    target = gen_reg(comp, VAL_INT); /* result register. */
     
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", one.no);
     fprintf(OUT, "\t%s\tI%d, I%d, I%d\n", op, target.no, reg.no, one.no);
@@ -1053,13 +1055,10 @@ gencode_print(M1_compiler *comp, m1_expression *expr) {
 
 static void
 gencode_new(M1_compiler *comp, m1_newexpr *expr) {
-	m1_reg reg     = gen_reg(comp, VAL_INT);
-	m1_reg sizereg = gen_reg(comp, VAL_INT);
-	
-
-	unsigned size  = 128; /* fix; should be size of object requested */
-    
-    m1_decl *typedecl = type_find_def(comp, expr->type);
+	m1_reg reg        = gen_reg(comp, VAL_INT); /* reg holding the pointer to new memory */
+	m1_reg sizereg    = gen_reg(comp, VAL_INT); /* reg holding the num. of bytes to alloc. */
+	unsigned size     = 0;
+    m1_decl *typedecl = type_find_def(comp, expr->type); /* find the decl for requested type */
     
     if (typedecl == NULL) { /* XXX need to check in semcheck. */
         fprintf(stderr, "Cannot find type '%s' requested for in new-statement\n", expr->type);   
@@ -1107,12 +1106,11 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
     END: #break statements will go here.
       
     */
-    m1_reg reg;
-    int endlabel = gen_label(comp);
-
+    m1_reg   reg;
     m1_case *caseiter;
-    m1_reg test;
-    test = gen_reg(comp, VAL_INT);
+    m1_reg   test     = gen_reg(comp, VAL_INT);
+    int      endlabel = gen_label(comp);
+
     
     /* evaluate selector */
     gencode_expr(comp, expr->selector);
@@ -1165,12 +1163,11 @@ gencode_var(M1_compiler *comp, m1_var *v) {
        }
     }
     
-    if (v->size > 1) { /* generate code to allocate memory on the heap for arrays */
+    if (v->num_elems > 1) { /* generate code to allocate memory on the heap for arrays */
         m1_symbol *sym;
-        m1_reg     memsize;        
-        
-        int size_per_item = 4; /* XXX fix this. Size of one element in the array. */
-        int size;
+        m1_reg     memsize;                
+        int        elem_size = 4; /* XXX fix this. Size of one element in the array. */
+        int        size;
 
         sym = v->sym;
         assert(sym != NULL);
@@ -1185,7 +1182,7 @@ gencode_var(M1_compiler *comp, m1_var *v) {
          * then load the value with set_imm, otherwise from the 
          * constants segment.
          */
-        size = v->size * size_per_item;
+        size = v->num_elems * elem_size;
         
         memsize = gen_reg(comp, VAL_INT); /* reg to hold num of bytes to allocate */
         

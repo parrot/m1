@@ -226,7 +226,7 @@ typedef struct m1_const {
 typedef struct m1_var {
     char                 *name;
     struct m1_expression *init;
-    unsigned              size; /* 1 for non-arrays, larger for arrays */
+    unsigned              num_elems; /* 1 for non-arrays, larger for arrays */
     struct m1_symbol     *sym;  /* pointer to symbol in symboltable */
     
     struct m1_var        *next; /* var nodes are stored as a list. */
