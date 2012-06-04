@@ -22,8 +22,6 @@ extern int yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str);
 %option bison-bridge
 %option warn
 %option noyywrap
-%option outfile="m1lexer.c"
-%option header-file="m1lexer.h"
 %option stack
 %option never-interactive
 %option pointer

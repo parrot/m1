@@ -35,14 +35,10 @@ src/m1parser$(O): src/m1parser.c
 	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1parser.c	
 
 src/m1parser.c: src/m1.y src/m1lexer.c
-	$(YACC) src/m1.y
-	mv m1parser.c src/ 
-	mv m1parser.h src/ 
+	$(YACC) --output=src/m1parser.c src/m1.y
 
 src/m1lexer.c: src/m1.l
-	$(LEX) src/m1.l	
-	mv m1lexer.c src/ 
-	mv m1lexer.h src/ 
+	$(LEX) --header-file=src/m1lexer.h --outfile=src/m1lexer.c src/m1.l	
 	
 src/ast$(O): src/ast.c src/ast.h
 	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/ast.c

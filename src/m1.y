@@ -255,8 +255,6 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 %parse-param	{struct M1_compiler * const comp}
 
 %defines
-%output="m1parser.c"
-
 %expect 0
 
 %start TOP
