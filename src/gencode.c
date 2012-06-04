@@ -1255,50 +1255,53 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
     }
         
     switch (e->type) {
-        case EXPR_NUMBER:
-            gencode_number(comp, e->expr.l);
-            break;
-        case EXPR_INT:
-            gencode_int(comp, e->expr.l);
-            break;
-        case EXPR_STRING:
-            gencode_string(comp, e->expr.l);     
-            break;
-        case EXPR_BINARY:
-            gencode_binary(comp, e->expr.b);
-            break;
-        case EXPR_UNARY:
-            gencode_unary(comp, e->expr.u);
-            break;
-        case EXPR_FUNCALL:
-            gencode_funcall(comp, e->expr.f);
+        case EXPR_ADDRESS:
+            gencode_address(comp, e->expr.t);
             break;
         case EXPR_ASSIGN:
             gencode_assign(comp, e->expr.a);
             break;
-        case EXPR_IF:   
-            gencode_if(comp, e->expr.i);
+        case EXPR_BINARY:
+            gencode_binary(comp, e->expr.b);
             break;
-        case EXPR_WHILE:
-            gencode_while(comp, e->expr.w);
+        case EXPR_BREAK:
+            gencode_break(comp);
             break;
+        case EXPR_CAST:
+            gencode_cast(comp, e->expr.cast);
+            break;            
+        case EXPR_CONSTDECL:
+            /* do nothing. constants are compiled away */
+        	break;            
+        case EXPR_DEREF:
+            gencode_deref(comp, e->expr.t);
+            break;            
         case EXPR_DOWHILE:
             gencode_dowhile(comp, e->expr.w);
             break;
+        case EXPR_FALSE:
+            gencode_bool(comp, 0);
+            break;              
         case EXPR_FOR:
             gencode_for(comp, e->expr.o);
+            break;                      
+        case EXPR_FUNCALL:
+            gencode_funcall(comp, e->expr.f);
             break;
-        case EXPR_RETURN:
-            gencode_return(comp, e->expr.e);
+        case EXPR_IF:   
+            gencode_if(comp, e->expr.i);
+            break;            
+        case EXPR_INT:
+            gencode_int(comp, e->expr.l);
             break;
+        case EXPR_NEW:
+        	gencode_new(comp, e->expr.n);
+        	break;    
         case EXPR_NULL:
             gencode_null(comp);
             break;
-        case EXPR_DEREF:
-            gencode_deref(comp, e->expr.t);
-            break;
-        case EXPR_ADDRESS:
-            gencode_address(comp, e->expr.t);
+        case EXPR_NUMBER:
+            gencode_number(comp, e->expr.l);
             break;
         case EXPR_OBJECT: 
         {
@@ -1306,38 +1309,35 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             gencode_obj(comp, e->expr.t, &obj, 0);            
             break;
         }
-        case EXPR_BREAK:
-            gencode_break(comp);
-            break;
-        case EXPR_CONSTDECL:
-            /* do nothing. constants are compiled away */
-        	break;
-        case EXPR_VARDECL:
-            gencode_vardecl(comp, e->expr.v);            
-            break;
-        case EXPR_SWITCH:
-            gencode_switch(comp, e->expr.s);
-        	break;
-        case EXPR_NEW:
-        	gencode_new(comp, e->expr.n);
-        	break;
         case EXPR_PRINT:
             gencode_print(comp, e->expr.e);   
             break; 
-        case EXPR_CAST:
-            gencode_cast(comp, e->expr.cast);
+        case EXPR_RETURN:
+            gencode_return(comp, e->expr.e);
+            break;            
+        case EXPR_STRING:
+            gencode_string(comp, e->expr.l);     
             break;
+        case EXPR_SWITCH:
+            gencode_switch(comp, e->expr.s);
+        	break;    
         case EXPR_TRUE:
             gencode_bool(comp, 1);
             break;
-        case EXPR_FALSE:
-            gencode_bool(comp, 0);
+        case EXPR_UNARY:
+            gencode_unary(comp, e->expr.u);
             break;
-        default:
+        case EXPR_VARDECL:
+            gencode_vardecl(comp, e->expr.v);            
+            break;
+        case EXPR_WHILE:
+            gencode_while(comp, e->expr.w);
+            break;        
+         default:
             fprintf(stderr, "unknown expr type (%d)", e->type);   
-            exit(EXIT_FAILURE);
+            assert(0);
     }   
-//    fprintf(OUT, "\n");
+
 }
 
 
