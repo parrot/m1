@@ -503,23 +503,22 @@ gencode_dowhile(M1_compiler *comp, m1_whileexpr *w) {
 
 static void
 gencode_for(M1_compiler *comp, m1_forexpr *i) {
-	/*
+	/*		
+      <code for init>
+	LSTART:
+	  <code for cond>
+	  goto_if cond, LBLOCK
+      goto LEND
+    LBLOCK: 
+      <code for block>
+      <code for step>
+	  goto LSTART
+	LEND:
 	
-	
-	<code for init>
-	START:
-	<code for cond>
-	goto_if cond, L1
-	goto END
-	L1: 
-	<code for block>
-	<code for step>
-	goto START
-	END:
 	*/
-    int startlabel = gen_label(comp),
+    int startlabel = gen_label(comp), 
         endlabel   = gen_label(comp),
-        blocklabel = gen_label(comp);
+        blocklabel = gen_label(comp); /* label where the block starts */
         
     push(comp->breakstack, endlabel);
     
@@ -556,17 +555,18 @@ static void
 gencode_if(M1_compiler *comp, m1_ifexpr *i) {
 	/*
 	
-	result1 = <evaluate condition>
-	goto_if result1, L1
-	<code for elseblock>
-	goto L2
+      result1 = <evaluate condition>
+	  goto_if result1, L1
+	  <code for elseblock>
+	  goto L2
     L1:
-	<code for ifblock>
+	  <code for ifblock>
 	L2:
+	
 	*/
 	m1_reg condreg;
 	int endlabel = gen_label(comp),
-		iflabel  = gen_label(comp) ;
+		iflabel  = gen_label(comp);
 
 	
     gencode_expr(comp, i->cond);
@@ -582,7 +582,7 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
     
     /* if block */
 	fprintf(OUT, "L%d:\n", iflabel);
-    gencode_expr(comp, i->ifblock);
+    gencode_block(comp, i->ifblock);
 			
     fprintf(OUT, "L%d:\n", endlabel);
          
@@ -680,14 +680,15 @@ indicates whether it's the == op (is_eq_op = true) or the != op (is_eq_op = fals
 static void
 ne_eq_common(M1_compiler *comp, m1_binexpr *b, int is_eq_op) {
     /* code for EQ; NE swaps the result.
-    left = <code for left>
-    right = <code for right>
-    diff = left - right
-    goto_if NOTEQUAL, diff # not zero
-    result = 1
-    goto END
+    
+      left  = <code for left>
+      right = <code for right>
+      diff  = left - right
+      goto_if NOTEQUAL, diff # not zero
+      result = 1
+      goto END
     NOTEQUAL:
-    result = 0
+      result = 0
     END:
     
     */
@@ -901,16 +902,19 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
 
 static void
 gencode_not(M1_compiler *comp, m1_unexpr *u) {
-    m1_reg reg, temp;
-    int label1, label2;
+    m1_reg reg, 
+           temp;
+           
+    int label1, 
+        label2;
     
     gencode_expr(comp, u->expr);
-    reg = popreg(comp->regstack);
+    reg  = popreg(comp->regstack);
     
     temp = gen_reg(comp, VAL_INT);
     
-    /* if reg is zero, make it nonzero (false->true).
-    If it's non-zero, make it zero. (true->false). 
+    /* If reg is zero, make it nonzero (false->true).
+       If it's non-zero, make it zero. (true->false). 
     */
     /*
       goto_if reg, L1 #non-zero, make it zero.
