@@ -416,18 +416,17 @@ var(M1_compiler *comp, char *varname, m1_expression *init) {
 }
 
 m1_var *
-array(M1_compiler *comp, char *varname, unsigned size, m1_expression *init) {
-    /* XXX not sure about type of init */
-    m1_var *v = make_var(comp, varname, init, size);
-    v->sym = sym_new_symbol(comp,
-                            &(comp->currentchunk->locals),  /* enter in current chunk's symbol table */
-	                        varname, 
-	                        //comp->parsingtype);              /* type of this variable */
-	                        "int", /* arrays are implemented as pointers. */
-	                        size); 
+array(M1_compiler *comp, char *varname, unsigned num_elems, m1_expression *init) {
+    m1_var *v = make_var(comp, varname, init, num_elems);
+    v->sym    = sym_new_symbol(comp,
+                               &(comp->currentchunk->locals),  /* enter in current chunk's symbol table */
+	                           varname,                        /* name of this array being declared */
+	                           comp->parsingtype,              /* type of base type variable */ 
+	                           num_elems); 
 	
 	assert(v->sym != NULL);
-    v->sym->var = v;
+	
+    v->sym->var = v; /* set pointer in the symbol (stored in symtab) to the var AST node. */
 	return v;
 }
 

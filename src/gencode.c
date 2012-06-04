@@ -194,6 +194,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
     else if (obj_reg_count == 2) {
         m1_reg index  = popreg(comp->regstack);
         m1_reg parent = popreg(comp->regstack);
+        
         fprintf(OUT, "\tset_ref\t%c%d, %c%d, %c%d\n", reg_chars[(int)parent.type], parent.no, 
                                                       reg_chars[(int)index.type], index.no,
                                                       reg_chars[(int)rhs.type], rhs.no);
@@ -306,8 +307,16 @@ OBJECT_LINK-----> L1
         	}
 */        	
             fprintf(stderr, "symbol %s has size %d\n", obj->sym->name, obj->sym->size);
+            
+            if (obj->sym->size > 1) { /* it's an array! */
+                reg.type = VAL_INT;                
+            }
+            else {
+                reg.type = obj->sym->typedecl->valtype;     
+            }
+            
         	reg.no   = obj->sym->regno;
-        	reg.type = obj->sym->typedecl->valtype; 
+        	
 
                       
             /* return a pointer to this node by OUT parameter. */
@@ -388,10 +397,17 @@ OBJECT_LINK-----> L1
                 
             }
             else { /* ... = x[42] */
-                m1_reg offsetreg = popreg(comp->regstack); /* containing the index. */
-                m1_reg parentreg = popreg(comp->regstack); /* containing the struct or array */
-                m1_reg result    = gen_reg(comp, VAL_INT); /* to store the result. */ /* XXX FIX THIS ; must be base type of an array, so string[] is string, but the type for the array itself is I (or P?) as that's a reference to an object. */
+                m1_reg offsetreg, parentreg, result;
                 
+                assert((*parent) != NULL);
+                assert((*parent)->sym != NULL);
+                assert((*parent)->sym->typedecl != NULL);
+                
+                offsetreg = popreg(comp->regstack); /* containing the index. */
+                parentreg = popreg(comp->regstack); /* containing the struct or array */
+                result    = gen_reg(comp, (*parent)->sym->typedecl->valtype); /* target reg to store result. */
+                
+                    
                 fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)result.type], result.no,
                                                             reg_chars[(int)parentreg.type], parentreg.no,
                                                             reg_chars[(int)offsetreg.type], offsetreg.no);   
@@ -524,7 +540,7 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
     fprintf(OUT, "L%d:\n", blocklabel);
     
     if (i->block) 
-        gencode_expr(comp, i->block);
+        gencode_block(comp, i->block);
         
     if (i->step)
         gencode_expr(comp, i->step);
@@ -1307,6 +1323,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             fprintf(stderr, "unknown expr type (%d)", e->type);   
             exit(EXIT_FAILURE);
     }   
+//    fprintf(OUT, "\n");
 }
 
 
