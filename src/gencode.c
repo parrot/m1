@@ -143,6 +143,13 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
 }
 
 static void
+gencode_bool(M1_compiler *comp, int boolval) {
+    m1_reg reg = gen_reg(comp, VAL_INT);
+    fprintf(OUT, "\tset_imm\t%d, 0, %d\n", reg.no, boolval);
+    pushreg(comp->regstack, reg);   
+}
+
+static void
 gencode_string(M1_compiler *comp, m1_literal *lit) {
     m1_reg reg,
            constidxreg;
@@ -1319,6 +1326,12 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             break; 
         case EXPR_CAST:
             gencode_cast(comp, e->expr.cast);
+            break;
+        case EXPR_TRUE:
+            gencode_bool(comp, 1);
+            break;
+        case EXPR_FALSE:
+            gencode_bool(comp, 0);
             break;
         default:
             fprintf(stderr, "unknown expr type (%d)", e->type);   
