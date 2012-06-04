@@ -1479,6 +1479,39 @@ gencode_block(M1_compiler *comp, m1_expression *block) {
     }
 }
 
+static void
+gencode_chunk_return(M1_compiler *comp) {
+    /*
+    # figure out return PC and chunk
+    # P0 is the parent call frame
+    set_imm I3, 0,  PCF
+    deref   P0, CF, I3
+    # I4 is the parent call frame's RETPC
+    set_imm I4, 0,  RETPC
+    deref   I4, P0, I4
+    # S3 is the parent call frame's CHUNK
+    set_imm I3, 0,  CHUNK
+    deref   I3, CONSTS, I3
+    goto_chunk I3, I4, x
+    */   
+    
+    /* XXX only generate in non-main functions. */
+    /*
+    m1_reg t = gen_reg(comp, VAL_INT);
+    fprintf(OUT, "\tset_imm\tI%d, 0, PCF\n", t.no);
+    fprintf(OUT, "\tderef\tP0, CF, I%d\n", t.no);
+    
+    m1_reg t2 = gen_reg(comp, VAL_INT);
+    fprintf(OUT, "\tset_imm\tI%d, 0, RETPC\n", t2.no);
+    fprintf(OUT, "\tderef\tI%d, P0, I%d\n", t2.no, t2.no);
+    
+    fprintf(OUT, "\tset_imm\tI%d, 0, CHUNK\n", t.no);
+    fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", t.no, t.no);
+    fprintf(OUT, "\tgoto_chunk\tI%d, I%d, x\n", t.no, t2.no);
+    */
+}
+
+
 static void 
 gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     
@@ -1516,6 +1549,9 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     
     /* generate code for statements */
     gencode_block(comp, c->block);
+    
+    /* helper function to generate instructions to return. */
+    gencode_chunk_return(comp);
 }
 
 /*
