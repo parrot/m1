@@ -71,12 +71,8 @@ src/main$(O): src/m1parser.h src/main.c
 src/decl$(O): src/decl.c src/decl.h
 	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/decl.c
 
-test: m1$(EXE) t/*.m1
-	for file in `ls t/*.m1`; \
-	do \
-	    echo $$file; \
-	    ./run_m1.sh $$file; \
-	done
+test: m1$(EXE)
+	find t/ -name '*.m1' -type f -print | xargs -n1 ./run_m1.sh
 
 clean:
 	$(RM) -rf src/m1parser.* \
