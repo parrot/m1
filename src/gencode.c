@@ -95,7 +95,7 @@ gencode_number(M1_compiler *comp, m1_literal *lit) {
    
         
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
-    fprintf(OUT, "\tderef\tN%d, CONSTS, %d\n", reg.no, constindex.no);
+    fprintf(OUT, "\tderef\tN%d, CONSTS, I%d\n", reg.no, constindex.no);
     
     pushreg(comp->regstack, reg);
     
