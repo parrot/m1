@@ -5,18 +5,16 @@ How can you help?
 -----------------
 If you're interested in M1 and M0, contributions in the following
 areas are particularly welcome:
-* tests (boring! :-) - ideas for a test framework?
-* figure out how to do function calls and parameters.
+* writing tests (try to break M1!).
+* figure out how to do function calls and parameters. 
 * figure out how to do modules (multi-file programs)
-* figure out how to do structs and arrays (address + offsets)
 * figure out how to do pointers and/or references (Java-like).
 * can we do exceptions at this level/
-* How to do objects/classes, and vtables? 
+* How to do vtables? 
 * Ideas for an optimizer? register allocator? 
 * a disassembler to generate M1?
 * a profiler?
 * other developers' tools?
-* Implement the switch statement (need comparison ops - coming soon in M0!)
 * Just review the code, and ask questions to clarify. These will be rewarded with documentation that explains it. 
 * Implement the semantic checking phase.
 
@@ -57,11 +55,7 @@ What's not working?
 
 short-term roadmap:
 -------------------
-* [FIXED?] implement assignments (x=1). This includes symbol management (sym tables). HIGH PRIORITY
 * implement function calls properly (including returning from a function) HIGH PRIORITY
-* [FIXED?] finish up control statements (if, while, dowhile, break)
-* implement "new" statement for allocating PMC and struct instances. This includes implementing pointers
-* [FIXED?] implement field access (x.y = 1)
 * look into vtable implementation for PMCs for calling member functions x.y();
 * think about a module management system. No preprocessor please. Maybe similar to Java's import statement. This might include namespaces, and also private and public scopes for modules (keywords needed?)
 * generate instructions (struct instances) rather than print directly to stdout. This will allow analysis and optimization.
