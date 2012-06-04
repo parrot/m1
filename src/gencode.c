@@ -1127,6 +1127,14 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     set_imm I0, 0, 0
     goto_chunk P0, I0, x
 */
+//    fprintf(OUT, "\tset_imm\tP%d, 0, 3\n", );
+//    fprintf(OUT, "\t\n");
+    m1_reg I0 = gen_reg(comp, VAL_INT);
+    fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", I0.no);
+    fprintf(OUT, "\tgoto_chunk P%d, I%d, x\n", cf_reg.no, I0.no);
+
+
+
 
     /*
     # We're back, so fix the parent call frame's PC and activate it.
@@ -1138,7 +1146,9 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     retpc:
     restore_cf:
     */
-    
+
+    m1_reg I9 = gen_reg(comp, VAL_INT);
+  
 /*
     # set PCF[CHUNK] to the current call frame's CHUNK
     set_imm  I9,  0,  CHUNK
@@ -1152,22 +1162,48 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     # set PCF[BCS] to the current call frame's BCS
     set_imm  I9,  0,  BCS
     set_ref  PCF, I9, BCS
-
 */
+    fprintf(OUT, "\tset_imm\tI%d, 0, CHUNK\n", I9.no);
+    fprintf(OUT, "\tset_ref\tPCF, I%d, CHUNK\n", I9.no);
+    
+    fprintf(OUT, "\tset_imm\tI%d, 0, CONSTS\n", I9.no);
+    fprintf(OUT, "\tset_ref\tPCF, I%d, CONSTS\n", I9.no);
+    
+    fprintf(OUT, "\tset_imm\tI%d, 0, MDS\n", I9.no);
+    fprintf(OUT, "\tset_ref\tPCF, I%d, MDS\n", I9.no);
+    
+    fprintf(OUT, "\tset_imm\tI%d, 0, BCS\n", I9.no);
+    fprintf(OUT, "\tset_ref\tPCF, I%d, BCS\n", I9.no);
+    
+
     /* set_cf_pc: */
     /*
     # Set PCF[PC] to the invoke_cf + 1 so that when we invoke PCF with
     # "set CF, PCF, x", control flow will continue at the next instruction.
+    */
+    /*
     set_imm I1,  0,  5
     add_i   I1,  PC, I1
     set_imm I9,  0,  PC
     set_ref PCF, I9, I1
     set_imm I9,  0,  CF
     set_ref PCF, I9, PCF
-
-invoke_cf:
-    set     CF, PCF, x    
-    */       
+    */
+    m1_reg I1 = gen_reg(comp, VAL_INT);
+    fprintf(OUT, "\tset_imm\tI%d, 0, 5\n", I1.no);
+    fprintf(OUT, "\tadd_i\tI%d, PC, I%d\n", I1.no, I1.no);
+    fprintf(OUT, "\tset_imm\tI%d, 0, PC\n", I9.no);
+    fprintf(OUT, "\tset_ref\tPCF, I%d, I%d\n", I9.no, I1.no);
+    fprintf(OUT, "\tset_imm\tI%d, 0, CF\n", I9.no);         
+    fprintf(OUT, "\tset_ref\tPCF, I%d, PCF\n", I9.no);
+    /* invoke_cf: */
+    
+    /*
+    set     CF, PCF, x
+    */
+    fprintf(OUT, "\tset\tCF, PCF, x\n");
+    
+          
 }
 
 
@@ -1549,7 +1585,8 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *ch) {
     */   
     
     /* XXX only generate in non-main functions. */
-    /*
+    
+    if (strcmp(ch->name, "main") != 0) {
     
     m1_reg t         = gen_reg(comp, VAL_INT);
     m1_reg parent_cf = gen_reg(comp, VAL_CHUNK);
@@ -1563,7 +1600,7 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *ch) {
     fprintf(OUT, "\tset_imm\tI%d, 0, CHUNK\n", t.no);
     fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", t.no, t.no);
     fprintf(OUT, "\tgoto_chunk\tI%d, I%d, x\n", t.no, t2.no);
-    */
+    }
 }
 
 

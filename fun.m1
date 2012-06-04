@@ -1,0 +1,9 @@
+int main() {
+    print("before\n");
+    foo();   
+    print("back\n");
+}
+
+int foo() {
+    print("foo\n");    
+}
