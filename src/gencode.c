@@ -1055,14 +1055,66 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
         ++comp->errors;
         return;
     }
-    reg = gen_reg(comp, VAL_INT);
-    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", reg.no, fun->constindex);
-    pmcreg = gen_reg(comp, VAL_CHUNK);
-    offsetreg = gen_reg(comp, VAL_INT);
-    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", offsetreg.no, 0);
-    fprintf(OUT, "\tderef\tP%d, CONSTS, I%d\n", pmcreg.no, reg.no);
-    fprintf(OUT, "\tgoto_chunk\tP%d, I%d, x\n", pmcreg.no, offsetreg.no);
-       
+
+    m1_reg cont_offset = gen_reg(comp, VAL_INT);
+    m1_reg pc_reg = gen_reg(comp, VAL_INT);
+    m1_reg cf_reg = gen_reg(comp, VAL_CHUNK);
+    
+    /* create a new call frame */
+    /* alloc_cf: */
+    m1_reg sizereg = gen_reg(comp, VAL_INT);
+    m1_reg flagsreg = gen_reg(comp, VAL_INT);
+    fprintf(OUT, "\tset_imm\tI%d, 8, 0\n", sizereg.no);
+    fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", flagsreg.no);
+    fprintf(OUT, "\tgc_alloc\tP%d, I%d, I%d\n", cf_reg.no, sizereg.no, flagsreg.no);
+    
+    /* init_cf_copy: */
+    m1_reg temp = gen_reg(comp, VAL_INT);
+    fprintf(OUT, "\tset_imm\tI%d, 0, INTERP\n", temp.no);
+    fprintf(OUT, "\tset_ref\tP%d, I%d, INTERP\n", cf_reg.no, temp.no);
+    
+    fprintf(OUT, "\tset_imm\tI%d, 0, CHUNK\n", temp.no);
+    fprintf(OUT, "\tset_ref\tP%d, I%d, CHUNK\n", cf_reg.no, temp.no);
+    
+    fprintf(OUT, "\tset_imm\tI%d, 0, CONSTS\n", temp.no);
+    fprintf(OUT, "\tset_ref\tP%d, I%d, CONSTS\n", cf_reg.no, temp.no);
+    
+    fprintf(OUT, "\tset_imm\tI%d, 0, MDS\n", temp.no);
+    fprintf(OUT, "\tset_ref\tP%d, I%d, MDS\n", cf_reg.no, temp.no);
+    
+    fprintf(OUT, "\tset_imm\tI%d, 0, BCS\n", temp.no);
+    fprintf(OUT, "\tset_ref\tP%d, I%d, BCS\n", cf_reg.no, temp.no);
+
+    fprintf(OUT, "\tset_imm\tI%d, 0, PCF\n", temp.no);
+    fprintf(OUT, "\tset_ref\tP%d, I%d, CF\n", cf_reg.no, temp.no);
+    
+    fprintf(OUT, "\tset_imm\tI%d, 0, CF\n", temp.no);
+    fprintf(OUT, "\tset_ref\tP%d, I%d, P%d\n", cf_reg.no, temp.no, cf_reg.no);
+    
+    /* init_cf_zero: */
+    m1_reg temp2 = gen_reg(comp, VAL_INT);
+    fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", temp.no);
+    fprintf(OUT, "\tset_imm\tI%d, 0, EH\n", temp2.no);
+    fprintf(OUT, "\tset_ref\tP%d, I%d, I%d\n", cf_reg.no, temp2.no, temp.no); 
+
+    fprintf(OUT, "\tset_imm\tI%d, 0, RETPC\n", temp2.no);
+    fprintf(OUT, "\tset_ref\tP%d, I%d, I%d\n", cf_reg.no, temp2.no, temp.no);
+
+    fprintf(OUT, "\tset_imm\tI%d, 0, SPILLCF\n", temp2.no);
+    fprintf(OUT, "\tset_ref\tP%d, I%d, I%d\n", cf_reg.no, temp2.no, temp.no);
+
+    /* init_cf_retpc: */    
+    fprintf(OUT, "\tset_imm\tI%d, 0, 10\n", temp.no);
+    fprintf(OUT, "\tadd_i\tRETPC, PC, I%d\n", temp.no);
+    
+    /* init_cf_pc */
+    fprintf(OUT, "\tset_imm\tI%d, 0, 3\n", cont_offset.no);
+    fprintf(OUT, "\tadd_i\tI%d, I%d, PC\n", cont_offset.no, cont_offset.no);
+    fprintf(OUT, "\tset_imm\tI%d, 0, PC\n", pc_reg.no);
+    fprintf(OUT, "\tset_ref \tP%d, I%d, I%d\n", cf_reg.no, pc_reg.no, cont_offset.no); 
+
+    fprintf(OUT, "\tset\tCF, P%d, x\n", cf_reg.no);
+           
 }
 
 
