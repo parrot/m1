@@ -1127,8 +1127,9 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     set_imm I0, 0, 0
     goto_chunk P0, I0, x
 */
-//    fprintf(OUT, "\tset_imm\tP%d, 0, 3\n", );
-//    fprintf(OUT, "\t\n");
+    fprintf(OUT, "\tset_imm\tP%d, 0, 3\n", cf_reg.no);
+    fprintf(OUT, "\tderef\tP%d, CONSTS, P%d\n", cf_reg.no, cf_reg.no);
+    
     m1_reg I0 = gen_reg(comp, VAL_INT);
     fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", I0.no);
     fprintf(OUT, "\tgoto_chunk P%d, I%d, x\n", cf_reg.no, I0.no);
