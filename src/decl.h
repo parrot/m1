@@ -1,9 +1,10 @@
 #ifndef __M1_DECL_H__
 #define __M1_DECL_H__
 
-
+#include "ast.h"
 #include "compiler.h"
 #include "symtab.h"
+
 
 /* declaration types. For each type, built-in or user-defined,
    a declaration type is stored in the compiler object. This
@@ -47,9 +48,9 @@ typedef struct m1_decl {
 } m1_decl;
 
 
-extern m1_decl *type_find_def(M1_compiler *comp, char *typename);
+extern m1_decl *type_find_def(M1_compiler *, char *type);
 extern m1_decl *type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structdef);
-extern m1_decl *type_enter_type(M1_compiler *comp, char *typename, m1_decl_type type, unsigned size);
+extern m1_decl *type_enter_type(M1_compiler *comp, char *type, m1_decl_type decltype, unsigned size);
 
 extern unsigned type_get_size(m1_decl *decl);
 

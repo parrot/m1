@@ -152,10 +152,10 @@ unaryexpr(M1_compiler *comp, m1_unop op, m1_expression *e) {
 }	
                 
 m1_expression *
-binexpr(M1_compiler *comp, m1_expression *e1, m1_binop op, m1_expression *e2) {
+binexpr(M1_compiler *comp, m1_expression *e1, int op, m1_expression *e2) {
 	m1_expression *expr = expression(comp, EXPR_BINARY);
 	expr->expr.b = (m1_binexpr *)m1_malloc(sizeof(m1_binexpr));
-    expr->expr.b->op    = op;
+    expr->expr.b->op    = (m1_binop)op;
     expr->expr.b->left  = e1;
     expr->expr.b->right = e2;       
     return expr;    

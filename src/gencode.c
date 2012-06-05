@@ -923,7 +923,7 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
     gencode_expr(comp, b->right);  
     right  = popreg(comp->regstack);
     
-    target = gen_reg(comp, left.type);  
+    target = gen_reg(comp, (m1_valuetype)left.type);  
     
     fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", op, 
                                              reg_chars[(int)target.type], target.no, 
@@ -1045,9 +1045,6 @@ gencode_break(M1_compiler *comp) {
 
 static void
 gencode_funcall(M1_compiler *comp, m1_funcall *f) {
-	m1_reg reg;
-	m1_reg pmcreg;
-	m1_reg offsetreg;
     m1_symbol *fun = sym_find_chunk(&comp->currentchunk->constants, f->name);
     
     if (fun == NULL) { /* XXX need to check in semcheck */
@@ -1601,7 +1598,7 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *ch) {
         fprintf(OUT, "\tderef      I%d, P%d, I%d\n", t2.no, parent_cf.no, t2.no);
     
         int callingfun_index = 2;
-        fprintf(OUT, "\tset_imm    I%d, 0, 2\n", t.no, callingfun_index);
+        fprintf(OUT, "\tset_imm    I%d, 0, %d\n", t.no, callingfun_index);
         fprintf(OUT, "\tderef      I%d, CONSTS, I%d\n", t.no, t.no);
         fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", t.no, t2.no);
     }

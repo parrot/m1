@@ -143,7 +143,8 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 %type <ival> TK_INT
              m0_op
              m0_arg                       
-             assignop
+             
+%type <ival> assignop
              
 %type <cval> TK_CHAR
 
@@ -289,7 +290,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 
 TOP     : imports chunks
             { 
-              M1_compiler *comp = yyget_extra(yyscanner);
+              M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
               comp->ast = $2; 
             }
         ;
@@ -395,7 +396,7 @@ function_definition : function_init '(' parameters ')' block
 
 function_init   : return_type TK_IDENT
                         {
-                          M1_compiler *comp = yyget_extra(yyscanner);                          
+                          M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);                          
                           $$ = chunk(comp, $1, $2, NULL); 
                           comp->currentchunk = $$;
                           /* enter name of function declaration in table */
@@ -419,7 +420,7 @@ param   : type TK_IDENT
                                              
 struct_definition   : "struct" TK_IDENT '{' struct_members '}' 
                         { 
-                          M1_compiler *comp = yyget_extra(yyscanner);
+                          M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
                           $$ = newstruct(comp, $2, $4); 
                           type_enter_struct(comp, $2, $$);
                         }
@@ -444,7 +445,10 @@ struct_members      : struct_member
                     ;
                     
 struct_member       : return_type TK_IDENT ';'
-                        { $$ = structfield(yyget_extra(yyscanner), $2, $1); }
+                        { 
+                           M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
+                           $$ = structfield(comp, $2, $1); 
+                        }
                     ;                                        
         
 block   : '{' statements '}'
@@ -508,16 +512,16 @@ throw_stat  : "throw" expression ';'
             ;
                                     
 print_stat  : "print" '(' expression ')' ';'
-                { $$ = printexpr(yyget_extra(yyscanner), $3); }
+                { $$ = printexpr((M1_compiler *)yyget_extra(yyscanner), $3); }
             ;
 
                   
 const_declaration   : "const" type TK_IDENT '=' constexpr ';'
-                        { $$ = constdecl(yyget_extra(yyscanner), $2, $3, $5); }
+                        { $$ = constdecl((M1_compiler *)yyget_extra(yyscanner), $2, $3, $5); }
                     ;                  
                         
 var_declaration: type var_list ';'  
-                    { $$ = vardecl(yyget_extra(yyscanner), $1, $2); }            
+                    { $$ = vardecl((M1_compiler *)yyget_extra(yyscanner), $1, $2); }            
                ;         
                               
 var_list    : var 				
@@ -532,9 +536,9 @@ var_list    : var
             ;               
             
 var         : TK_IDENT opt_init
-                { $$ = var(yyget_extra(yyscanner), $1, $2); }
+                { $$ = var((M1_compiler *)yyget_extra(yyscanner), $1, $2); }
             | TK_IDENT '[' TK_INT ']' opt_array_init
-                { $$ = array(yyget_extra(yyscanner), $1, $3, $5); }
+                { $$ = array((M1_compiler *)yyget_extra(yyscanner), $1, $3, $5); }
             ;           
             
 opt_array_init  : /* empty */
@@ -554,7 +558,10 @@ assign_stat : assign_expr ';'
             ;
             
 assign_expr : lhs assignop rhs
-                { $$ = assignexpr(yyget_extra(yyscanner), $1, $2, $3); }            
+                { 
+
+                    $$ = assignexpr((M1_compiler *)yyget_extra(yyscanner), $1, $2, $3); 
+                 }            
             ;
             
 assignop    : '='   { $$ = OP_ASSIGN; }
@@ -571,22 +578,22 @@ assignop    : '='   { $$ = OP_ASSIGN; }
             
            
 if_stat     : "if" '(' expression ')' statement %prec LOWER_THAN_ELSE  
-                { $$ = ifexpr(yyget_extra(yyscanner), $3, $5, NULL); }
+                { $$ = ifexpr((M1_compiler *)yyget_extra(yyscanner), $3, $5, NULL); }
             | "if" '(' expression ')' statement "else" statement 
-                { $$ = ifexpr(yyget_extra(yyscanner), $3, $5, $7); }
+                { $$ = ifexpr((M1_compiler *)yyget_extra(yyscanner), $3, $5, $7); }
             ;
             
             
 while_stat  : "while" '(' expression ')' statement 
-                { $$ = whileexpr(yyget_extra(yyscanner), $3, $5); }
+                { $$ = whileexpr((M1_compiler *)yyget_extra(yyscanner), $3, $5); }
             ;
             
 do_stat     : "do" block "while" '(' expression ')' ';' 
-                { $$ = dowhileexpr(yyget_extra(yyscanner), $5, $2); }
+                { $$ = dowhileexpr((M1_compiler *)yyget_extra(yyscanner), $5, $2); }
             ;
             
 switch_stat : "switch" '(' expression ')' '{' cases default_case '}'
-                { $$ = switchexpr(yyget_extra(yyscanner), $3, $6, $7); }
+                { $$ = switchexpr((M1_compiler *)yyget_extra(yyscanner), $3, $6, $7); }
             ;
             
 cases       : /* empty */
@@ -599,7 +606,7 @@ cases       : /* empty */
             ;
             
 case        : "case" TK_INT ':' statements                       
-				{ $$ = switchcase(yyget_extra(yyscanner), $2, $4); }
+				{ $$ = switchcase((M1_compiler *)yyget_extra(yyscanner), $2, $4); }
             ;
             
 default_case: /* empty */
@@ -610,7 +617,7 @@ default_case: /* empty */
              
 /* TODO: at some point we want x.y(); replace TK_IDENT with "lhs". Get this working first though*/           
 function_call_expr  : TK_IDENT '(' arguments ')' 
-                         { $$ = funcall(yyget_extra(yyscanner), $1); }
+                         { $$ = funcall((M1_compiler *)yyget_extra(yyscanner), $1); }
                     ;
                     
 function_call_stat  : function_call_expr ';'
@@ -629,7 +636,7 @@ expr_list   : expression
             ;                                                    
             
 for_stat    : "for" '(' for_init ';' for_cond ';' for_step ')' statement
-                { $$ = forexpr(yyget_extra(yyscanner), $3, $5, $7, $9); }
+                { $$ = forexpr((M1_compiler *)yyget_extra(yyscanner), $3, $5, $7, $9); }
             ;  
             
 for_init    : /* empty */
@@ -649,13 +656,13 @@ for_step    : /* empty */
             
 
 inc_or_dec_expr : lhs "++"
-                    { $$ = inc_or_dec(yyget_extra(yyscanner), $1, UNOP_POSTINC); }
+                    { $$ = inc_or_dec((M1_compiler *)yyget_extra(yyscanner), $1, UNOP_POSTINC); }
                 | lhs "--"
-                    { $$ = inc_or_dec(yyget_extra(yyscanner), $1, UNOP_POSTDEC); }
+                    { $$ = inc_or_dec((M1_compiler *)yyget_extra(yyscanner), $1, UNOP_POSTDEC); }
                 | "++" lhs
-                    { $$ = inc_or_dec(yyget_extra(yyscanner), $2, UNOP_PREINC); }
+                    { $$ = inc_or_dec((M1_compiler *)yyget_extra(yyscanner), $2, UNOP_PREINC); }
                 | "--" lhs
-                    { $$ = inc_or_dec(yyget_extra(yyscanner), $2, UNOP_PREDEC); }                    
+                    { $$ = inc_or_dec((M1_compiler *)yyget_extra(yyscanner), $2, UNOP_PREDEC); }                    
                 ;
                 
 inc_or_dec_stat : inc_or_dec_expr ';'
@@ -663,23 +670,23 @@ inc_or_dec_stat : inc_or_dec_expr ';'
                 ;
 
 break_stat  : "break" ';'
-                { $$ = expression(yyget_extra(yyscanner), EXPR_BREAK); }                
+                { $$ = expression((M1_compiler *)yyget_extra(yyscanner), EXPR_BREAK); }                
                 
 return_stat : "return" expression ';'
-                { $$ = returnexpr(yyget_extra(yyscanner), $2); }
+                { $$ = returnexpr((M1_compiler *)yyget_extra(yyscanner), $2); }
             ;                
                             
 lhs     : lhs_obj
-           { $$ = objectexpr(yyget_extra(yyscanner), $1, EXPR_OBJECT); }           
+           { $$ = objectexpr((M1_compiler *)yyget_extra(yyscanner), $1, EXPR_OBJECT); }           
         | '*' lhs_obj
-           { $$ = objectexpr(yyget_extra(yyscanner), $2, EXPR_DEREF); }
+           { $$ = objectexpr((M1_compiler *)yyget_extra(yyscanner), $2, EXPR_DEREF); }
         | '&' lhs_obj
-           { $$ = objectexpr(yyget_extra(yyscanner), $2, EXPR_ADDRESS); }
+           { $$ = objectexpr((M1_compiler *)yyget_extra(yyscanner), $2, EXPR_ADDRESS); }
         ;
         
 lhs_obj : TK_IDENT
             { 
-              M1_compiler *comp = yyget_extra(yyscanner);
+              M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
               /* look up identifier's declaration. */
               m1_symbol *sym    = sym_lookup_symbol(&comp->currentchunk->locals, $1);
               
@@ -695,20 +702,20 @@ lhs_obj : TK_IDENT
         | lhs_obj field_access
             {
               /* make a new node that links $1 and $2. */
-              $$ = lhsobj(yyget_extra(yyscanner), $1, $2);                                          
+              $$ = lhsobj((M1_compiler *)yyget_extra(yyscanner), $1, $2);                                          
             }
         | "self"
-        	{ $$ = object(yyget_extra(yyscanner), OBJECT_SELF); }
+        	{ $$ = object((M1_compiler *)yyget_extra(yyscanner), OBJECT_SELF); }
         | "super"
-        	{ $$ = object(yyget_extra(yyscanner), OBJECT_SUPER); }
+        	{ $$ = object((M1_compiler *)yyget_extra(yyscanner), OBJECT_SUPER); }
         ;        
         
 field_access: '[' expression ']'
-                { $$ = arrayindex(yyget_extra(yyscanner), $2); }                
+                { $$ = arrayindex((M1_compiler *)yyget_extra(yyscanner), $2); }                
             | '.' TK_IDENT
-                { $$ = objectfield(yyget_extra(yyscanner), $2); }           
+                { $$ = objectfield((M1_compiler *)yyget_extra(yyscanner), $2); }           
             | "->" TK_IDENT
-                { $$ = objectderef(yyget_extra(yyscanner), $2); }                
+                { $$ = objectderef((M1_compiler *)yyget_extra(yyscanner), $2); }                
             | "::" TK_IDENT
                 { $$ = NULL; /* do we want this scope operator? */}
             ;        
@@ -717,17 +724,17 @@ rhs     : expression
         ;
         
 constexpr   : TK_NUMBER    
-                { $$ = number(yyget_extra(yyscanner), $1); }    
+                { $$ = number((M1_compiler *)yyget_extra(yyscanner), $1); }    
             | TK_INT
-                { $$ = integer(yyget_extra(yyscanner), $1); }  
+                { $$ = integer((M1_compiler *)yyget_extra(yyscanner), $1); }  
             | TK_STRING_CONST
-                { $$ = string(yyget_extra(yyscanner), $1); }
+                { $$ = string((M1_compiler *)yyget_extra(yyscanner), $1); }
             | "true"
-                { $$ = expression(yyget_extra(yyscanner), EXPR_TRUE); }
+                { $$ = expression((M1_compiler *)yyget_extra(yyscanner), EXPR_TRUE); }
             | "false"
-                { $$ = expression(yyget_extra(yyscanner), EXPR_FALSE); }
+                { $$ = expression((M1_compiler *)yyget_extra(yyscanner), EXPR_FALSE); }
             | TK_CHAR
-                { $$ = character(yyget_extra(yyscanner), $1); } 
+                { $$ = character((M1_compiler *)yyget_extra(yyscanner), $1); } 
             ;
             
 expression  : constexpr 
@@ -750,11 +757,11 @@ subexpr     : '(' expression ')'
 
             
 newexpr     : "new" TK_USERTYPE '(' arguments ')'
-                { $$ = newexpr(yyget_extra(yyscanner), $2); }
+                { $$ = newexpr((M1_compiler *)yyget_extra(yyscanner), $2); }
             ;         
             
 nullexpr    : "null"
-                { $$ = expression(yyget_extra(yyscanner), EXPR_NULL); }            
+                { $$ = expression((M1_compiler *)yyget_extra(yyscanner), EXPR_NULL); }            
             ;
             
 arrayconstructor: '{' const_list '}' 
@@ -767,55 +774,57 @@ const_list    : constexpr
               ;
             
 unexpr  : '-' expression
-                { $$ = binexpr(yyget_extra(yyscanner), $2, OP_MUL, integer(yyget_extra(yyscanner), -1)); }                                          
+                { 
+                    M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
+                    $$ = binexpr(comp, $2, OP_MUL, integer(comp, -1)); }                                          
         | '(' return_type ')' expression %prec LOWER_THAN_ELSE
-                { $$ = castexpr(yyget_extra(yyscanner), $2, $4); }
+                { $$ = castexpr((M1_compiler *)yyget_extra(yyscanner), $2, $4); }
           | "!" expression 
-                { $$ = unaryexpr(yyget_extra(yyscanner), UNOP_NOT, $2); }                        
+                { $$ = unaryexpr((M1_compiler *)yyget_extra(yyscanner), UNOP_NOT, $2); }                        
         ;            
        
 tertexpr    : expression "?" expression ':' expression
-                { $$ = ifexpr(yyget_extra(yyscanner), $1, $3, $5); }
+                { $$ = ifexpr((M1_compiler *)yyget_extra(yyscanner), $1, $3, $5); }
             ;
                    
 binexpr     : expression '=' expression /* to allow writing: a = b = c; */
-				{ $$ = binexpr(yyget_extra(yyscanner), $1, OP_ASSIGN, $3); }
+				{ $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_ASSIGN, $3); }
             | expression '+' expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_PLUS, $3); }
+                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_PLUS, $3); }
             | expression '-' expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_MINUS, $3); }
+                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_MINUS, $3); }
             | expression '*' expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_MUL, $3); }
+                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_MUL, $3); }
             | expression '/' expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_DIV, $3); }
+                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_DIV, $3); }
             | expression '%' expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_MOD, $3); }
+                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_MOD, $3); }
             | expression '^' expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_XOR, $3); }
+                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_XOR, $3); }
             | expression '&' expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_BAND, $3); }
+                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_BAND, $3); }
             | expression '|' expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_BOR, $3); }   
+                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_BOR, $3); }   
             | expression "==" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_EQ, $3); }
+                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_EQ, $3); }
             | expression "!=" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_NE, $3); }
+                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_NE, $3); }
             | expression ">" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_GT, $3); }
+                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_GT, $3); }
             | expression "<" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_LT, $3); }
+                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_LT, $3); }
             | expression "<=" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_LE, $3); }
+                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_LE, $3); }
             | expression ">=" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_GE, $3); }
+                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_GE, $3); }
             | expression "&&" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_AND, $3); }
+                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_AND, $3); }
             | expression "||" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_OR, $3); }
+                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_OR, $3); }
             | expression "<<" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_LSH, $3); }
+                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_LSH, $3); }
             | expression ">>" expression
-                { $$ = binexpr(yyget_extra(yyscanner), $1, OP_RSH, $3); }   
+                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_RSH, $3); }   
                                       
                                     
             ;
@@ -826,13 +835,13 @@ return_type : type    { $$ = $1; }
             
 type    : native_type   
               {
-                 M1_compiler *comp = yyget_extra(yyscanner);
+                 M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
                  comp->parsingtype = $1;
                  $$ = $1;  
               } 
         | TK_USERTYPE
               {
-                 M1_compiler *comp = yyget_extra(yyscanner);         
+                 M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);         
                  comp->parsingtype = $1; 
                  $$ = $1; 
               }
@@ -851,7 +860,10 @@ native_type : "int"     { $$ = "int"; }
 
 /* TODO: handle M0 instructions */                        
 m0_block    : "M0" '{' m0_instructions '}'
-                { $$ = expression(yyget_extra(yyscanner), EXPR_M0BLOCK); }
+                { 
+                  M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
+                  $$ = expression(comp, EXPR_M0BLOCK); 
+                }
             ;            
             
 m0_instructions : m0_instr

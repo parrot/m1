@@ -12,7 +12,7 @@ Find the declaration for type <typename>.
 
 */
 m1_decl *
-type_find_def(M1_compiler *comp, char *typename) {
+type_find_def(M1_compiler *comp, char *type) {
     m1_decl *iter;
     
     assert(comp != NULL);
@@ -21,10 +21,10 @@ type_find_def(M1_compiler *comp, char *typename) {
     
     while (iter != NULL) {
         assert(iter->name != NULL);
-        assert(typename != NULL);
+        assert(type != NULL);
         
-        if (strcmp(iter->name, typename) == 0) { /* found! */
-            fprintf(stderr, "Found type %s\n", typename);
+        if (strcmp(iter->name, type) == 0) { /* found! */
+            fprintf(stderr, "Found type %s\n", type);
             return iter;
         }
         iter = iter->next;    
@@ -71,13 +71,13 @@ Interface for declaring basic types.
 
 */
 m1_decl *
-type_enter_type(M1_compiler *comp, char *typename, m1_decl_type type, unsigned size) {
+type_enter_type(M1_compiler *comp, char *type, m1_decl_type decltype, unsigned size) {
     m1_decl *decl  = (m1_decl *)calloc(1, sizeof(m1_decl));    
-    decl->name     = typename;
-    decl->decltype = type;    
+    decl->name     = type;
+    decl->decltype = decltype;    
     decl->d.size   = size;
     
-    switch (type) {
+    switch (decltype) {
         case DECL_INT:
             decl->valtype = VAL_INT;
             break;
