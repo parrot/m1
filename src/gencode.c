@@ -1190,11 +1190,11 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     set_ref PCF, I9, PCF
     */
     m1_reg I1 = gen_reg(comp, VAL_INT);
-    fprintf(OUT, "\tset_imm   I%d, 0, 5\n", I1.no);
-    fprintf(OUT, "\tadd_i     I%d, PC, I%d\n", I1.no, I1.no);
-    fprintf(OUT, "\tset_imm   I%d, 0, PC\n", I9.no);
+    fprintf(OUT, "\tset_imm   I%d, 0,   5\n", I1.no);
+    fprintf(OUT, "\tadd_i     I%d, PC,  I%d\n", I1.no, I1.no);
+    fprintf(OUT, "\tset_imm   I%d, 0,   PC\n", I9.no);
     fprintf(OUT, "\tset_ref   PCF, I%d, I%d\n", I9.no, I1.no);
-    fprintf(OUT, "\tset_imm   I%d, 0, CF\n", I9.no);         
+    fprintf(OUT, "\tset_imm   I%d, 0,   CF\n", I9.no);         
     fprintf(OUT, "\tset_ref   PCF, I%d, PCF\n", I9.no);
     /* invoke_cf: */
     
@@ -1569,7 +1569,7 @@ gencode_block(M1_compiler *comp, m1_expression *block) {
 }
 
 static void
-gencode_chunk_return(M1_compiler *comp, m1_chunk *ch) {
+gencode_chunk_return(M1_compiler *comp, m1_chunk *chunk) {
     /*
     # figure out return PC and chunk
     # P0 is the parent call frame
@@ -1586,21 +1586,33 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *ch) {
     
     /* XXX only generate in non-main functions. */
     
-    if (strcmp(ch->name, "main") != 0) {
+    if (strcmp(chunk->name, "main") != 0) {
     
         m1_reg t         = gen_reg(comp, VAL_INT);
         m1_reg parent_cf = gen_reg(comp, VAL_CHUNK);
-        fprintf(OUT, "\tset_imm    I%d, 0, PCF\n", t.no);
+        fprintf(OUT, "\tset_imm    I%d, 0,  PCF\n", t.no);
         fprintf(OUT, "\tderef      P%d, CF, I%d\n", parent_cf.no, t.no);
     
         m1_reg t2 = gen_reg(comp, VAL_INT);
-        fprintf(OUT, "\tset_imm    I%d, 0, RETPC\n", t2.no);
+        fprintf(OUT, "\tset_imm    I%d, 0,   RETPC\n", t2.no);
         fprintf(OUT, "\tderef      I%d, P%d, I%d\n", t2.no, parent_cf.no, t2.no);
     
-        int callingfun_index = 2;
-        fprintf(OUT, "\tset_imm    I%d, 0, %d\n", t.no, callingfun_index);
-        fprintf(OUT, "\tderef      I%d, CONSTS, I%d\n", t.no, t.no);
-        fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", t.no, t2.no);
+        m1_reg callingfun_index = gen_reg(comp, VAL_INT);
+        m1_reg const_seg_index  = gen_reg(comp, VAL_INT);
+        m1_reg parent_const_seg = gen_reg(comp, VAL_CHUNK);
+        m1_reg zero_reg         = gen_reg(comp, VAL_INT);
+
+        fprintf(OUT, "\tset_imm    I%d, 0,   CONSTS\n", const_seg_index.no);
+        fprintf(OUT, "\tderef      P%d, P%d, I%d\n", parent_const_seg.no, parent_cf.no, const_seg_index.no);
+        fprintf(OUT, "\tset_imm    I%d, 0,   0\n", zero_reg.no);        
+        fprintf(OUT, "\tderef      I%d, P%d, I%d\n", callingfun_index.no, parent_const_seg.no, zero_reg.no);      
+        fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", callingfun_index.no, t2.no);
+        
+//        int callfunidx = 2;
+//        fprintf(OUT, "\tset_imm    I%d, 0, %d\n", t.no, callfunidx);
+//        fprintf(OUT, "\tderef      I%d, CONSTS, I%d\n", t.no, t.no);
+//        fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", t.no, t2.no);
+        
     }
 }
 
