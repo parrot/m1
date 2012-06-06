@@ -5,3 +5,4 @@ m1
 *.exe
 m1lexer.*
 m1parser.*
+/*.m1
