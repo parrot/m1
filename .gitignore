@@ -1,4 +1,7 @@
 m1
 *.o
-m1lexer.c
-m1parser.c
+*.m0
+*.m0b
+*.exe
+m1lexer.*
+m1parser.*
