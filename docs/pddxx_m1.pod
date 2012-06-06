@@ -1,0 +1,263 @@
+# Copyright (C) 2012, Parrot Foundation.
+
+=head1 PDD XX: M1 Design and Implementation Spec
+
+=head2 Abstract
+
+M1 refers to a C-like language targeting the M0 "virtual machine". That is,
+M0 can be considered as a virtual machine which defines an instruction set
+and a computation model. Details of M0 can be found in [1].
+
+=head2 Status
+
+=head2 Design Principles of M1
+
+
+
+=head3 Differences with C
+
+Compared to C, M1 has:
+
+=over 4
+
+=item * a built-in C<string> type;
+
+=item * a built-in C<bool> type;
+
+=item * a C++-class-style construction for defining PMCs, including inheritance;
+
+=item * a simpler (and more restrictive) grammar;
+
+=item * no union construct
+
+=item * 
+
+=back
+
+Other differences with C include the following.
+
+
+=head2 M1 Milestones
+
+Completed milestones:
+
+Incomplete milestones:
+
+=head2 Architecture overview
+
+The M1 compiler follows the so-called C<batch-sequential> architecture> [2], which
+is a variant of the better known C<pipes-and-filters> architectural pattern. The
+key difference is that in a pipes-filter architecture, the next filter can already
+start processing before the filter before it has finished. In the M1 compiler, all
+text needs to be parsed before semantic analysis and other phases can start.
+
+Each phase of the compiler is one "filter". The M1 compiler has the following phases:
+
+=over 4
+
+=item 1. Lexical and grammatical analysis (combined, as is usual for compilers).
+
+=item 2. Semantic analysis/type checking.
+
+=item 3. Instruction generation.
+
+=item 4. Optimization and register allocation.
+
+=item 5. File generation (writing instructions to an M0 file).
+
+=back
+
+Lexical analysis refers to the tokenization of the input file. Grammatical analysis
+refers to parsing the input stream of tokens. The compiler invocation starts
+with the grammar, which requests tokens from the lexer as needed until end of file
+is reached. During the parse, an Abstract Syntax Tree (AST) is constructed for
+later phases.
+
+After the parse, the AST is passed on to the semantic analysis phase. In this phase,
+the compiler performs a number of type checks.
+
+
+
+=head2 Implementation
+
+M1 is implemented in C. The lexer is implemented using the Flex lexer generator. 
+The parser is implemented using the Bison parser generator. Flex and Bison are
+more modern implementations of the well-known Lex and Yacc tools, respectively.
+The choice for these tools is grounded in the fact that the precise definition 
+of M1 was expected to be in flux in this early stage, and the need for maintainability.
+
+The current implementation consists currently of about 8,000 lines of code, using 
+SLOCcount [3], though it is expected this will go up to 10,000 when the implementation 
+is finished.
+
+The implementation consists of the following files:
+
+=over 4
+
+=item m1.l - lexer specification.
+
+=item m1.y - parser specification.
+
+=item ast.{c,h} - abstract syntax tree nodes definitions and constructors.
+
+=item eval.{c,h} - code to generate M1 code from the AST. This is to ensure that the compiler
+can generate the same code as it has parsed.
+
+=item semcheck.{c,h} - implementation of the semantic check phase.
+
+=item instr.{c,h} - structures and code to represent M0 instructions.
+
+=item decl.{c,h} - structures and code to represent type declarations {{XXX needs better name}}
+
+=item gencode.{c,h} - code generation.
+
+=item stack.{c,h} - implementation of a stack
+
+=item symtab.{c,h} - symbol table implementation.
+
+=item ann.h - code annotation #defines for splint. {{XXX needs better name}}
+
+=back
+
+=head3 Type declarations
+
+M1 has a number of built-in types. These are:
+
+=over 4
+
+=item * int
+
+=item * num
+
+=item * string
+
+=item * char
+
+=item * bool
+
+=back
+
+Besides these built-in types, M1 supports the notion of aggregate types; you can
+define a C<struct>, which is essentially the same as a C struct, in which all attributes
+(member fields) are publicly accessible. An M1 struct is therefore just a means to 
+bundle a number of related variables.
+
+Besides structs, M1 allows you to write PMCs. A PMC is a Parrot Magic Cookie, or
+Poly-Morphic Container. The PMC is the magic means through which Parrot supports
+language-dependent behavior. A PMC can be compared to a C++ class definition.
+
+{{XXX need to see whether inheritance and vtables can be implemented.}}
+
+=head3 Variable declarations
+
+=head3 Struct type definitions
+
+
+
+=head2 M1 Language Specification
+
+=head3 M1 Lexical specification
+
+The following words are reserved and cannot be used as identifier:
+
+ bool
+ char
+ const
+ do
+ else
+ for 
+ if
+ int
+ num
+ pmc
+ string
+ struct
+ while
+
+=head3 M1 Grammar
+
+The grammar of M1 is expressed using EBNF notation below. Note that this EBNF notation
+differs from the Bison specification, as Bison expects a certain formatting of the
+grammar rules.
+
+M1-program: chunk+
+
+chunk: function-def
+     | pmc-def
+     | struct-def
+     | namespace
+     
+function-def: type NAME ( parameters? ) block
+
+parameters: parameter [, parameter]*
+         
+block: { statement* }    
+
+statement: assignment
+         | if-stat
+         | while-stat
+         | do-while-stat
+         | break-stat
+         | for-stat
+         | block
+         | var-decl
+         | const-decl
+         
+assignment: target = expression ;
+
+if-stat: if ( expression ) statement [else statement]?
+
+while-stat: while ( expression ) statement
+
+do-while-stat: do { statement* } while ( expression ) ;
+
+for-statement: for ( for-init? ; for-cond? ; for-step? ) statement
+
+break-stat: break
+              
+expression: INTEGER
+          | NUMBER
+          | STRING
+          | CHAR
+          | expression binop expression
+          | unop expression
+          | target
+          | expression ++
+          | expression --
+          | ++ expression
+          | -- expression
+          
+target: target field-access*
+
+field-access: . field
+            | [ expression ]
+                       
+              
+              
+type: native-type
+    | userdefined-type
+    
+native-type: int
+           | num
+           | char
+           | string
+           | bool         
+
+=head3 M1 Semantic rules
+
+
+=head2 References
+
+[1] PDD 32: M0 Design Spec
+
+[2] Paris Avgeriou and Uwe Zdun, Architectural Patterns Revisited – A Pattern Language
+http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.141.7444&rep=rep1&type=pdf
+
+[3] http://www.dwheeler.com/sloccount/
+
+=cut
+
+__END__
+Local Variables:
+  fill-column:78
+End:
