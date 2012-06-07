@@ -236,9 +236,11 @@ allocate memory for them.
 The following words are reserved and cannot be used as identifier:
 
  bool
+ break
  case
  char
  const
+ continue
  default
  do
  else
@@ -246,8 +248,10 @@ The following words are reserved and cannot be used as identifier:
  for 
  if
  int
+ null
  num
  pmc
+ return
  string
  struct
  switch
@@ -276,6 +280,8 @@ function-def: type NAME ( parameters? ) block
 
 parameters: parameter [, parameter]*
 
+parameter: type NAME
+
 enum-def: enum NAME { enum-constant [, enum-constant]* }
 
 enum-constant: NAME
@@ -289,6 +295,8 @@ statement: assignment
          | break-stat
          | for-stat
          | switch-stat
+         | return-stat
+         | funcall-stat
          | block
          | var-decl
          | const-decl
@@ -312,6 +320,16 @@ switch-stat: switch ( expression ) { case* default-case? }
 case: case INTEGER : statement*
 
 default-case: default : statement *
+  
+return-stat: return expression? ;
+
+funcall-stat: funcall ';'
+
+funcall: NAME ( arguments? )
+
+arguments: argument [, argument]*
+
+argument: expression
               
 expression: INTEGER
           | NUMBER
@@ -319,25 +337,33 @@ expression: INTEGER
           | CHAR
           | true
           | false
+          | null
+          | new NAME ( arguments? )
           | expression ? expression : expression
           | expression binop expression
           | unop expression
+          | funcall
           | target
           | target ++
           | target --
           | ++ target
           | -- target
+          | ( expression )
           
 
-binop: + | - | * | % | / | >> | << | > | < | >= | <= | == | != | = | & | "|"
+binop: + | - | * | % | / | >> | << | > | < | >= | <= | == | != | = | & | "|" | && | "||"
      
 
 unop: ! 
     | -
               
-target: target field-access*
+target: object field-access*
 
-field-access: . field
+object: NAME
+      | self
+      | super
+      
+field-access: "." NAME
             | "[" expression "]"
                        
               
