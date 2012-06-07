@@ -524,10 +524,11 @@ switchcase(M1_compiler *comp, int selector, m1_expression *block) {
 }
 
 m1_expression *
-newexpr(M1_compiler *comp, char *type) {
+newexpr(M1_compiler *comp, char *type, m1_expression *args) {
 	m1_expression *expr = expression(comp, EXPR_NEW);
 	expr->expr.n        = (m1_newexpr *)m1_malloc(sizeof(m1_newexpr));
 	expr->expr.n->type  = type;
+	expr->expr.n->args  = args;
 	return expr;	
 }
 

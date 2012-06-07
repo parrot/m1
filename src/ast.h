@@ -54,9 +54,10 @@ typedef struct m1_funcall {
     
 } m1_funcall;
 
+/* XXX can we use m1_funcall for this? */
 typedef struct m1_newexpr {
-	char *type;
-	/* TODO handle args */
+	char                 *type;
+	struct m1_expression *args;
 	
 } m1_newexpr;
 
@@ -339,7 +340,7 @@ extern unsigned field_size(struct m1_structfield *field);
 extern m1_expression *switchexpr(M1_compiler *comp, m1_expression *expr, m1_case *cases, m1_expression *defaultstat);
 extern m1_case *switchcase(M1_compiler *comp, int selector, m1_expression *block);
 
-extern m1_expression *newexpr(M1_compiler *copm, char *type);
+extern m1_expression *newexpr(M1_compiler *copm, char *type, m1_expression *args);
 
 extern m1_object *lhsobj(M1_compiler *comp, m1_object *parent, m1_object *field);
 extern m1_expression *castexpr(M1_compiler *comp, char *type, m1_expression *castedexpr);

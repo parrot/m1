@@ -437,15 +437,19 @@ opt_vtable      : /* empty */
                 ;				
                                         
 function_definition : function_init '(' parameters ')' block
-                        { 
-                          $1->block = $5;  
-                         // print_symboltable(&comp->currentchunk->locals);
+                        {  
+                          $1->block = $5;                           
                           $$ = $1;
                         }
                     ;
 
 function_init   : return_type TK_IDENT
                         {
+                          /* create a new chunk so we can set it as "current" before
+                             parsing the remainder of the function. Parameters and
+                             statements (which include var. decl.) can then use this
+                             "current" chunk (for its symbol table etc.). 
+                           */  
                           M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);                          
                           $$ = chunk(comp, $1, $2, NULL); 
                           comp->currentchunk = $$;
@@ -688,7 +692,6 @@ function_call_stat  : function_call_expr ';'
                          { $$ = $1; }
                     ;
 
-/* TODO: argument handling  */                
 arguments   : /* empty */
                 { $$ = NULL; }
             | expr_list
@@ -830,10 +833,9 @@ subexpr     : '(' expression ')'
                 { $$ = $2; }           
             ;
             
-
             
 newexpr     : "new" TK_USERTYPE '(' arguments ')'
-                { $$ = newexpr((M1_compiler *)yyget_extra(yyscanner), $2); }
+                { $$ = newexpr((M1_compiler *)yyget_extra(yyscanner), $2, $4); }
             ;         
             
 nullexpr    : "null"
