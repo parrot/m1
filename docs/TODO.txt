@@ -37,10 +37,11 @@ What's working?
 * array access (x[42] = 3; x = y[3])
 * field access (x.y = 3; )
 * function calls and returns.
+* nested scopes.
 
 What's not working?
 -------------------
-* parameters/arguments.
+* parameters/arguments/return values.
 * namespaces
 * PMC definitions (incl methods)
 * return statements
@@ -49,7 +50,6 @@ What's not working?
 * type checking (separate phase of compiler)
 * import statement.
 * try/catch statement (needed?)
-* nested scopes (symboltables).
 * complex arrays (multidimensional)
 
 
@@ -70,10 +70,8 @@ random list of items:
 * [FIXED] implement constant and variable declarations
 * do we want member functions: x.y(); ? (prob for PMCs)
 * exception handling at this level?
-* [FIXED] make compiler re-entrant
 * improve symbol table handling
 * free all memory after done.
 * an optimizer, perhaps implemented in yet another bison-based grammar; based on certain patterns of intructions that are generated, some instructions can be removed. 
 * A register allocator (linear-scan algorithm), to minimize register usage.
-* add a "make splint" target?
 * add "const" keyword where-ever possible.
