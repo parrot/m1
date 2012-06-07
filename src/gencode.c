@@ -1141,8 +1141,8 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     set_imm I0, 0, 0
     goto_chunk P0, I0, x
 */
-    /* XXX load the index of the called function's name in the const table */
-    int calledfun_index = 2;
+
+    int calledfun_index = fun->constindex;
     fprintf(OUT, "\tset_imm    P%d, 0, %d\n", cf_reg.no, calledfun_index);
     fprintf(OUT, "\tderef      P%d, CONSTS, P%d\n", cf_reg.no, cf_reg.no);
     
