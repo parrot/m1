@@ -168,7 +168,7 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
                            return TK_NUMBER;
                         }
                         
-[a-zA-Z_][a-zA-Z0-9]*   { 
+[a-zA-Z_][a-zA-Z0-9_]*  { 
                            M1_compiler *comp = yyget_extra(yyscanner);
                            yylval->sval      = strdup(yytext);                   
                            
