@@ -1607,10 +1607,12 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *chunk) {
     /* XXX only generate in non-main functions. */
     
     if (strcmp(chunk->name, "main") != 0) {        
-        m1_reg retpc_reg = gen_reg(comp, VAL_INT);    
-        m1_reg chunk_index      = gen_reg(comp, VAL_INT);
+        m1_reg retpc_reg   = gen_reg(comp, VAL_INT);    
+        m1_reg retpc_index = gen_reg(comp, VAL_INT);
+        m1_reg chunk_index = gen_reg(comp, VAL_INT);
   
-        fprintf(OUT, "\tderef      I%d, PCF, RETPC\n", retpc_reg.no);
+        fprintf(OUT, "\tset_imm    I%d, 0, RETPC\n", retpc_index.no);
+        fprintf(OUT, "\tderef      I%d, PCF, I%d\n", retpc_reg.no, retpc_index.no);
         fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
         fprintf(OUT, "\tderef      I%d, PCF, I%d\n", chunk_index.no, chunk_index.no);
         fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", chunk_index.no, retpc_reg.no);        
