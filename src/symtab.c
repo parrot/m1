@@ -250,7 +250,10 @@ sym_find_num(m1_symboltable *table, double fval) {
     m1_symbol *sym = table->syms;
     
     while (sym != NULL) {
-       
+        /* exact comparison on floats usually doesn't work, but 
+           this does work for the exact literal constant floats
+           that are used in a program.
+         */
         if (sym->valtype == VAL_FLOAT) {
             if (sym->value.fval == fval) {        	
                 return sym;            

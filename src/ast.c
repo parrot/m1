@@ -370,6 +370,16 @@ newstruct(M1_compiler *comp, char *name, m1_structfield *fields) {
     return str;   
 }
 
+m1_enum *
+newenum(M1_compiler *comp, char *name, m1_enumconst *enumconstants) {
+    m1_enum *en  = (m1_enum *)m1_malloc(sizeof(m1_enum));
+    en->enumname = name;
+    en->enums    = enumconstants;
+    
+    assert(comp != NULL);
+    return en;   
+}
+
 
 m1_expression *
 vardecl(M1_compiler *comp, char *type, m1_var *v) {
@@ -536,6 +546,7 @@ enumconst(M1_compiler *comp, char *enumitem, int enumvalue) {
     ec->name         = enumitem;
     ec->value        = enumvalue;
     ec->next         = NULL;
+    assert(comp != NULL);
     return ec;       
 }
 

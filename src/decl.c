@@ -34,7 +34,19 @@ type_find_def(M1_compiler *comp, char *type) {
 }
 
 
-
+static m1_decl *
+make_decl(M1_compiler *comp, int type) {
+    m1_decl *decl = (m1_decl *)calloc(1, sizeof(m1_decl));    
+    
+    assert(comp != NULL);
+    
+    if (decl == NULL) {
+        fprintf(stderr, "cant alloc mem for decl\n");
+        exit(EXIT_FAILURE);   
+    }
+    decl->decltype = type;
+    return decl;
+}
 
 /*
 
@@ -43,20 +55,10 @@ Enter a new struct declaration that goes by name <structname>.
 */
 m1_decl *
 type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structdef) {
-    m1_decl *decl = (m1_decl *)calloc(1, sizeof(m1_decl));    
-    
-    assert(comp != NULL);
-    
-    fprintf(stderr, "entering type [%s]\n", structname);
-    if (decl == NULL) {
-        fprintf(stderr, "cant alloc mem for decl\n");
-        exit(EXIT_FAILURE);   
-    }
-    
-    decl->name     = structname;
-    decl->d.s      = structdef;
-    decl->decltype = DECL_STRUCT;
-    
+    m1_decl *decl = make_decl(comp, DECL_STRUCT);    
+    decl->name    = structname;
+    decl->d.s     = structdef;
+       
     /* link in list of declarations */
     decl->next = comp->declarations;
     comp->declarations = decl;
@@ -64,6 +66,17 @@ type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structd
     return decl;
 }
 
+m1_decl *
+type_enter_enum(M1_compiler *comp, char *enumname, struct m1_enum *enumdef) {
+    m1_decl *decl = make_decl(comp, DECL_ENUM);
+    decl->name    = enumname;
+    decl->d.e     = enumdef;
+    
+    decl->next = comp->declarations;
+    comp->declarations = decl;
+    
+    return decl;   
+}
 
 /* 
 

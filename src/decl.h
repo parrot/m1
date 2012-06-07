@@ -52,6 +52,8 @@ extern m1_decl *type_find_def(M1_compiler *, char *type);
 extern m1_decl *type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structdef);
 extern m1_decl *type_enter_type(M1_compiler *comp, char *type, m1_decl_type decltype, unsigned size);
 
+extern m1_decl *type_enter_enum(M1_compiler *comp, char *enumname, struct m1_enum *enumdef);
+
 extern unsigned type_get_size(m1_decl *decl);
 
 #endif

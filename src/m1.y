@@ -24,7 +24,7 @@ extern int yylex(YYSTYPE *yylval, yyscan_t yyscanner);
 int 
 yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 
-    fprintf(stderr, "%s: unexpected token '%s' (line %d)\n\n", 
+    fprintf(stderr, "%s: unexpected token '%s' (line %d)\n", 
             str, yyget_text(yyscanner), yyget_lineno(yyscanner) );
     ++comp->errors;        
     return 0;
@@ -45,6 +45,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
     struct m1_statement     *stat;
     struct m1_object        *obj;
     struct m1_struct        *strct;
+    struct m1_enum          *enm;
     struct m1_structfield   *sfld;
     struct m1_var           *var;
     struct m0_instr         *instr;
@@ -140,7 +141,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
               chunks 
               chunk 
               TOP
-              enum_definition
+              
              
 %type <ival> TK_INT
              m0_op
@@ -205,7 +206,10 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              var_list
 %type <sfld> struct_members 
              struct_member
+             
 %type <strct> struct_definition
+
+%type <enm> enum_definition
              
 %type <obj> field_access             
             lhs_obj
@@ -342,14 +346,15 @@ chunk   : function_definition
            fprintf(stderr, "PMC definitions are not implemented yet!\n");
            }
         | enum_definition
-           { $$ = NULL; /* TODO */
-           fprintf(stderr, "enum definitions are not implemented yet!\n");
-           }
+           { $$ = NULL; }
         ;        
 
 
-enum_definition : "enum" TK_IDENT '{' enum_constants '}' ';' 
-                    { $$ = NULL; }
+enum_definition : "enum" TK_IDENT '{' enum_constants '}'
+                    { 
+                      $$ = newenum(comp, $2, $4); 
+                      type_enter_enum((M1_compiler *)yyget_extra(yyscanner), $2, $$);
+                    }
                 ;
         
 enum_constants  : enum_const 
@@ -428,7 +433,7 @@ opt_vtable      : /* empty */
 function_definition : function_init '(' parameters ')' block
                         { 
                           $1->block = $5;  
-                          print_symboltable(&comp->currentchunk->locals);
+                         // print_symboltable(&comp->currentchunk->locals);
                           $$ = $1;
                         }
                     ;
@@ -606,10 +611,7 @@ assign_stat : assign_expr ';'
             ;
             
 assign_expr : lhs assignop rhs
-                { 
-
-                    $$ = assignexpr((M1_compiler *)yyget_extra(yyscanner), $1, $2, $3); 
-                 }            
+                { $$ = assignexpr((M1_compiler *)yyget_extra(yyscanner), $1, $2, $3); }            
             ;
             
 assignop    : '='   { $$ = OP_ASSIGN; }
@@ -648,6 +650,8 @@ cases       : /* empty */
 				{ $$ = NULL; }
             | cases case 
             	{   /* link them in reverse order as order doesn't matter. */
+            	    
+            	    /* Note that $1 may be NULL (first time matching this rule). */
             		$2->next = $1;
             		$$ = $2; 
             	}

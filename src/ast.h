@@ -36,9 +36,7 @@ typedef struct m1_struct {
     unsigned size; /* can calculate from fields but better keep a "cached" value */
     
     struct m1_structfield *fields;
-    
-//    struct m1_struct      *structs;
-    
+      
 } m1_struct;
 
 
@@ -180,20 +178,7 @@ typedef struct m1_object {
       
 } m1_object;
 
-/*
-typedef enum m1_lhsobj_type {
-    LHS_INDEX, // a[b] 
-    LHS_FIELD  // a.b 
-    
-} m1_lhsobj_type;
-*/
-/*
-typedef struct m1_lhsobj {
-    struct m1_lhsobj *obj;
-    struct m1_lhsobj *field;
-      
-} m1_lhs_obj;
-*/
+
 
 /* for while and do-while statements */
 typedef struct m1_whileexpr {
@@ -268,14 +253,14 @@ typedef struct m0_block {
 typedef struct m1_enumconst {
     char  *name;                /* name of this constant */
     int    value;               /* value of this constant */
-    struct m1_enumconst *next;  /* pointer to next enum const. */
+    struct m1_enumconst *next;
 } m1_enumconst;
 
-typedef struct m1_enumeration {
+typedef struct m1_enum {
     char         *enumname;
     m1_enumconst *enums;
     
-} m1_enumeration;
+} m1_enum;
 
 /* to represent statements */
 typedef struct m1_expression {
@@ -360,6 +345,7 @@ extern m1_expression *castexpr(M1_compiler *comp, char *type, m1_expression *cas
 extern m1_structfield *struct_find_field(M1_compiler *comp, m1_struct *structdef, char *fieldname);
 
 extern m1_enumconst *enumconst(M1_compiler *comp, char *enumitem, int enumvalue);
+extern m1_enum *newenum(M1_compiler *comp, char *name, m1_enumconst *enumconstants);
 
 #endif
 
