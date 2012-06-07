@@ -1,10 +1,16 @@
 int main() {
-    print("before\n");
+    print("ok 1\n");
     foo();   
-    print("back\n");
+    print("ok 3\n");
+    bar();
+    print("ok 5\n");
 }
 
 int foo() {
-    print("foo\n");    
-    return 10000;
+    print("ok 2\n");    
 }
+
+int bar() {
+    print("ok 4\n");
+}
+

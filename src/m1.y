@@ -309,7 +309,10 @@ chunks  : chunk
         | chunks chunk
             { 
               if ($1 != NULL) {
-                $1->next = $2;
+                m1_chunk *iter = $1;
+                while (iter->next != NULL)
+                    iter = iter->next;
+                iter->next = $2;
                 $$ = $1; 
               }
               else {
