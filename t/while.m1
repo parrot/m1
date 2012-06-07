@@ -1,12 +1,12 @@
 int main() {
     int x;
     x = 10;
-    print("10..1\n");
+    print("1..10\n");
     while (x) {
         
         print("ok..");
         print(x);
         print("\n");   
-        x--;
+        x++;
     }
 }

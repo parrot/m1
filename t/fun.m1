@@ -1,16 +1,24 @@
 int main() {
-    print("ok 1\n");
+    print("1..7\n");
+    print("ok..1\n");
     foo();   
-    print("ok 3\n");
+    print("ok..3\n");
     bar();
-    print("ok 5\n");
+    print("ok..7\n");
 }
 
 int foo() {
-    print("ok 2\n");    
+    print("ok..2\n");    
 }
 
 int bar() {
-    print("ok 4\n");
+    print("ok..4\n");
+    baz();
+    print("ok..6\n");
 }
+
+int baz() {
+    print("ok..5\n");
+}
+    
 
