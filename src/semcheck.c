@@ -173,7 +173,6 @@ check_return(M1_compiler *comp, m1_expression *e) {
 
 static m1_type
 check_binary(M1_compiler *comp, m1_binexpr *b) {
-    char *op;
     m1_type ltype, rtype;
     
     ltype = check_expr(comp, b->left);
@@ -223,7 +222,6 @@ check_binary(M1_compiler *comp, m1_binexpr *b) {
             }
             break;
         default:
-            op = "unknown op";
             break;   
     }
 
@@ -263,6 +261,11 @@ check_unary(M1_compiler *comp, m1_unexpr *u) {
 
 static void
 check_break(M1_compiler *comp) {
+    assert(comp != NULL);
+}
+
+static void
+check_continue(M1_compiler *comp) {
     assert(comp != NULL);
 }
 
@@ -343,6 +346,9 @@ check_expr(M1_compiler *comp, m1_expression *e) {
         case EXPR_BREAK:
             check_break(comp);
             break;            
+        case EXPR_CONTINUE:
+            check_continue(comp);
+            break;   
         case EXPR_CONSTDECL:
             break;
         case EXPR_VARDECL:

@@ -6,4 +6,5 @@ int main() {
 
 int foo() {
     print("foo\n");    
+    return 10000;
 }

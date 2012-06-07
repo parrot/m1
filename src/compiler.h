@@ -25,6 +25,7 @@ typedef struct M1_compiler {
     char               *parsingtype; /* when parsing var declarations, need to know this when entering symbols. */
     
 	struct m1_intstack *breakstack; /* for handling break statements */
+	struct m1_intstack *continuestack; /* for handling continue statements */
 	
     struct m1_chunk    *currentchunk; /* current chunk being parsed, if any. */
    	

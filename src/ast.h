@@ -66,6 +66,7 @@ typedef enum m1_expr_type {
     EXPR_ASSIGN,
     EXPR_BINARY,
     EXPR_BREAK,
+    EXPR_CONTINUE,
     EXPR_CAST,
     EXPR_CHAR,    
     EXPR_CONSTDECL,

@@ -245,6 +245,11 @@ eval_break(void) {
 }
 
 static void
+eval_continue(void) {
+    fprintf(OUT, "continue;");   
+}
+
+static void
 eval_funcall(m1_funcall *f) {
     fprintf(OUT, "%s();", f->name);   
 }
@@ -303,6 +308,9 @@ eval_expr(m1_expression *e) {
         case EXPR_BREAK:
             eval_break();
             break;            
+        case EXPR_CONTINUE:
+            eval_continue();
+            break;
         case EXPR_CONSTDECL:
         case EXPR_VARDECL:
             break;

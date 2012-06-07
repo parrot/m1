@@ -76,6 +76,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
         KW_VOID         "void"
         KW_NULL         "null"
         KW_BREAK        "break"
+        KW_CONTINUE     "continue"
         KW_RETURN       "return"
         KW_CONST        "const"
         TK_GE           ">="
@@ -120,7 +121,6 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
         KW_CATCH        "catch"
         KW_THROW        "throw"
         KW_TRY          "try"
-        KW_CONTINUE     "continue"
         KW_INLINE       "inline"
         KW_PRIVATE      "private"
         KW_PUBLIC       "public"
@@ -174,6 +174,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              for_step
              return_stat
              break_stat
+             continue_stat
              tertexpr
              constexpr
              switch_stat
@@ -487,17 +488,14 @@ statement   : assign_stat
             | const_declaration                           
             | return_stat  
             | break_stat  
+            | continue_stat 
             | switch_stat 
             | print_stat
             | try_stat { $$ = NULL; fprintf(stderr, "try stat not implemented!\n"); }
             | throw_stat { $$ = NULL; fprintf(stderr, "throw stat not implemented!\n"); }
-            | continue_stat { $$ = NULL; fprintf(stderr, "continue stat not implemented!\n"); }
             | m0_block                                      
             ;
 
-continue_stat   : "continue" ';'
-                ;
-                
 try_stat    : "try" block catch_blocks
             ;
             
@@ -671,6 +669,8 @@ inc_or_dec_stat : inc_or_dec_expr ';'
 
 break_stat  : "break" ';'
                 { $$ = expression((M1_compiler *)yyget_extra(yyscanner), EXPR_BREAK); }                
+continue_stat  : "continue" ';'
+                { $$ = expression((M1_compiler *)yyget_extra(yyscanner), EXPR_CONTINUE); }                
                 
 return_stat : "return" expression ';'
                 { $$ = returnexpr((M1_compiler *)yyget_extra(yyscanner), $2); }

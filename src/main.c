@@ -26,6 +26,7 @@ init_compiler(M1_compiler *comp) {
     comp->breakstack = new_intstack();   
     comp->regstack   = new_regstack();	
     
+    comp->continuestack   = new_intstack();   
     comp->expect_usertype = 0; /* when not parsing a function's body, 
                                    then identifiers are types */   	
     comp->is_parsing_usertype = 1;

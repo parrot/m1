@@ -485,6 +485,7 @@ gencode_while(M1_compiler *comp, m1_whileexpr *w) {
 	
 	/* push break label onto stack so break statement knows where to go. */
 	push(comp->breakstack, endlabel);
+	push(comp->continuestack, startlabel);
 	
 	fprintf(OUT, "\tgoto L%d\n", endlabel);
 	
@@ -500,6 +501,7 @@ gencode_while(M1_compiler *comp, m1_whileexpr *w) {
 			
 	/* remove break label from stack. */
 	(void)pop(comp->breakstack);
+	(void)pop(comp->continuestack);
 }
 
 static void
@@ -518,6 +520,7 @@ gencode_dowhile(M1_compiler *comp, m1_whileexpr *w) {
     int endlabel   = gen_label(comp);
     
     push(comp->breakstack, endlabel);
+    push(comp->continuestack, startlabel);
      
     fprintf(OUT, "L%d:\n", startlabel);
     gencode_block(comp, w->block);
@@ -530,6 +533,7 @@ gencode_dowhile(M1_compiler *comp, m1_whileexpr *w) {
     fprintf(OUT, "L%d:\n", endlabel);
     
     (void)pop(comp->breakstack);
+    (void)pop(comp->continuestack);
 
 }
 
@@ -550,9 +554,11 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
 	*/
     int startlabel = gen_label(comp), 
         endlabel   = gen_label(comp),
+        steplabel  = gen_label(comp), 
         blocklabel = gen_label(comp); /* label where the block starts */
         
     push(comp->breakstack, endlabel);
+    push(comp->continuestack, steplabel);
     
     if (i->init)
         gencode_expr(comp, i->init);
@@ -573,6 +579,7 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
     if (i->block) 
         gencode_block(comp, i->block);
         
+    fprintf(OUT, "L%d:\n", steplabel);
     if (i->step)
         gencode_expr(comp, i->step);
     
@@ -580,6 +587,7 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
     fprintf(OUT, "L%d:\n", endlabel);
     
     (void)pop(comp->breakstack);
+    (void)pop(comp->continuestack);
     
 }
 
@@ -1033,13 +1041,22 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
 }
 
 static void
+gencode_continue(M1_compiler *comp) {
+	
+    /* get label to jump to */
+    int continuelabel = top(comp->continuestack);
+	
+    /* pop label from compiler's label stack (todo!) and jump there. */
+    fprintf(OUT, "\tgoto\tL%d\n", continuelabel);
+}
+
+static void
 gencode_break(M1_compiler *comp) {
 	
-	/* get label to jump to */
-	int breaklabel = top(comp->breakstack);
-	
-	/* pop label from compiler
-	's label stack (todo!) and jump there. */
+    /* get label to jump to */
+    int breaklabel = top(comp->breakstack);
+
+    /* pop label from compiler's label stack (todo!) and jump there. */
     fprintf(OUT, "\tgoto\tL%d\n", breaklabel);
 }
 
@@ -1430,6 +1447,9 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             break;
         case EXPR_BREAK:
             gencode_break(comp);
+            break;
+        case EXPR_CONTINUE:
+            gencode_continue(comp);
             break;
         case EXPR_CAST:
             gencode_cast(comp, e->expr.cast);
