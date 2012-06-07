@@ -55,7 +55,7 @@ link_sym(m1_symboltable *table, m1_symbol *sym) {
 }
 
 m1_symbol *
-sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *type, unsigned size) {
+sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *type, unsigned size, int scope) {
     m1_symbol *sym = (m1_symbol *)calloc(1, sizeof(m1_symbol));
     
     assert(varname != NULL);
@@ -67,6 +67,7 @@ sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *ty
     }
     
     sym->size       = size;
+    sym->scope      = scope;
     sym->name       = varname; /* name of this symbol */
     sym->regno      = NO_REG_ALLOCATED_YET; /* need to allocate a register later. */  
     sym->next       = NULL;    /* symbols are stored in a list */
@@ -84,7 +85,7 @@ sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *ty
 }
 
 m1_symbol *
-sym_lookup_symbol(m1_symboltable *table, char *name) {
+sym_lookup_symbol(m1_symboltable *table, char *name, int scope) {
     m1_symbol *sym;
     
     assert(table != NULL);
@@ -95,8 +96,21 @@ sym_lookup_symbol(m1_symboltable *table, char *name) {
     while (sym != NULL) {        
         assert(sym->name != NULL);
         assert(name != NULL);  
-                           
-        if (strcmp(sym->name, name) == 0) {     
+                        
+        /* when looking for a symbol IN scope N, then symbol's scope
+           must be N or less. Example:
+           
+           { // scope = 1 
+             int x;
+             { // scope = 2
+                int y;
+             }
+             x = 42; // ok
+             y = 43; // not ok. y is declared in scope 2, but currently in scope 1.
+           }       
+         */
+                               
+        if (sym->scope <= scope && strcmp(sym->name, name) == 0) {     
             return sym;
         }   
             

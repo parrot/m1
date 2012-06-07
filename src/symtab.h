@@ -99,8 +99,8 @@ extern m1_symbol *sym_find_num(m1_symboltable *table, double val);
 extern m1_symbol *sym_find_int(m1_symboltable *table, int val);
 extern m1_symbol *sym_find_chunk(m1_symboltable *table, char *name);
 
-extern m1_symbol *sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *type, unsigned size);
-extern m1_symbol *sym_lookup_symbol(m1_symboltable *table, char *name);
+extern m1_symbol *sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *type, unsigned size, int scope);
+extern m1_symbol *sym_lookup_symbol(m1_symboltable *table, char *name, int scope);
 
 extern void print_symboltable(m1_symboltable *table);
 

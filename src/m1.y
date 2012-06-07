@@ -388,8 +388,13 @@ pmc_item		: pmc_attr
 pmc_attr		: var_declaration
                 ;
 
-pmc_method		: "method" function_definition
+pmc_method		: opt_vtable "method" TK_IDENT '(' parameters ')' block 
+                    {}
 				;
+				
+opt_vtable      : /* empty */
+                | "vtable"
+                ;				
                                         
 function_definition : function_init '(' parameters ')' block
                         { 
@@ -456,9 +461,21 @@ struct_member       : return_type TK_IDENT ';'
                         }
                     ;                                        
         
-block   : '{' statements '}'
+block   : open_block statements close_block
             { $$ = $2; }
         ;
+        
+open_block: '{'   
+                  { /* open new scope, increment scope counter. */
+                    M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner); 
+                    comp->currentscope++;
+                  }
+
+close_block: '}'  
+                  { /* closing current scope, decrement scope counter. */
+                    M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner); 
+                    comp->currentscope--;
+                  }
         
 statements  : /* empty */
                 { $$ = NULL; }
@@ -696,7 +713,7 @@ lhs_obj : TK_IDENT
             { 
               M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
               /* look up identifier's declaration. */
-              m1_symbol *sym    = sym_lookup_symbol(&comp->currentchunk->locals, $1);
+              m1_symbol *sym    = sym_lookup_symbol(&comp->currentchunk->locals, $1, comp->currentscope);
               
               if (sym == NULL) {
                 fprintf(stderr, "Undeclared variable: ");

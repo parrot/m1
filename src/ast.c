@@ -374,12 +374,12 @@ newstruct(M1_compiler *comp, char *name, m1_structfield *fields) {
 m1_expression *
 vardecl(M1_compiler *comp, char *type, m1_var *v) {
 	m1_expression *expr = expression(comp, EXPR_VARDECL);
+
 	assert(type != NULL);
 	assert(v != NULL);
 	
 	expr->expr.v  = v;
 
-    /* XXX set type */
 	return expr;	
 }
 
@@ -404,7 +404,8 @@ var(M1_compiler *comp, char *varname, m1_expression *init) {
 	                        &(comp->currentchunk->locals),  /* enter in current chunk's sym.tab. */
 	                        varname, 
 	                        comp->parsingtype, /* type of this variable */
-	                        1);      /* size 1 */        
+	                        1,      /* size 1 */        
+	                        comp->currentscope);
 		
 	assert(v->sym != NULL);
 		
@@ -431,7 +432,8 @@ array(M1_compiler *comp, char *varname, unsigned num_elems, m1_expression *init)
                                &(comp->currentchunk->locals),  /* enter in current chunk's symbol table */
 	                           varname,                        /* name of this array being declared */
 	                           comp->parsingtype,              /* type of base type variable */ 
-	                           num_elems); 
+	                           num_elems,
+	                           comp->currentscope); 
 	
 	assert(v->sym != NULL);
 	

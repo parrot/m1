@@ -36,6 +36,8 @@ typedef struct M1_compiler {
 	struct m1_regstack *regstack; /* for storing registers in code generator */		
 	yyscan_t            yyscanner; /* pointer to the lexer structure */
 	
+	int                 currentscope;
+	
 } M1_compiler;
 
 #endif
