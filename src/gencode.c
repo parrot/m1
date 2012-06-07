@@ -1073,6 +1073,8 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
         ++comp->errors;
         return;
     }
+    m1_reg return_reg = gen_reg(comp, VAL_INT);
+    pushreg(comp->regstack, return_reg);
 
     m1_reg cont_offset = gen_reg(comp, VAL_INT);
     m1_reg pc_reg = gen_reg(comp, VAL_INT);
