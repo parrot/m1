@@ -187,10 +187,11 @@ expr_set_unexpr(M1_compiler *comp, m1_expression *node, m1_expression *exp, m1_u
 
 m1_expression *
 funcall(M1_compiler *comp, char *name, m1_expression *args) {
-	m1_expression *expr = expression(comp, EXPR_FUNCALL);
-	expr->expr.f       = (m1_funcall *)m1_malloc(sizeof(m1_funcall));
-	expr->expr.f->name = name;
-	
+	m1_expression *expr     = expression(comp, EXPR_FUNCALL);
+	expr->expr.f            = (m1_funcall *)m1_malloc(sizeof(m1_funcall));
+	expr->expr.f->name      = name;
+    expr->expr.f->arguments = args;	
+    
 	/* enter name of function to invoke into constant table. */
 	sym_enter_chunk(&comp->currentchunk->constants, name);
     return expr;   

@@ -49,8 +49,8 @@ typedef struct m1_assignment {
 } m1_assignment;
 
 typedef struct m1_funcall {
-    char *name;
-    /* TODO: add args */
+    char                 *name;
+    struct m1_expression *arguments;
     
 } m1_funcall;
 

@@ -454,7 +454,6 @@ function_init   : return_type TK_IDENT
                         }
                 ;
 
-/* TODO: parameter handling. */        
 parameters  : /* empty */
                 { $$ = NULL; }
             | param_list

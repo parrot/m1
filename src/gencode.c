@@ -1095,6 +1095,22 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     fprintf(OUT, "\tset_imm   I%d, 0, 0\n", flagsreg.no);
     fprintf(OUT, "\tgc_alloc  P%d, I%d, I%d\n", cf_reg.no, sizereg.no, flagsreg.no);
     
+    /* store arguments in registers of new callframe.
+       XXX this still needs to be specced for M0's calling conventions. */
+       
+    m1_expression *argiter = f->arguments;
+    int regindex = 12; /* points to I0. XXX */
+    while (argiter != NULL) {
+        m1_reg argreg;
+        m1_reg indexreg = gen_reg(comp, VAL_INT);
+        gencode_expr(comp, argiter);
+        argreg = popreg(comp->regstack);
+        fprintf(OUT, "\tset_imm   I%d, 0, %d\n", indexreg.no, regindex);
+        fprintf(OUT, "\tset_ref   P%d, I%d, I%d\n", cf_reg.no, indexreg.no, argreg.no);
+        regindex++;
+        argiter = argiter->next;   
+    }
+    
     /* init_cf_copy: */
     m1_reg temp = gen_reg(comp, VAL_INT);
     fprintf(OUT, "\tset_imm   I%d, 0, INTERP\n", temp.no);
