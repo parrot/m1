@@ -1,0 +1,24 @@
+struct my_struct {
+    int x;
+    int y;
+    int z;
+}
+
+int main() {
+    my_struct s = new my_struct();
+    
+    s.x = 1;
+    s.y = 2;
+    s.z = 3;
+    
+    print("1..3\n");
+    print("ok..");
+    print(s.x);
+    print("\nok..");   
+    print(s.y);
+    print("\nok..");
+    print(s.z);
+    print("\n");
+    
+    
+}
