@@ -8,7 +8,12 @@ M1 refers to a C-like language targeting the M0 "virtual machine". That is,
 M0 can be considered as a virtual machine which defines an instruction set
 and a computation model. Details of M0 can be found in [1].
 
+The M1 compiler is reentrant, which means it is thread-safe. This allows to 
+invoke the M1 compiler if it's already running.
+
 =head2 Status
+
+See the TODO file for the current status.
 
 =head2 Design Principles of M1
 
@@ -70,13 +75,13 @@ Completed milestones:
 
 =item * simple structs; read and write
 
+=item * function calls and returns
+
 =back
 
 Incomplete milestones:
 
 =over 4
-
-=item * function calls and returns
 
 =item * Enumerations
 

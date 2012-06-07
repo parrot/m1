@@ -6,7 +6,6 @@ How can you help?
 If you're interested in M1 and M0, contributions in the following
 areas are particularly welcome:
 * writing tests (try to break M1!).
-* figure out how to do function calls and parameters. 
 * figure out how to do modules (multi-file programs)
 * figure out how to do pointers and/or references (Java-like).
 * can we do exceptions at this level/
@@ -37,10 +36,11 @@ What's working?
 * unary minus op.
 * array access (x[42] = 3; x = y[3])
 * field access (x.y = 3; )
+* function calls and returns.
 
 What's not working?
 -------------------
-* function calls (mostly the returns); parameters/arguments.
+* parameters/arguments.
 * namespaces
 * PMC definitions (incl methods)
 * return statements
@@ -55,7 +55,6 @@ What's not working?
 
 short-term roadmap:
 -------------------
-* implement function calls properly (including returning from a function) HIGH PRIORITY
 * look into vtable implementation for PMCs for calling member functions x.y();
 * think about a module management system. No preprocessor please. Maybe similar to Java's import statement. This might include namespaces, and also private and public scopes for modules (keywords needed?)
 * generate instructions (struct instances) rather than print directly to stdout. This will allow analysis and optimization.
@@ -64,7 +63,7 @@ random list of items:
 ---------------------
 * implement parameter and argument handling
 * implement namespaces and their handling
-* implement structs or other aggregate types; PMCs native?
+* implement PMCs
 * any other keywords? e.g., continue? 
 * implement semantic checker (a thorough one!)
 * finish code generator
