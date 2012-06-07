@@ -1606,33 +1606,14 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *chunk) {
     
     /* XXX only generate in non-main functions. */
     
-    if (strcmp(chunk->name, "main") != 0) {
-    
-        m1_reg t         = gen_reg(comp, VAL_INT);
-        m1_reg parent_cf = gen_reg(comp, VAL_CHUNK);
-        fprintf(OUT, "\tset_imm    I%d, 0,  PCF\n", t.no);
-        fprintf(OUT, "\tderef      P%d, CF, I%d\n", parent_cf.no, t.no);
-    
-        m1_reg t2 = gen_reg(comp, VAL_INT);
-        fprintf(OUT, "\tset_imm    I%d, 0,   RETPC\n", t2.no);
-        fprintf(OUT, "\tderef      I%d, P%d, I%d\n", t2.no, parent_cf.no, t2.no);
-    
-        m1_reg callingfun_index = gen_reg(comp, VAL_INT);
-        m1_reg const_seg_index  = gen_reg(comp, VAL_INT);
-        m1_reg parent_const_seg = gen_reg(comp, VAL_CHUNK);
-        m1_reg zero_reg         = gen_reg(comp, VAL_INT);
-
-        fprintf(OUT, "\tset_imm    I%d, 0,   CONSTS\n", const_seg_index.no);
-        fprintf(OUT, "\tderef      P%d, P%d, I%d\n", parent_const_seg.no, parent_cf.no, const_seg_index.no);
-        fprintf(OUT, "\tset_imm    I%d, 0,   0\n", zero_reg.no);        
-        fprintf(OUT, "\tderef      I%d, P%d, I%d\n", callingfun_index.no, parent_const_seg.no, zero_reg.no);      
-        fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", callingfun_index.no, t2.no);
-        
-//        int callfunidx = 2;
-//        fprintf(OUT, "\tset_imm    I%d, 0, %d\n", t.no, callfunidx);
-//        fprintf(OUT, "\tderef      I%d, CONSTS, I%d\n", t.no, t.no);
-//        fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", t.no, t2.no);
-        
+    if (strcmp(chunk->name, "main") != 0) {        
+        m1_reg retpc_reg = gen_reg(comp, VAL_INT);    
+        m1_reg chunk_index      = gen_reg(comp, VAL_INT);
+  
+        fprintf(OUT, "\tderef      I%d, PCF, RETPC\n", retpc_reg.no);
+        fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
+        fprintf(OUT, "\tderef      I%d, PCF, I%d\n", chunk_index.no, chunk_index.no);
+        fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", chunk_index.no, retpc_reg.no);        
     }
 }
 

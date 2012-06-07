@@ -12,7 +12,20 @@ and a computation model. Details of M0 can be found in [1].
 
 =head2 Design Principles of M1
 
+A few basic design principles (so-called I<key drivers>) drove the design
+of M1:
 
+=over 4
+
+=item * Maintainability
+
+=item * High-quality output (i.e., M0 instructions)
+
+=item * Extensibility (e.g., easy to add another phase to the compilation process)
+
+=item * Ease of implementation 
+
+=back
 
 =head3 Differences with C
 
@@ -28,9 +41,13 @@ Compared to C, M1 has:
 
 =item * a simpler (and more restrictive) grammar;
 
-=item * no union construct
+=item * no union construct {{XXX do we want that?}}
 
-=item * 
+=item * no C<goto> statement (to prevent spaghetti code)
+
+=item * namespaces {{XXX do we want that?}}
+
+=item * a try-catch statement {{XXX if we get that working}}
 
 =back
 
@@ -41,7 +58,47 @@ Other differences with C include the following.
 
 Completed milestones:
 
+=over 4
+
+=item * assignments
+
+=item * iterating statements (while, do-while, for)
+
+=item * conditional statements (if/else, switch)
+
+=item * one-dimensional arrays; read and write
+
+=item * simple structs; read and write
+
+=back
+
 Incomplete milestones:
+
+=over 4
+
+=item * function calls and returns
+
+=item * Enumerations
+
+=item * PMC definitions
+
+=item * methods (as part of a PMC)
+
+=item * vtable methods (virtual methods)
+
+=item * PMC inheritance
+
+=item * namespaces
+
+=item * semantic checker
+
+=item * module system (preprocessor?)
+
+=item * register allocator
+
+=item * optimization phase
+
+=back
 
 =head2 Architecture overview
 
@@ -75,6 +132,9 @@ later phases.
 
 After the parse, the AST is passed on to the semantic analysis phase. In this phase,
 the compiler performs a number of type checks.
+
+After the type checking phase, the code generation phase traverses the AST, and
+generates appropriate instructions for each node. 
 
 
 
@@ -150,7 +210,17 @@ language-dependent behavior. A PMC can be compared to a C++ class definition.
 
 =head3 Variable declarations
 
-=head3 Struct type definitions
+=head3 Assignments
+
+=head3 Arrays
+
+Arrays, when declared, are auto-vivivied. This means that code is generated to 
+allocate memory for them. 
+
+=head3 Structs
+
+
+=head3 User-defined type definitions
 
 
 
@@ -161,10 +231,13 @@ language-dependent behavior. A PMC can be compared to a C++ class definition.
 The following words are reserved and cannot be used as identifier:
 
  bool
+ case
  char
  const
+ default
  do
  else
+ false
  for 
  if
  int
@@ -172,6 +245,8 @@ The following words are reserved and cannot be used as identifier:
  pmc
  string
  struct
+ switch
+ true
  while
 
 =head3 M1 Grammar
@@ -185,11 +260,20 @@ M1-program: chunk+
 chunk: function-def
      | pmc-def
      | struct-def
+     | enum-def
      | namespace
      
+struct-def: struct NAME { struct-member+ }      
+
+struct-member: type NAME ;
+
 function-def: type NAME ( parameters? ) block
 
 parameters: parameter [, parameter]*
+
+enum-def: enum NAME { enum-constant [, enum-constant]* }
+
+enum-constant: NAME
          
 block: { statement* }    
 
@@ -199,11 +283,14 @@ statement: assignment
          | do-while-stat
          | break-stat
          | for-stat
+         | switch-stat
          | block
          | var-decl
          | const-decl
          
-assignment: target = expression ;
+assignment: target assignop expression ;
+
+assignop: = | += | -= | *= | /= | %= | >>= | <<= | &= | |=
 
 if-stat: if ( expression ) statement [else statement]?
 
@@ -214,23 +301,39 @@ do-while-stat: do { statement* } while ( expression ) ;
 for-statement: for ( for-init? ; for-cond? ; for-step? ) statement
 
 break-stat: break
+
+switch-stat: switch ( expression ) { case* default-case? }
+
+case: case INTEGER : statement*
+
+default-case: default : statement *
               
 expression: INTEGER
           | NUMBER
           | STRING
           | CHAR
+          | true
+          | false
+          | expression ? expression : expression
           | expression binop expression
           | unop expression
           | target
-          | expression ++
-          | expression --
-          | ++ expression
-          | -- expression
+          | target ++
+          | target --
+          | ++ target
+          | -- target
           
+
+binop: + | - | * | % | / | >> | << | > | < | >= | <= | == | != | = | & | "|"
+     
+
+unop: ! 
+    | -
+              
 target: target field-access*
 
 field-access: . field
-            | [ expression ]
+            | "[" expression "]"
                        
               
               
