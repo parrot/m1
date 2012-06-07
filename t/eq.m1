@@ -4,6 +4,7 @@ int main() {
     
     x = x & y;
     
+    print("1..4\n");
     if (x == y) 
         print("ok..1\n");
     else

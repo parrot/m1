@@ -1,28 +1,12 @@
 int main() {
     int i = 0;
+    print("1..5\n");
     for(; i < 10; i++ ) {
-        if(i <= 5)
+        if(i > 5)
             continue;
+        print("ok..");
         print(i);
+        print("\n");
     }
 
-    print("\n");
-
-    i = 0;
-    while( i < 10 ) {
-        i++;
-        if(i <= 5)
-            continue;
-        print(i);
-    }
-
-    print("\n");
-
-    i = 0;
-    do {
-        i++;
-        if(i <= 5)
-            continue;
-        print(i);
-    } while( i < 10 );
 }

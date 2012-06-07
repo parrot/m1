@@ -7,7 +7,10 @@ int main() {
         x[i] = i;
     }
     
+    print("1..10\n");
     for (i = 0; i < 10; i++) {
-        print(x[i]);   
+        print("ok..");
+        print(x[i]); 
+        print("\n");  
     }
 }
