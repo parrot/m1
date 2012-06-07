@@ -1073,6 +1073,8 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
         ++comp->errors;
         return;
     }
+
+    /* XXX: This just makes comp->regstack->sp won't be 0, which makes m1 happy */
     m1_reg return_reg = gen_reg(comp, VAL_INT);
     pushreg(comp->regstack, return_reg);
 
