@@ -189,6 +189,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              subexpr
              newexpr
              opt_array_init
+             opt_ret_expr
              
 %type <instr> m0_instructions
               m0_instr
@@ -675,9 +676,13 @@ break_stat  : "break" ';'
 continue_stat  : "continue" ';'
                 { $$ = expression((M1_compiler *)yyget_extra(yyscanner), EXPR_CONTINUE); }                
                 
-return_stat : "return" expression ';'
+return_stat : "return" opt_ret_expr ';'
                 { $$ = returnexpr((M1_compiler *)yyget_extra(yyscanner), $2); }
-            ;                
+            ;   
+            
+opt_ret_expr: /* empty */     { $$ = NULL; }
+            | expression      { $$ = $1; }
+            ;                         
                             
 lhs     : lhs_obj
            { $$ = objectexpr((M1_compiler *)yyget_extra(yyscanner), $1, EXPR_OBJECT); }           

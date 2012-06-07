@@ -640,7 +640,11 @@ gencode_address(M1_compiler *comp, m1_object *o) {
 
 static void
 gencode_return(M1_compiler *comp, m1_expression *e) {
-    gencode_expr(comp, e);
+    if (e != NULL) {
+        gencode_expr(comp, e);
+    }
+    
+    
 }
 
 static void
