@@ -265,6 +265,12 @@ typedef struct m0_block {
        
 } m0_block;
 
+typedef struct m1_enumconst {
+    char *name;
+    int value;
+    struct m1_enumconst *next;
+} m1_enumconst;
+
 /* to represent statements */
 typedef struct m1_expression {
     union {
@@ -346,6 +352,8 @@ extern m1_object *lhsobj(M1_compiler *comp, m1_object *parent, m1_object *field)
 extern m1_expression *castexpr(M1_compiler *comp, char *type, m1_expression *castedexpr);
 
 extern m1_structfield *struct_find_field(M1_compiler *comp, m1_struct *structdef, char *fieldname);
+
+extern m1_enumconst *enumconst(M1_compiler *comp, char *enumitem, int enumvalue);
 
 #endif
 

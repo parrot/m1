@@ -530,7 +530,14 @@ castexpr(M1_compiler *comp, char *type, m1_expression *castedexpr) {
     return expr;   
 }
 
-
+m1_enumconst *
+enumconst(M1_compiler *comp, char *enumitem, int enumvalue) {
+    m1_enumconst *ec = (m1_enumconst *)m1_malloc(sizeof(m1_enumconst));
+    ec->name         = enumitem;
+    ec->value        = enumvalue;
+    ec->next         = NULL;
+    return ec;       
+}
 
 
 m1_structfield *

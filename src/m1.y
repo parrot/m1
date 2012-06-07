@@ -49,6 +49,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
     struct m1_var           *var;
     struct m0_instr         *instr;
     struct m1_case			*cse;
+    struct m1_enumconst     *ecnst;
 }
 
 
@@ -139,12 +140,17 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
               chunks 
               chunk 
               TOP
+              enum_definition
              
 %type <ival> TK_INT
              m0_op
              m0_arg                       
              
 %type <ival> assignop
+             opt_enum_val
+
+%type <ecnst> enum_const
+              enum_constants
              
 %type <cval> TK_CHAR
 
@@ -343,20 +349,43 @@ chunk   : function_definition
 
 
 enum_definition : "enum" TK_IDENT '{' enum_constants '}' ';' 
-                    { }
+                    { $$ = NULL; }
                 ;
         
 enum_constants  : enum_const 
-                    {  }
+                    { $$ = $1; }
                 | enum_constants ',' enum_const 
-                    { }
+                    { 
+                      /* link in reverse order. */
+                      $3->next = $1;
+                      $$ = $3;    
+                    }
                 ; 
                   
 enum_const      : TK_IDENT opt_enum_val
+                    {
+                      $$ = enumconst((M1_compiler *)yyget_extra(yyscanner), $1, $2);    
+                    }
                 ;
                 
-opt_enum_val    : 
+opt_enum_val    : /* empty */
+                    { /* if no value is specified, get one from comp. */
+                       M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);                        
+                       $$ = comp->enum_const_counter++; 
+                    }
                 |'=' TK_INT
+                    { 
+                       /* a specified value for an enum const; the NEXT enum
+                          without a specified value will have THIS value + 1.
+                          Therefore, update comp->enum_const_counter.
+                          
+                          Checks for duplicate numbers are done in the 
+                          semantic checker phase.
+                        */
+                       M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
+                       comp->enum_const_counter = $2 + 1;
+                       $$ = $2;                        
+                    }
                 ;
                    
 namespace_definition: "namespace" TK_IDENT ';'
