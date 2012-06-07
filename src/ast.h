@@ -266,10 +266,16 @@ typedef struct m0_block {
 } m0_block;
 
 typedef struct m1_enumconst {
-    char *name;
-    int value;
-    struct m1_enumconst *next;
+    char  *name;                /* name of this constant */
+    int    value;               /* value of this constant */
+    struct m1_enumconst *next;  /* pointer to next enum const. */
 } m1_enumconst;
+
+typedef struct m1_enumeration {
+    char         *enumname;
+    m1_enumconst *enums;
+    
+} m1_enumeration;
 
 /* to represent statements */
 typedef struct m1_expression {

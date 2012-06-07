@@ -27,6 +27,7 @@ extern int yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str);
 %option never-interactive
 %option pointer
 %option noyy_top_state
+%option noinput
 
 /* override memory allocation function with Parrot's memory functions;
  * don't generate built-ins.
