@@ -54,6 +54,8 @@ Compared to C, M1 has:
 
 =item * a try-catch statement {{XXX if we get that working}}
 
+=item * nested multi-line comments (/* comment 1 /* nested comment */ comment 1 part 2 */ )
+
 =back
 
 Other differences with C include the following.
@@ -220,7 +222,11 @@ language-dependent behavior. A PMC can be compared to a C++ class definition.
 =head3 Arrays
 
 Arrays, when declared, are auto-vivivied. This means that code is generated to 
-allocate memory for them. 
+allocate memory for them. For instance, the following declaration:
+
+ int x[10]; 
+ 
+will allocate 10 * sizeof(int) bytes on the heap. 
 
 =head3 Structs
 
@@ -384,7 +390,7 @@ native-type: int
 
 [1] PDD 32: M0 Design Spec
 
-[2] Paris Avgeriou and Uwe Zdun, Architectural Patterns Revisited – A Pattern Language
+[2] Paris Avgeriou and Uwe Zdun, Architectural Patterns Revisited - A Pattern Language
 http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.141.7444&rep=rep1&type=pdf
 
 [3] http://www.dwheeler.com/sloccount/

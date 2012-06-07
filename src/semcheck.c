@@ -3,6 +3,7 @@
 #include "symtab.h"
 #include "semcheck.h"
 #include "ast.h"
+#include "decl.h"
 
 #include <assert.h>
 

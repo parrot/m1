@@ -66,6 +66,11 @@ type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structd
     return decl;
 }
 
+/*
+
+Enter a new enumeration declaration that goes by <enumname>.
+
+*/
 m1_decl *
 type_enter_enum(M1_compiler *comp, char *enumname, struct m1_enum *enumdef) {
     m1_decl *decl = make_decl(comp, DECL_ENUM);

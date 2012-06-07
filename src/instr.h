@@ -66,6 +66,13 @@ typedef enum m0_instr_flag {
     
 } m0_instr_flag;
 
+typedef enum M0_alias {
+    CONSTS = 5,
+    CHUNK,
+    PCF,
+    CF
+} M0_alias;
+
 typedef struct m0_instr {
     char              opcode;
     char              flags;       /* maximum of 8 flags */

@@ -834,7 +834,8 @@ const_list    : constexpr
 unexpr  : '-' expression
                { 
                  M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
-                 $$ = binexpr(comp, $2, OP_MUL, integer(comp, -1)); }                                          
+                 $$ = binexpr(comp, $2, OP_MUL, integer(comp, -1)); 
+               }                                          
         | '(' return_type ')' expression %prec LOWER_THAN_ELSE
                 { $$ = castexpr((M1_compiler *)yyget_extra(yyscanner), $2, $4); }
         | "!" expression 

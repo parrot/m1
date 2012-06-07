@@ -26,6 +26,7 @@ This happens in gencode_number().
 #include "stack.h"
 #include "symtab.h"
 #include "decl.h"
+#include "instr.h"
 
 #include "ann.h"
 
@@ -93,7 +94,11 @@ gencode_number(M1_compiler *comp, m1_literal *lit) {
     reg        = gen_reg(comp, VAL_FLOAT);
     constindex = gen_reg(comp, VAL_INT);
    
+
         
+    ins_set_imm(comp, &constindex, 0, lit->sym->constindex);
+    ins_deref(comp, &reg, CONSTS, &constindex);
+    
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tN%d, CONSTS, I%d\n", reg.no, constindex.no);
     
