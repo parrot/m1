@@ -141,7 +141,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
               chunks 
               chunk 
               TOP
-              
+
              
 %type <ival> TK_INT
              m0_op
@@ -197,6 +197,8 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              newexpr
              opt_array_init
              opt_ret_expr
+             expr_list
+
              
 %type <instr> m0_instructions
               m0_instr
@@ -204,6 +206,10 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 
 %type <var>  var
              var_list
+             param
+             param_list
+             parameters              
+              
 %type <sfld> struct_members 
              struct_member
              
@@ -450,16 +456,23 @@ function_init   : return_type TK_IDENT
 
 /* TODO: parameter handling. */        
 parameters  : /* empty */
+                { $$ = NULL; }
             | param_list
+                { $$ = $1; }
             ;
             
 param_list  : param
+                { $$ = $1; }
             | param_list ',' param
-                { /* TODO */ fprintf(stderr, "parameters are not implemented yet!\n"); }
+                {  
+                    /* store them in reverse order. (for now. XXX) */
+                    $3->next = $1;
+                    $$ = $3;    
+                }
             ;            
         
-param   : type TK_IDENT
-        | type '*' TK_IDENT
+param   : type TK_IDENT         { $$ = parameter((M1_compiler *)yyget_extra(yyscanner), $1, $2); }
+        | type '*' TK_IDENT     { $$ = parameter((M1_compiler *)yyget_extra(yyscanner), $1, $3); }
         ;
                                              
 struct_definition   : "struct" TK_IDENT '{' struct_members '}' 
@@ -669,7 +682,7 @@ default_case: /* empty */
              
 /* TODO: at some point we want x.y(); replace TK_IDENT with "lhs". Get this working first though*/           
 function_call_expr  : TK_IDENT '(' arguments ')' 
-                         { $$ = funcall((M1_compiler *)yyget_extra(yyscanner), $1); }
+                         { $$ = funcall((M1_compiler *)yyget_extra(yyscanner), $1, $3); }
                     ;
                     
 function_call_stat  : function_call_expr ';'
@@ -678,13 +691,19 @@ function_call_stat  : function_call_expr ';'
 
 /* TODO: argument handling  */                
 arguments   : /* empty */
-                { $$ = NULL; fprintf(stderr, "no arguments\n"); }
-            | expr_list
                 { $$ = NULL; }
+            | expr_list
+                { $$ = $1; }
             ;
             
 expr_list   : expression 
-            | expr_list ',' expression /* TODO */
+                { $$ = $1; }
+            | expr_list ',' expression 
+                { 
+                  /* link them in reverse order for now. */
+                  $3->next = $1;
+                  $$ = $3;   
+                }
             ;                                                    
             
 for_stat    : "for" '(' for_init ';' for_cond ';' for_step ')' statement

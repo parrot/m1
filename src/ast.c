@@ -186,7 +186,7 @@ expr_set_unexpr(M1_compiler *comp, m1_expression *node, m1_expression *exp, m1_u
 }
 
 m1_expression *
-funcall(M1_compiler *comp, char *name) {
+funcall(M1_compiler *comp, char *name, m1_expression *args) {
 	m1_expression *expr = expression(comp, EXPR_FUNCALL);
 	expr->expr.f       = (m1_funcall *)m1_malloc(sizeof(m1_funcall));
 	expr->expr.f->name = name;
@@ -569,5 +569,25 @@ struct_find_field(M1_compiler *comp, m1_struct *structdef, char *fieldname) {
         sfield = sfield->next;   
     }
     return sfield;        
+}
+
+/*
+
+Parameters are also represented by m1_var nodes.
+
+*/
+m1_var *
+parameter(M1_compiler *comp, char *paramtype, char *paramname) {
+    m1_var *p = (m1_var *)m1_malloc(sizeof(m1_var));
+
+    p->sym = sym_new_symbol(comp,
+                            &(comp->currentchunk->locals),  /* enter in current chunk's symbol table */
+	                        paramname,                      /* name of this parameter being declared */
+	                        paramtype,
+	                        1,
+	                        comp->currentscope + 1); /* at the time this is executed, block has closed
+	                                                    already, but still add the parameter to that scope. */ 
+    p->name    = paramname;
+    return p;
 }
 

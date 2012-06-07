@@ -7,13 +7,15 @@
 #include "compiler.h"
 
 
+
 /* structure to represent a function. */
 typedef struct m1_chunk {
     char                 *rettype;      /* return type of chunk */
     char                 *name;         /* name of this chunk */    
     struct m1_chunk      *next;         /* chunks are stored in a list. */
     struct m1_expression *block;        /* list of statements. */
-    /* TODO: add parameters */
+
+    struct m1_var        *parameters;   /* list of parameters */
     
     struct m1_symboltable locals;       /* local vars in this chunk */
     struct m1_symboltable constants;    /* constants used in this chunk */
@@ -294,7 +296,7 @@ typedef struct m1_expression {
 extern m1_chunk *chunk(M1_compiler *comp, char *rettype, char *name, m1_expression *block);
 
 extern m1_expression *expression(M1_compiler *comp, m1_expr_type type);       
-extern m1_expression *funcall(M1_compiler *comp, char *name);
+extern m1_expression *funcall(M1_compiler *comp, char *name, m1_expression *args);
             
 extern m1_object *object(M1_compiler *comp, m1_object_type type);            
 extern void obj_set_ident(m1_object *node, char *ident);
@@ -346,6 +348,8 @@ extern m1_structfield *struct_find_field(M1_compiler *comp, m1_struct *structdef
 
 extern m1_enumconst *enumconst(M1_compiler *comp, char *enumitem, int enumvalue);
 extern m1_enum *newenum(M1_compiler *comp, char *name, m1_enumconst *enumconstants);
+
+extern m1_var *parameter(M1_compiler *comp, char *type, char *name);
 
 #endif
 
