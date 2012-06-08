@@ -122,15 +122,13 @@ string(M1_compiler *comp, char *str) {
 
 static void
 obj_set_index(m1_object *node, m1_expression *index) {
-    node->obj.index = index; /* XXX test this. */   
+    node->obj.index = index; 
 }
 
 m1_object *
 arrayindex(M1_compiler *comp, m1_expression *index) {
 	m1_object *obj = object(comp, OBJECT_INDEX);
-
-	obj->obj.index = index;
-	
+    obj_set_index(obj, index);	
 	return obj;	
 }
 

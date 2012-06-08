@@ -56,28 +56,33 @@ link_sym(m1_symboltable *table, m1_symbol *sym) {
 
 m1_symbol *
 sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *type, unsigned size, int scope) {
-    m1_symbol *sym = (m1_symbol *)calloc(1, sizeof(m1_symbol));
+    m1_symbol *sym = NULL;
     
     assert(varname != NULL);
     assert(type != NULL);
+    assert(table != NULL);
+    
+    /* check whether symbol exists already. */
+    sym = sym_lookup_symbol(table, varname, scope);
+    
+    if (sym != NULL) {
+        fprintf(stderr, "Error (line %d): already declared a variable '%s'\n", yyget_lineno(comp->yyscanner), varname); 
+        ++comp->errors;  
+        return sym;  
+    }
+    
+    sym        = (m1_symbol *)calloc(1, sizeof(m1_symbol));
     
     if (sym == NULL) {
         fprintf(stderr, "cant alloc mem for new sym %s", varname);
         exit(EXIT_FAILURE);   
     }
     
-    sym = sym_lookup_symbol(table, varname, scope);
-    
-    if (sym != NULL) {
-        fprintf(stderr, "Error (line %d): already declared a variable '%s'\n", yyget_lineno(comp->yyscanner), varname); 
-        ++comp->errors;    
-    }
-    
-    sym->size       = size;
-    sym->scope      = scope;
-    sym->name       = varname; /* name of this symbol */
-    sym->regno      = NO_REG_ALLOCATED_YET; /* need to allocate a register later. */  
-    sym->next       = NULL;    /* symbols are stored in a list */
+    sym->size  = size;
+    sym->scope = scope;
+    sym->name  = varname; /* name of this symbol */
+    sym->regno = NO_REG_ALLOCATED_YET; /* need to allocate a register later. */  
+    sym->next  = NULL;    /* symbols are stored in a list */
     
     
     /* find the type declaration for the specified type. 
@@ -93,7 +98,7 @@ sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *ty
 
 m1_symbol *
 sym_lookup_symbol(m1_symboltable *table, char *name, int scope) {
-    m1_symbol *sym;
+    m1_symbol *sym = NULL;
     
     assert(table != NULL);
     assert(name != NULL);
@@ -101,9 +106,10 @@ sym_lookup_symbol(m1_symboltable *table, char *name, int scope) {
     sym = table->syms;
         
     while (sym != NULL) {        
+    
         assert(sym->name != NULL);
         assert(name != NULL);  
-                        
+    
         /* when looking for a symbol IN scope N, then symbol's scope
            must be N or less. Example:
            
@@ -116,8 +122,7 @@ sym_lookup_symbol(m1_symboltable *table, char *name, int scope) {
              y = 43; // not ok. y is declared in scope 2, but currently in scope 1.
            }       
          */
-                               
-        if (sym->scope <= scope && strcmp(sym->name, name) == 0) {     
+        if ((sym->scope <= scope) && (strcmp(sym->name, name) == 0)) {     
             return sym;
         }   
             
