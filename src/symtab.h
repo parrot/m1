@@ -59,6 +59,7 @@ typedef union m1_value {
  */
 typedef struct m1_symbol {
     char             *name;     /* name of this symbol */
+    char              is_active; /* true if in-scope; when out-of-scope, it's false. */
     m1_value          value;    /* for const declarations. */
     m1_valuetype      valtype;  /* selector of value union. */
     

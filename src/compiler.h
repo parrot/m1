@@ -36,6 +36,9 @@ typedef struct M1_compiler {
 	yyscan_t               yyscanner; /* pointer to the lexer structure */
 	
 	int                    currentscope;       /* to keep track of nested scopes. */
+	int                    scopegenerator;     /* to generate a new scope ID for each nested block. */
+	struct m1_intstack    *scopestack; 
+	
 	int                    enum_const_counter; /* for parsing enums that don't specify values. */
 	
 } M1_compiler;

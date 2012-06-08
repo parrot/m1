@@ -9,7 +9,7 @@
 #include "compiler.h"
 #include "symtab.h"
 #include "decl.h"
-
+#include "stack.h"
 
 m1_symboltable *
 new_symtab(void) {
@@ -83,7 +83,7 @@ sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *ty
     sym->name  = varname; /* name of this symbol */
     sym->regno = NO_REG_ALLOCATED_YET; /* need to allocate a register later. */  
     sym->next  = NULL;    /* symbols are stored in a list */
-    
+    sym->is_active = 1;
     
     /* find the type declaration for the specified type. 
     XXX perhaps do this in semcheck after the parsing is finished? 
@@ -120,9 +120,13 @@ sym_lookup_symbol(m1_symboltable *table, char *name, int scope) {
              }
              x = 42; // ok
              y = 43; // not ok. y is declared in scope 2, but currently in scope 1.
+             
+             { // scope 3 (level 2, but newly generated scope ID.
+                int y; // different y than in scope 2.
+             }
            }       
          */
-        if ((sym->scope <= scope) && (strcmp(sym->name, name) == 0)) {     
+        if (sym->scope <= scope && sym->is_active && strcmp(sym->name, name) == 0) {     
             return sym;
         }   
             
@@ -294,11 +298,21 @@ sym_find_int(m1_symboltable *table, int ival) {
 
 void
 open_scope(M1_compiler *comp) {
-    comp->currentscope++;
+    push(comp->scopestack, comp->currentscope);
+    comp->currentscope = comp->scopegenerator++;
 }
 
 void
 close_scope(M1_compiler *comp) {
-    comp->currentscope--;
+
+    /* set all symbols' is_active field that go out of scope to 0. */
+    m1_symbol *iter = comp->currentchunk->locals.syms;
+    while (iter != NULL) {
+        if (iter->scope == comp->currentscope) {
+            iter->is_active = 0;
+        }
+        iter = iter->next;       
+    }
+    comp->currentscope = pop(comp->scopestack);
 }
 
