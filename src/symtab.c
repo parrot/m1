@@ -279,3 +279,14 @@ sym_find_int(m1_symboltable *table, int ival) {
     }
     return NULL;
 }
+
+void
+open_scope(M1_compiler *comp) {
+    comp->currentscope++;
+}
+
+void
+close_scope(M1_compiler *comp) {
+    comp->currentscope--;
+}
+

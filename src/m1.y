@@ -516,17 +516,11 @@ block   : open_block statements close_block
         ;
         
 open_block: '{'   
-                  { /* open new scope, increment scope counter. */
-                    M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner); 
-                    comp->currentscope++;
-                  }
+                  { open_scope((M1_compiler *)yyget_extra(yyscanner)); }
 
 close_block: '}'  
-                  { /* closing current scope, decrement scope counter. */
-                    M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner); 
-                    comp->currentscope--;
-                  }
-        
+                  { close_scope((M1_compiler *)yyget_extra(yyscanner)); }
+                          
 statements  : /* empty */
                 { $$ = NULL; }
             | statements statement

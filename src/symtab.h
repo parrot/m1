@@ -104,5 +104,8 @@ extern m1_symbol *sym_lookup_symbol(m1_symboltable *table, char *name, int scope
 
 extern void print_symboltable(m1_symboltable *table);
 
+extern void open_scope(M1_compiler *comp);
+extern void close_scope(M1_compiler *comp);
+
 #endif
 

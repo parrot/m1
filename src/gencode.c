@@ -48,6 +48,14 @@ static unsigned gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **paren
 static const char type_chars[4] = {'i', 'n', 's', 'p'};
 static const char reg_chars[4] = {'I', 'N', 'S', 'P'};
 
+/*
+#define M1_GEN_INS(name, cf, ops, pc) { \
+      if (M1_DEBUG) { \
+        fprintf(stderr, "pc = %d, op: " #name "\n", (char)pc);      \
+      } \
+      m1_ins_##name( cf, &ops[4*pc] ); \
+  }
+*/
 
 /*
 
