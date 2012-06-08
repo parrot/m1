@@ -1,9 +1,8 @@
 int main() {
     int x;
-    x = 10;
+    x = 1;
     print("1..10\n");
-    while (x) {
-        
+    while (x <= 10) {
         print("ok..");
         print(x);
         print("\n");   
