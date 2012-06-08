@@ -11,4 +11,5 @@ int main() {
     
     print(o.x);
     print(o.y);
+    print("\n");
 }
