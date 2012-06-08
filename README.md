@@ -20,6 +20,13 @@ Running
 -------
 After downloading the source code, just type "make". Then invoke ./m1 <m1 script>.
 
+Testing M1
+==========
+
+To run the M1 test suite:
+
+    make test
+
 Language grammar
 ================
 
