@@ -66,6 +66,13 @@ sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *ty
         exit(EXIT_FAILURE);   
     }
     
+    sym = sym_lookup_symbol(table, varname, scope);
+    
+    if (sym != NULL) {
+        fprintf(stderr, "Error (line %d): already declared a variable '%s'\n", yyget_lineno(comp->yyscanner), varname); 
+        ++comp->errors;    
+    }
+    
     sym->size       = size;
     sym->scope      = scope;
     sym->name       = varname; /* name of this symbol */

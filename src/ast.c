@@ -15,7 +15,6 @@ AST node constructors
 
 #include "ann.h"
 
-extern int yyget_lineno(yyscan_t yyscanner);
 
 static void expr_set_unexpr(M1_compiler *comp, m1_expression *node, m1_expression *exp, m1_unop op);             
 static void expr_set_expr(m1_expression *node, m1_expression *expr);

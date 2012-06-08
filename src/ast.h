@@ -294,6 +294,8 @@ typedef struct m1_expression {
 } m1_expression;
 
 
+extern int yyget_lineno(yyscan_t yyscanner);
+
 extern m1_chunk *chunk(M1_compiler *comp, char *rettype, char *name, m1_expression *block);
 
 extern m1_expression *expression(M1_compiler *comp, m1_expr_type type);       
