@@ -22,6 +22,12 @@ new_symtab(void) {
     return table;   
 }
 
+void 
+init_symtab(m1_symboltable *symtab) {
+    symtab->syms        = NULL;
+    symtab->parentscope = NULL;    
+}
+
 /*
 
 Add symbol C<sym> to symboltable C<table>. 
@@ -55,7 +61,7 @@ link_sym(m1_symboltable *table, m1_symbol *sym) {
 }
 
 m1_symbol *
-sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *type, unsigned num_elems, int scope) {
+sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *type, unsigned num_elems) {
     m1_symbol *sym = NULL;
     
     assert(varname != NULL);
@@ -63,7 +69,7 @@ sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *ty
     assert(table != NULL);
     
     /* check whether symbol exists already. */
-    sym = sym_lookup_symbol(table, varname, scope);
+    sym = sym_lookup_symbol(table, varname);
     
     if (sym != NULL) {
         fprintf(stderr, "Error (line %d): already declared a variable '%s'\n", yyget_lineno(comp->yyscanner), varname); 
@@ -79,17 +85,15 @@ sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *ty
     }
     
     sym->num_elems = num_elems;
-    sym->scope     = scope;
     sym->name      = varname; /* name of this symbol */
     sym->regno     = NO_REG_ALLOCATED_YET; /* need to allocate a register later. */  
     sym->next      = NULL;    /* symbols are stored in a list */
-    sym->is_active = 1;
     
     /* find the type declaration for the specified type. 
     XXX perhaps do this in semcheck after the parsing is finished? 
     */
-    sym->typedecl   = type_find_def(comp, type);
-    
+    sym->typedecl  = type_find_def(comp, type);
+    fprintf(stderr, "[symtab] new symbol for %s\n", varname);
     
     link_sym(table, sym);
     
@@ -97,7 +101,7 @@ sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *ty
 }
 
 m1_symbol *
-sym_lookup_symbol(m1_symboltable *table, char *name, int scope) {
+sym_lookup_symbol(m1_symboltable *table, char *name) {
     m1_symbol *sym = NULL;
     
     assert(table != NULL);
@@ -126,12 +130,18 @@ sym_lookup_symbol(m1_symboltable *table, char *name, int scope) {
              }
            }       
          */
-        if (sym->scope <= scope && sym->is_active && strcmp(sym->name, name) == 0) {     
+        if (strcmp(sym->name, name) == 0) {     
             return sym;
         }   
             
         sym = sym->next;   
     }
+    
+    /* try and find the symbol in the parent scope, recursively. */
+    if (table->parentscope != NULL) {
+        return sym_lookup_symbol(table->parentscope, name);
+    }
+        
     return NULL;
 }
 
@@ -141,7 +151,10 @@ print_symboltable(m1_symboltable *table) {
     m1_symbol *iter = table->syms;
     fprintf(stderr, "SYMBOL TABLE\n");
     while (iter != NULL) {
-        fprintf(stderr, "symbol '%s' has register %d and type %d\n", iter->value.sval, iter->regno, iter->valtype);
+        fprintf(stderr, "symbol '%s' [%s] has register %d and type %d\n", iter->value.sval, 
+                                                                          iter->name, 
+                                                                          iter->regno, 
+                                                                          iter->valtype);
         iter = iter->next;   
     }   
 }
@@ -167,7 +180,6 @@ sym_enter_str(m1_symboltable *table, char *str, int scope) {
     
     sym->value.sval = str;
     sym->valtype    = VAL_STRING;
-    sym->scope      = scope;
     sym->constindex = table->constindex++;
     
     link_sym(table, sym);
@@ -296,23 +308,5 @@ sym_find_int(m1_symboltable *table, int ival) {
     return NULL;
 }
 
-void
-open_scope(M1_compiler *comp) {
-    push(comp->scopestack, comp->currentscope);
-    comp->currentscope = comp->scopegenerator++;
-}
 
-void
-close_scope(M1_compiler *comp) {
-
-    /* set all symbols' is_active field that go out of scope to 0. */
-    m1_symbol *iter = comp->currentchunk->locals.syms;
-    while (iter != NULL) {
-        if (iter->scope == comp->currentscope) {
-            iter->is_active = 0;
-        }
-        iter = iter->next;       
-    }
-    comp->currentscope = pop(comp->scopestack);
-}
 

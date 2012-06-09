@@ -23,10 +23,8 @@ static void
 init_compiler(M1_compiler *comp) {
    	memset(comp, 0, sizeof(M1_compiler)); 
    	
-    comp->breakstack = new_intstack();   
-    comp->regstack   = new_regstack();	
-    comp->scopestack = new_intstack();
-    
+    comp->breakstack      = new_intstack();   
+    comp->regstack        = new_regstack();	   
     comp->continuestack   = new_intstack();   
     comp->expect_usertype = 0; /* when not parsing a function's body, 
                                    then identifiers are types */   	

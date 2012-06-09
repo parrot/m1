@@ -14,6 +14,7 @@
 #include "instr.h"
 #include "compiler.h"
 #include "decl.h"
+#include "symtab.h"
 
 
 
@@ -51,6 +52,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
     struct m0_instr         *instr;
     struct m1_case			*cse;
     struct m1_enumconst     *ecnst;
+    struct m1_block         *blck;
 }
 
 
@@ -142,6 +144,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
               chunk 
               TOP
 
+
              
 %type <ival> TK_INT
              m0_op
@@ -158,6 +161,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 %type <fval> TK_NUMBER
 
 %type <expr> expression 
+             open_block
              binexpr 
              inc_or_dec_expr 
              function_call_expr 
@@ -438,8 +442,9 @@ opt_vtable      : /* empty */
                                         
 function_definition : function_init '(' parameters ')' block
                         {  
-                          $1->block = $5;                           
+                          $1->block = $5->expr.blck;                           
                           $$ = $1;
+                          fprintf(stderr, "fun def\n");
                         }
                     ;
 
@@ -451,10 +456,11 @@ function_init   : return_type TK_IDENT
                              "current" chunk (for its symbol table etc.). 
                            */  
                           M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);                          
-                          $$ = chunk(comp, $1, $2, NULL); 
+                          $$ = chunk(comp, $1, $2); 
                           comp->currentchunk = $$;
                           /* enter name of function declaration in table */
                           sym_enter_chunk(&comp->currentchunk->constants, $2);
+                          fprintf(stderr, "fun init\n");
                         }
                 ;
 
@@ -512,11 +518,14 @@ struct_member       : return_type TK_IDENT ';'
                     ;                                        
         
 block   : open_block statements close_block
-            { $$ = $2; }
+            {  
+                $$ = $1; 
+                block_set_stat($1, $2);
+            }
         ;
         
-open_block: '{'   
-                  { open_scope((M1_compiler *)yyget_extra(yyscanner)); }
+open_block: '{'   /* create a new block, set currentsymtab to its symbol table. */
+                  { $$ = open_scope((M1_compiler *)yyget_extra(yyscanner)); }
 
 close_block: '}'  
                   { close_scope((M1_compiler *)yyget_extra(yyscanner)); }
@@ -760,17 +769,10 @@ lhs     : lhs_obj
 lhs_obj : TK_IDENT
             { 
               M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
-              /* look up identifier's declaration. */
-              m1_symbol *sym    = sym_lookup_symbol(&comp->currentchunk->locals, $1, comp->currentscope);
-              
-              if (sym == NULL) {
-                fprintf(stderr, "Undeclared variable: ");
-                yyerror(yyscanner, comp, $1); 
-              }
-              
+                            
               $$ = object(comp, OBJECT_MAIN); 
               obj_set_ident($$, $1);
-              $$->sym = sym;      
+              
             }            
         | lhs_obj field_access
             {

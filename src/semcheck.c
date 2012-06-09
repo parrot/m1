@@ -9,7 +9,7 @@
 
 
 static m1_type check_expr(M1_compiler *comp, m1_expression *e);
-static void check_block(M1_compiler *comp, m1_expression *expr);
+static void check_block(M1_compiler *comp, m1_block *expr);
 static m1_type check_obj(M1_compiler *comp, m1_object *obj);
 
 
@@ -57,13 +57,26 @@ check_obj(M1_compiler *comp, m1_object *obj) {
     if (obj->type == OBJECT_LINK) {
         
         t = check_obj(comp, obj->parent);   
+        check_obj(comp, obj->obj.field);
         
     }
     
     switch (obj->type) {
-        case OBJECT_MAIN:
-
+        case OBJECT_MAIN: {
+            /* look up identifier's declaration. */
+            fprintf(stderr, "[semcheck] looking for %s...", obj->obj.name);
+            m1_symbol *sym = sym_lookup_symbol(comp->currentsymtab, obj->obj.name);
+            
+            
+            if (sym == NULL) {
+                fprintf(stderr, "Undeclared variable '%s'\n", obj->obj.name);
+                ++comp->errors;
+            }
+            else
+                fprintf(stderr, "found\n");
+            obj->sym = sym;      
             break;
+        }
         case OBJECT_FIELD:
 
             break;
@@ -95,7 +108,7 @@ check_while(M1_compiler *comp, m1_whileexpr *w) {
         type_error(comp, 0, "condition in while statement is not a boolean expression");       
     }
 
-    check_block(comp, w->block);
+    check_expr(comp, w->block);
 
 }
 
@@ -108,7 +121,7 @@ check_dowhile(M1_compiler *comp, m1_whileexpr *w) {
         type_error(comp, 0, "condition in do-while statement is not a boolean expression");   
     }
     
-    check_block(comp, w->block);
+    check_expr(comp, w->block);
 
 }
 
@@ -130,7 +143,7 @@ check_for(M1_compiler *comp, m1_forexpr *i) {
         check_expr(comp, i->step);
 
     if (i->block)
-        check_block(comp, i->block);
+        check_expr(comp, i->block);
 
 }
 
@@ -142,10 +155,10 @@ check_if(M1_compiler *comp, m1_ifexpr *i) {
         type_error(comp, 0, "condition in if-statement does not yield boolean value");   
     }
 
-    check_block(comp, i->ifblock);
+    check_expr(comp, i->ifblock);
 
     if (i->elseblock) {
-        check_block(comp, i->elseblock);
+        check_expr(comp, i->elseblock);
     }
            
 }
@@ -285,6 +298,11 @@ check_switch(M1_compiler *comp, m1_switch *s) {
     }   
 }
 
+static void
+check_newexpr(M1_compiler *comp, m1_newexpr *n) {
+    
+}
+
 static m1_type
 check_expr(M1_compiler *comp, m1_expression *e) {
     m1_type t = TYPE_VOID;
@@ -293,6 +311,9 @@ check_expr(M1_compiler *comp, m1_expression *e) {
         return t;
         
     switch (e->type) {
+        case EXPR_BLOCK:
+            check_block(comp, e->expr.blck);
+            break;
         case EXPR_NUMBER:
             return TYPE_NUM;
 
@@ -359,8 +380,10 @@ check_expr(M1_compiler *comp, m1_expression *e) {
             break;
             
         case EXPR_NEW:
+            check_newexpr(comp, e->expr.n);
             break;
         case EXPR_PRINT:
+            check_expr(comp, e->expr.e);
             break;
                 
         default:
@@ -370,31 +393,34 @@ check_expr(M1_compiler *comp, m1_expression *e) {
     return t;
 }
 
+
+
 static void 
 check_chunk(M1_compiler *comp, m1_chunk *c) {
-    m1_expression *iter = c->block;
-    
-    
-    while (iter != NULL) {
-        (void)check_expr(comp, iter);
-        iter = iter->next;
-    }
+
+    check_block(comp, c->block);
 }
 
 static void
-check_block(M1_compiler *comp, m1_expression *expr) {
-    m1_expression *iter = expr;
+check_block(M1_compiler *comp, m1_block *block) {
+    assert(block != NULL);
+    m1_expression *iter = block->stats;
+    
+    assert(&block->locals != NULL);
+    comp->currentsymtab = &block->locals;
     while (iter != NULL) {
         check_expr(comp, iter);
         iter = iter->next;   
     }   
+    comp->currentsymtab = block->locals.parentscope;
 }
 
 void 
 check(M1_compiler *comp, m1_chunk *ast) {
     m1_chunk *iter = ast;
     
-    while (iter != NULL) {        
+    while (iter != NULL) {       
+        comp->currentchunk = iter;    
         check_chunk(comp, iter);
         iter = iter->next;   
     }

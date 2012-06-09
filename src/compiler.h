@@ -1,3 +1,4 @@
+
 #ifndef __M1_COMPILER__
 #define __M1_COMPILER__
 
@@ -34,10 +35,8 @@ typedef struct M1_compiler {
 
 	struct m1_regstack    *regstack; /* for storing registers in code generator */		
 	yyscan_t               yyscanner; /* pointer to the lexer structure */
-	
-	int                    currentscope;       /* to keep track of nested scopes. */
-	int                    scopegenerator;     /* to generate a new scope ID for each nested block. */
-	struct m1_intstack    *scopestack; 
+		
+	struct m1_symboltable *currentsymtab;
 	
 	int                    enum_const_counter; /* for parsing enums that don't specify values. */
 	

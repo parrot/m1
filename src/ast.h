@@ -7,17 +7,21 @@
 #include "compiler.h"
 
 
+typedef struct m1_block {
+    struct m1_expression *stats;
+    struct m1_symboltable locals;
+    
+} m1_block;
 
 /* structure to represent a function. */
 typedef struct m1_chunk {
     char                 *rettype;      /* return type of chunk */
     char                 *name;         /* name of this chunk */    
     struct m1_chunk      *next;         /* chunks are stored in a list. */
-    struct m1_expression *block;        /* list of statements. */
+    struct m1_block      *block;        /* list of statements. */
 
     struct m1_var        *parameters;   /* list of parameters */
     
-    struct m1_symboltable locals;       /* local vars in this chunk */
     struct m1_symboltable constants;    /* constants used in this chunk */
         
 } m1_chunk;
@@ -66,6 +70,7 @@ typedef enum m1_expr_type {
     EXPR_ADDRESS,   /* &x */
     EXPR_ASSIGN,
     EXPR_BINARY,
+    EXPR_BLOCK,
     EXPR_BREAK,
     EXPR_CONTINUE,
     EXPR_CAST,
@@ -284,6 +289,7 @@ typedef struct m1_expression {
         struct m1_newexpr    *n;
         struct m1_literal    *l;
         struct m1_castexpr   *cast;
+        struct m1_block      *blck;
     } expr;
     
     m1_expr_type  type; /* selector for union */
@@ -296,7 +302,7 @@ typedef struct m1_expression {
 
 extern int yyget_lineno(yyscan_t yyscanner);
 
-extern m1_chunk *chunk(M1_compiler *comp, char *rettype, char *name, m1_expression *block);
+extern m1_chunk *chunk(M1_compiler *comp, char *rettype, char *name);
 
 extern m1_expression *expression(M1_compiler *comp, m1_expr_type type);       
 extern m1_expression *funcall(M1_compiler *comp, char *name, m1_expression *args);
@@ -353,6 +359,13 @@ extern m1_enumconst *enumconst(M1_compiler *comp, char *enumitem, int enumvalue)
 extern m1_enum *newenum(M1_compiler *comp, char *name, m1_enumconst *enumconstants);
 
 extern m1_var *parameter(M1_compiler *comp, char *type, char *name);
+
+extern m1_expression *block(M1_compiler *comp);
+extern void block_set_stat(m1_expression *block, m1_expression *stat);
+
+extern struct m1_expression *open_scope(M1_compiler *comp);
+extern void close_scope(M1_compiler *comp);
+
 
 #endif
 

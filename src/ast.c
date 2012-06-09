@@ -35,17 +35,30 @@ m1_malloc(size_t size) {
 
 /*@modiefies nothing @*/ 
 m1_chunk *
-chunk(M1_compiler *comp, char *rettype, NOTNULL(char *name), m1_expression *block) {
+chunk(M1_compiler *comp, char *rettype, NOTNULL(char *name)) {
     m1_chunk *c = (m1_chunk *)m1_malloc(sizeof(m1_chunk));
     c->rettype  = rettype;
     c->name     = name;
-    c->block    = block;
+    c->block    = NULL;
     c->next     = NULL;
     
     assert(comp != NULL);
     
     return c;   
 }
+
+m1_expression *
+block(M1_compiler *comp) {
+    m1_expression *expr = expression(comp, EXPR_BLOCK);
+    expr->expr.blck = (m1_block *)m1_malloc(sizeof(m1_block)); 
+    init_symtab(&expr->expr.blck->locals);
+    return expr;   
+}
+
+void 
+block_set_stat(m1_expression *block, m1_expression *stat) {
+    block->expr.blck->stats = stat;   
+}    
 
 m1_expression *
 expression(M1_compiler *comp, m1_expr_type type) {
@@ -415,23 +428,17 @@ var(M1_compiler *comp, char *varname, m1_expression *init) {
     
     /* enter this var. declaration into the symbol table; store a pointer to the symbol in this var. */
 	v->sym = sym_new_symbol(comp,
-	                        &(comp->currentchunk->locals),  /* enter in current chunk's sym.tab. */
+	                        comp->currentsymtab,  /* enter in current chunk's sym.tab. */
 	                        varname, 
 	                        comp->parsingtype, /* type of this variable */
-	                        1,      /* size 1 */        
-	                        comp->currentscope);
-		
+	                        1);    /* size 1 */        
+
+
 	assert(v->sym != NULL);
 		
 	/* get a pointer to the type declaration */	
 	v->sym->typedecl = type_find_def(comp, comp->parsingtype);
 
-	if (v->sym->typedecl != NULL) {
-	   fprintf(stderr, "[var] %s is of type %s\n", varname, v->sym->typedecl->name);
-	}
-	else {
-	   fprintf(stderr, "[var] can't find type declaration for %s\n", varname);  
-	}
     assert(v->sym->typedecl != NULL); 		
     
 	v->sym->var  = v; /* set the symbol node's (representing the variable declaration) 
@@ -443,11 +450,11 @@ m1_var *
 array(M1_compiler *comp, char *varname, unsigned num_elems, m1_expression *init) {
     m1_var *v = make_var(comp, varname, init, num_elems);
     v->sym    = sym_new_symbol(comp,
-                               &(comp->currentchunk->locals),  /* enter in current chunk's symbol table */
+                               comp->currentsymtab,  /* enter in current chunk's symbol table */
 	                           varname,                        /* name of this array being declared */
 	                           comp->parsingtype,              /* type of base type variable */ 
-	                           num_elems,
-	                           comp->currentscope); 
+	                           num_elems);
+	                           
 	
 	assert(v->sym != NULL);
 	
@@ -586,13 +593,32 @@ parameter(M1_compiler *comp, char *paramtype, char *paramname) {
     m1_var *p = (m1_var *)m1_malloc(sizeof(m1_var));
 
     p->sym = sym_new_symbol(comp,
-                            &(comp->currentchunk->locals),  /* enter in current chunk's symbol table */
+                            comp->currentsymtab,  /* enter in current chunk's symbol table */
 	                        paramname,                      /* name of this parameter being declared */
 	                        paramtype,
-	                        1,
-	                        comp->currentscope + 1); /* at the time this is executed, block has closed
-	                                                    already, but still add the parameter to that scope. */ 
+	                        1);
+	                        
     p->name    = paramname;
     return p;
+}
+
+m1_expression *
+open_scope(M1_compiler *comp) {
+    
+    m1_expression *exp = block(comp);
+    /* link to current symbol table, which is the parent scope. */
+    fprintf(stderr, "Opening scope\n");
+    
+    exp->expr.blck->locals.parentscope = comp->currentsymtab;
+    comp->currentsymtab = &exp->expr.blck->locals;
+
+    return exp;
+}
+
+void
+close_scope(M1_compiler *comp) {
+
+    fprintf(stderr, "Closing scope\n");
+    comp->currentsymtab = comp->currentsymtab->parentscope;
 }
 

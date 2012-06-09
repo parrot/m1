@@ -42,7 +42,7 @@ This happens in gencode_number().
 
 
 static void gencode_expr(M1_compiler *comp, m1_expression *e);
-static void gencode_block(M1_compiler *comp, m1_expression *block);
+static void gencode_block(M1_compiler *comp, m1_block *block);
 static unsigned gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target);
 
 static const char type_chars[4] = {'i', 'n', 's', 'p'};
@@ -104,8 +104,8 @@ gencode_number(M1_compiler *comp, m1_literal *lit) {
    
 
         
-    ins_set_imm(comp, &constindex, 0, lit->sym->constindex);
-    ins_deref(comp, &reg, CONSTS, &constindex);
+    //ins_set_imm(comp, &constindex, 0, lit->sym->constindex);
+    //ins_deref(comp, &reg, CONSTS, &constindex);
     
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tN%d, CONSTS, I%d\n", reg.no, constindex.no);
@@ -262,7 +262,7 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target
 
 	assert(comp != NULL);
     assert(comp->currentchunk != NULL);
-    assert(&comp->currentchunk->locals != NULL);
+    assert(comp->currentsymtab != NULL);
 	   
 	/* visit this node's parent recursively, depth-first. 
     parent parameter will return a pointer to it so it can
@@ -325,7 +325,7 @@ OBJECT_LINK-----> L1
             /* set OUT parameter to this node (that's currently visited, obj) */
             *parent = obj;   	
 
-            gencode_obj(comp, obj->parent,parent, is_target);
+            gencode_obj(comp, obj->parent, parent, is_target);
             numregs_pushed += gencode_obj(comp, obj->obj.field, parent, is_target);     
             
             break;
@@ -498,7 +498,7 @@ gencode_while(M1_compiler *comp, m1_whileexpr *w) {
 	fprintf(OUT, "\tgoto L%d\n", endlabel);
 	
 	fprintf(OUT, "L%d:\n", startlabel);
-	gencode_block(comp, w->block);
+	gencode_expr(comp, w->block);
 	
 	fprintf(OUT, "L%d:\n", endlabel);
 	
@@ -531,7 +531,7 @@ gencode_dowhile(M1_compiler *comp, m1_whileexpr *w) {
     push(comp->continuestack, startlabel);
      
     fprintf(OUT, "L%d:\n", startlabel);
-    gencode_block(comp, w->block);
+    gencode_expr(comp, w->block);
     
     gencode_expr(comp, w->cond);
     reg = popreg(comp->regstack);
@@ -585,7 +585,7 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
     fprintf(OUT, "L%d:\n", blocklabel);
     
     if (i->block) 
-        gencode_block(comp, i->block);
+        gencode_expr(comp, i->block);
         
     fprintf(OUT, "L%d:\n", steplabel);
     if (i->step)
@@ -624,13 +624,13 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
 
     /* else block */
     if (i->elseblock) {            	
-        gencode_block(comp, i->elseblock);     
+        gencode_expr(comp, i->elseblock);     
     }
     fprintf(OUT, "\tgoto L%d\n", endlabel);
     
     /* if block */
 	fprintf(OUT, "L%d:\n", iflabel);
-    gencode_block(comp, i->ifblock);
+    gencode_expr(comp, i->ifblock);
 			
     fprintf(OUT, "L%d:\n", endlabel);
          
@@ -1348,7 +1348,7 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
         testlabel = gen_label(comp);
         fprintf(OUT, "\tgoto_if L%d, I%d\n", testlabel, test.no);
         /* generate code for this case's block. */
-        gencode_block(comp, caseiter->block);
+        gencode_expr(comp, caseiter->block);
         /* next test label. */
         fprintf(OUT, "L%d:\n", testlabel);
         
@@ -1356,7 +1356,7 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
     }
     
     if (expr->defaultstat) {
-       gencode_block(comp, expr->defaultstat); 
+       gencode_expr(comp, expr->defaultstat); 
     }
     
     fprintf(OUT, "L%d:\n", endlabel);      
@@ -1476,6 +1476,9 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             break;
         case EXPR_BINARY:
             gencode_binary(comp, e->expr.b);
+            break;
+        case EXPR_BLOCK:
+            gencode_block(comp, e->expr.blck);
             break;
         case EXPR_BREAK:
             gencode_break(comp);
@@ -1611,13 +1614,16 @@ gencode_metadata(m1_chunk *c) {
 
 
 static void
-gencode_block(M1_compiler *comp, m1_expression *block) {
-    m1_expression *iter = block;
+gencode_block(M1_compiler *comp, m1_block *block) {
+    m1_expression *iter = block->stats;
+    assert(&block->locals != NULL);
+    comp->currentsymtab = &block->locals;
     
     while (iter != NULL) {
         gencode_expr(comp, iter);
         iter = iter->next;
     }
+    comp->currentsymtab = block->locals.parentscope;
 }
 
 static void
