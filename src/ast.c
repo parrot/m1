@@ -411,13 +411,20 @@ vardecl(M1_compiler *comp, char *type, m1_var *v) {
 }
 
 static m1_var *
-make_var(M1_compiler *comp, char *name, m1_expression *init, unsigned num_elems) {
+make_var(M1_compiler *comp, char *varname, m1_expression *init, unsigned num_elems) {
     m1_var *v    = (m1_var *)m1_malloc(sizeof(m1_var));
-    v->name      = name;
+    v->name      = varname;
     v->init      = init;
     v->num_elems = num_elems;
-    
-    assert(comp != NULL);
+    /* enter this var. declaration into the symbol table; 
+       store a pointer to the symbol in this var. */
+    v->sym       = sym_new_symbol(comp, 
+                                  comp->currentsymtab, 
+                                  varname, 
+                                  comp->parsingtype, 
+                                  num_elems);
+	assert(v->sym != NULL);
+    v->sym->var = v; /* set pointer in the symbol (stored in symtab) to the var AST node. */
     return v;    	
 }
 
@@ -425,40 +432,19 @@ m1_var *
 var(M1_compiler *comp, char *varname, m1_expression *init) {
     /* a single var is just size 1. */
 	m1_var *v = make_var(comp, varname, init, 1);
-    
-    /* enter this var. declaration into the symbol table; store a pointer to the symbol in this var. */
-	v->sym = sym_new_symbol(comp,
-	                        comp->currentsymtab,  /* enter in current chunk's sym.tab. */
-	                        varname, 
-	                        comp->parsingtype, /* type of this variable */
-	                        1);    /* size 1 */        
-
-
-	assert(v->sym != NULL);
-		
+   		
 	/* get a pointer to the type declaration */	
 	v->sym->typedecl = type_find_def(comp, comp->parsingtype);
 
     assert(v->sym->typedecl != NULL); 		
     
-	v->sym->var  = v; /* set the symbol node's (representing the variable declaration) 
-	                    pointer to this declaration AST node. */
 	return v;
 }
 
 m1_var *
 array(M1_compiler *comp, char *varname, unsigned num_elems, m1_expression *init) {
     m1_var *v = make_var(comp, varname, init, num_elems);
-    v->sym    = sym_new_symbol(comp,
-                               comp->currentsymtab,  /* enter in current chunk's symbol table */
-	                           varname,                        /* name of this array being declared */
-	                           comp->parsingtype,              /* type of base type variable */ 
-	                           num_elems);
-	                           
 	
-	assert(v->sym != NULL);
-	
-    v->sym->var = v; /* set pointer in the symbol (stored in symtab) to the var AST node. */
 	return v;
 }
 

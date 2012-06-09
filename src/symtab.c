@@ -93,7 +93,6 @@ sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *ty
     XXX perhaps do this in semcheck after the parsing is finished? 
     */
     sym->typedecl  = type_find_def(comp, type);
-    fprintf(stderr, "[symtab] new symbol for %s\n", varname);
     
     link_sym(table, sym);
     
@@ -113,23 +112,7 @@ sym_lookup_symbol(m1_symboltable *table, char *name) {
     
         assert(sym->name != NULL);
         assert(name != NULL);  
-    
-        /* when looking for a symbol IN scope N, then symbol's scope
-           must be N or less. Example:
-           
-           { // scope = 1 
-             int x;
-             { // scope = 2
-                int y;
-             }
-             x = 42; // ok
-             y = 43; // not ok. y is declared in scope 2, but currently in scope 1.
-             
-             { // scope 3 (level 2, but newly generated scope ID.
-                int y; // different y than in scope 2.
-             }
-           }       
-         */
+   
         if (strcmp(sym->name, name) == 0) {     
             return sym;
         }   

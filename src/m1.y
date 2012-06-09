@@ -444,7 +444,6 @@ function_definition : function_init '(' parameters ')' block
                         {  
                           $1->block = $5->expr.blck;                           
                           $$ = $1;
-                          fprintf(stderr, "fun def\n");
                         }
                     ;
 
@@ -460,7 +459,6 @@ function_init   : return_type TK_IDENT
                           comp->currentchunk = $$;
                           /* enter name of function declaration in table */
                           sym_enter_chunk(&comp->currentchunk->constants, $2);
-                          fprintf(stderr, "fun init\n");
                         }
                 ;
 
@@ -768,11 +766,8 @@ lhs     : lhs_obj
         
 lhs_obj : TK_IDENT
             { 
-              M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
-                            
-              $$ = object(comp, OBJECT_MAIN); 
+              $$ = object( (M1_compiler *)yyget_extra(yyscanner), OBJECT_MAIN); 
               obj_set_ident($$, $1);
-              
             }            
         | lhs_obj field_access
             {

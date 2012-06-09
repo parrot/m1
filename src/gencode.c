@@ -324,8 +324,14 @@ OBJECT_LINK-----> L1
         {
             /* set OUT parameter to this node (that's currently visited, obj) */
             *parent = obj;   	
-
+            /* visit parent recursively. (go depth-first in order to reach first ident. first
+               That is, in "x.y.z", we want to visit x first.
+             */
             gencode_obj(comp, obj->parent, parent, is_target);
+            /* At this point, we're done visiting parents, so now visit the "fields".
+               In x.y.z, after returning from x, we're visiting y. After that, we'll visit z.
+               As we do this, keep track of how many registers were used to store the result.
+             */
             numregs_pushed += gencode_obj(comp, obj->obj.field, parent, is_target);     
             
             break;
@@ -349,13 +355,14 @@ OBJECT_LINK-----> L1
             if (obj->sym->num_elems > 1) { /* it's an array! */
                 reg.type = VAL_INT;                
             }
-            else {
+            else { 
+             /* it's not an array; just get the root type (in string[10], that's string). */
+                assert(obj->sym->num_elems == 1);
+                
                 reg.type = obj->sym->typedecl->valtype;     
             }
             
-        	reg.no = obj->sym->regno;
-        	
-
+        	reg.no = obj->sym->regno;        	
                       
             /* return a pointer to this node by OUT parameter. */
             *parent = obj;
