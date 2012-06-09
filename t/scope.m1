@@ -1,0 +1,37 @@
+int main() { // scope 1, nestlevel 1
+    
+    print("1..5\n");
+    int x = 1;
+    print("ok..");
+    print(x);
+    print("\n");
+    
+    { // scope 2, nestlevel 2
+        int y = 2;
+        print("ok..");
+        print(y);
+        print("\n");
+    }
+    
+    { // scope 3, nestlevel 2
+        int y = 3;
+        print("ok..");
+        print(y);
+        print("\n");
+        
+    }
+    
+    { // scope 5, nestlevel 2
+        int y = 4; // ok, 
+        print("ok..");
+        print(y);
+        print("\n");
+
+    }
+    int y = 5;
+    print("ok..");
+    print(y);
+    print("\n");
+
+    
+}
