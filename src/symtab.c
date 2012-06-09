@@ -55,7 +55,7 @@ link_sym(m1_symboltable *table, m1_symbol *sym) {
 }
 
 m1_symbol *
-sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *type, unsigned size, int scope) {
+sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *type, unsigned num_elems, int scope) {
     m1_symbol *sym = NULL;
     
     assert(varname != NULL);
@@ -70,19 +70,19 @@ sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *ty
         ++comp->errors;  
         return sym;  
     }
-    
-    sym        = (m1_symbol *)calloc(1, sizeof(m1_symbol));
+    /* if it existed, the function would have returned by now. */
+    sym = (m1_symbol *)calloc(1, sizeof(m1_symbol));
     
     if (sym == NULL) {
         fprintf(stderr, "cant alloc mem for new sym %s", varname);
         exit(EXIT_FAILURE);   
     }
     
-    sym->size  = size;
-    sym->scope = scope;
-    sym->name  = varname; /* name of this symbol */
-    sym->regno = NO_REG_ALLOCATED_YET; /* need to allocate a register later. */  
-    sym->next  = NULL;    /* symbols are stored in a list */
+    sym->num_elems = num_elems;
+    sym->scope     = scope;
+    sym->name      = varname; /* name of this symbol */
+    sym->regno     = NO_REG_ALLOCATED_YET; /* need to allocate a register later. */  
+    sym->next      = NULL;    /* symbols are stored in a list */
     sym->is_active = 1;
     
     /* find the type declaration for the specified type. 

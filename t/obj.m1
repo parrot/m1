@@ -5,11 +5,14 @@ struct Object {
 }
 
 int main() {
+    print("1..2\n");
     Object o = new Object();
-    o.x = 42;
-    o.y = 43;
+    o.x = 1;
+    o.y = 2;
     
+    print("ok..");
     print(o.x);
+    print("\nok..");
     print(o.y);
     print("\n");
 }

@@ -345,20 +345,15 @@ OBJECT_LINK-----> L1
                 m1_reg r = gen_reg(comp, obj->sym->typedecl->valtype); 
                 obj->sym->regno = r.no;
         	}  
-/*        	else {
-                fprintf(stderr, "Reg of %s is %d\n", obj->sym->name, obj->sym->regno);        	
-        	}
-*/        	
-            fprintf(stderr, "symbol %s has size %d\n", obj->sym->name, obj->sym->size);
             
-            if (obj->sym->size > 1) { /* it's an array! */
+            if (obj->sym->num_elems > 1) { /* it's an array! */
                 reg.type = VAL_INT;                
             }
             else {
                 reg.type = obj->sym->typedecl->valtype;     
             }
             
-        	reg.no   = obj->sym->regno;
+        	reg.no = obj->sym->regno;
         	
 
                       
