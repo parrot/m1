@@ -59,12 +59,12 @@ typedef union m1_value {
    
  */
 typedef struct m1_symbol {
-    char             *name;     /* name of this symbol */
-    m1_value          value;    /* for const declarations. */
-    m1_valuetype      valtype;  /* selector of value union. */
+    char             *name;         /* name of this symbol */
+    m1_value          value;        /* for const declarations. */
+    m1_valuetype      valtype;      /* selector of value union. */
     
-    unsigned          num_elems;     /* 1 for normal symbols; > 1 for arrays. */
-    int               regno;    /* allocated register */
+    unsigned          num_elems;    /* 1 for normal symbols; > 1 for arrays. */
+    int               regno;        /* allocated register */
 
     int               constindex;   /* index in const segment that holds this symbol's value. */
     struct m1_var    *var;          /* pointer to declaration AST node for var */
@@ -81,8 +81,9 @@ typedef struct m1_symbol {
  */
 typedef struct m1_symboltable {
     struct m1_symbol *syms;
-    int    constindex; /* one symboltable per constants segment, therefore keep
-                           constindex local to the table. */
+    int    constindex;                  /* one symboltable per constants segment, therefore keep
+                                           constindex local to the table. 
+                                         */
     struct m1_symboltable *parentscope; /* pointer to outer scope */
 } m1_symboltable;
 
@@ -91,7 +92,7 @@ typedef struct m1_symboltable {
 extern m1_symboltable *new_symtab(void);
 extern void init_symtab(m1_symboltable *symtab);
 
-extern m1_symbol *sym_enter_str(m1_symboltable *table, char *name, int scope);
+extern m1_symbol *sym_enter_str(m1_symboltable *table, char *name);
 extern m1_symbol *sym_enter_num(m1_symboltable *table, double val);
 extern m1_symbol *sym_enter_int(m1_symboltable *table, int val);
 extern m1_symbol *sym_enter_chunk(m1_symboltable *table, char *name);

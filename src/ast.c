@@ -129,7 +129,7 @@ string(M1_compiler *comp, char *str) {
     assert(&comp->currentchunk->constants != NULL);
     
     /* store the string in the constants segment. */
-    expr->expr.l->sym = sym_enter_str(&comp->currentchunk->constants, str, 0);
+    expr->expr.l->sym = sym_enter_str(&comp->currentchunk->constants, str);
 
 	return expr;	
 }

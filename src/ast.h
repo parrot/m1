@@ -27,21 +27,21 @@ typedef struct m1_chunk {
 } m1_chunk;
 
 typedef struct m1_structfield {
-    char        *name; 
-    char        *type;     
-    unsigned     offset;
+    char        *name;              /* name of struct member. */
+    char        *type;              /* type of struct member. */
+    unsigned     offset;            /* memory offset of this member in the struct */
     
-    struct m1_structfield *next;
+    struct m1_structfield *next;    /* fields are stored as a list. */
     
 } m1_structfield;
 
 /* structure that holds an M1 struct definition */
 typedef struct m1_struct {
-    char    *name;
-    unsigned numfields;
-    unsigned size; /* can calculate from fields but better keep a "cached" value */
+    char    *name;              /* name of this struct. */
+    unsigned size;              /* total size of this struct; can calculate from fields but 
+                                   better keep a "cached" value */
     
-    struct m1_structfield *fields;
+    struct m1_structfield *fields; /* list of fields in this struct. */ 
       
 } m1_struct;
 
@@ -182,7 +182,6 @@ typedef struct m1_object {
     
     enum m1_object_type type;       /* selector for union */
     struct m1_symbol   *sym;        /* pointer to this object's declaration. */ 
-    unsigned            line;       /* line number of symbol that this object is representing. */
     
     struct m1_object   *parent;     /* pointer to its parent (in a.b.c, a is b's parent) */
       

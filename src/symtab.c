@@ -140,7 +140,7 @@ print_symboltable(m1_symboltable *table) {
 }
 
 m1_symbol *
-sym_enter_str(m1_symboltable *table, char *str, int scope) {
+sym_enter_str(m1_symboltable *table, char *str) {
     m1_symbol *sym;
     
     assert(table != NULL);
@@ -170,7 +170,7 @@ m1_symbol *
 sym_enter_chunk(m1_symboltable *table, char *name) {
     m1_symbol *sym;
     /* a chunk is just stored as a name, but override the type. */
-    sym = sym_enter_str(table, name, 0);        
+    sym = sym_enter_str(table, name);        
     sym->valtype    = VAL_CHUNK;
     return sym;       
 }

@@ -32,6 +32,8 @@ type_error_extra(M1_compiler *comp, unsigned line, char *msg, ...) {
     int i;
     char fmtbuf[256];
         
+    ++comp->errors;  
+    fprintf(stderr, "Error (line %d): ", line);  
     va_start(argp, msg);
            
     for (p = msg; *p != '\0'; p++) {
@@ -143,7 +145,7 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line) {
             m1_type t;
             t = check_expr(comp, obj->obj.index);
             if (t != TYPE_INT) {
-                type_error(comp, obj->line, "result of expression does not yield an integer value!\n");   
+                type_error(comp, line, "result of expression does not yield an integer value!\n");   
             }
 
             break;          
@@ -356,8 +358,13 @@ check_continue(M1_compiler *comp, unsigned line) {
 static m1_type
 check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
     m1_type rettype;
+    
     assert(comp != NULL);
-    assert(f != NULL);
+    assert(f != NULL);    
+    assert(line != 0);
+    
+    /* find declaration of function, check arguments against function signature. */
+    /* TODO */
     return rettype;
 }
 
@@ -409,8 +416,7 @@ check_cast(M1_compiler *comp, m1_castexpr *expr, unsigned line) {
         expr->targettype = VAL_FLOAT;
     }
     else {
-        fprintf(stderr, "wrong type in casting\n");
-        ++comp->errors;
+        type_error_extra(comp, line, "Cannot cast value to type %s", expr->type);
     }    
 }
 
