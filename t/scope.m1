@@ -2,36 +2,36 @@ int main() { // scope 1, nestlevel 1
     
     print("1..5\n");
     int x = 1;
-    print("ok..");
+    print("ok ");
     print(x);
-    print("\n");
+    print(" - function-level scope\n");
     
     { // scope 2, nestlevel 2
         int y = 2;
-        print("ok..");
+        print("ok ");
         print(y);
-        print("\n");
+        print(" - nested scope with var y.\n");
     }
     
     { // scope 3, nestlevel 2
         int y = 3;
-        print("ok..");
+        print("ok ");
         print(y);
-        print("\n");
+        print(" - other nested scope with var y.\n");
         
     }
     
-    { // scope 5, nestlevel 2
+    { // scope 4, nestlevel 2
         int y = 4; // ok, 
-        print("ok..");
+        print("ok ");
         print(y);
-        print("\n");
+        print(" - yet another nested scope with var y.\n");
 
     }
     int y = 5;
-    print("ok..");
+    print("ok ");
     print(y);
-    print("\n");
+    print(" - back in function-level scope\n");
 
     
 }

@@ -12,13 +12,13 @@ int main() {
     s.z = 3;
     
     print("1..3\n");
-    print("ok..");
+    print("ok ");
     print(s.x);
-    print("\nok..");   
+    print(" - struct access 1\nok ");   
     print(s.y);
-    print("\nok..");
+    print(" - struct access 2\nok ");
     print(s.z);
-    print("\n");
+    print(" - struct access 3\n");
     
     
 }

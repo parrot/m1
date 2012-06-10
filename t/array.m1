@@ -9,8 +9,11 @@ int main() {
     
     print("1..10\n");
     for (i = 0; i < 10; i++) {
-        print("ok..");
-        print(x[i]); 
-        print("\n");  
+        print("ok ");
+        print(x[i] + 1); 
+        if (i == 1)
+            print(" - test array read and write");  
+        
+        print("\n");
     }
 }

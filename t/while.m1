@@ -3,9 +3,9 @@ int main() {
     x = 1;
     print("1..10\n");
     while (x <= 10) {
-        print("ok..");
+        print("ok ");
         print(x);
-        print("\n");   
+        print(" - while loop 1 to 10\n");   
         x++;
     }
 }

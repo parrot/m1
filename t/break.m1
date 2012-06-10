@@ -1,12 +1,12 @@
 int main() {
-    int i = 0;
+    int i = 1;
     print("1..5\n");
     for(; i < 10; i++ ) {
         if(i == 6) 
             break;
 
-        print("ok..");
+        print("ok ");
         print(i);
-        print("\n");
+        print(" - break out of for loop.\n");
     }
 }

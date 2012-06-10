@@ -1,8 +1,16 @@
 int main() {
+    print("1..1\n");
     int i = foo();
-    print(i);
+    
+    if (i == 1) {
+        print("ok ");
+        print(i);
+        print(" - return value ok\n");
+    }
+    else 
+        print("not ok - returning values not implemented yet!\n"); 
 }
 
 int foo() {
-    return 100;
+    return 1;
 }

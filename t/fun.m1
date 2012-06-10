@@ -1,24 +1,24 @@
 int main() {
     print("1..7\n");
-    print("ok..1\n");
+    print("ok 1 - before calling foo()\n");
     foo();   
-    print("ok..3\n");
+    print("ok 3 - after calling foo()\n");
     bar();
-    print("ok..7\n");
+    print("ok 7 - after calling bar()\n");
 }
 
 int foo() {
-    print("ok..2\n");    
+    print("ok 2 - in foo()\n");    
 }
 
 int bar() {
-    print("ok..4\n");
+    print("ok 4 - in bar() before baz()\n");
     baz();
-    print("ok..6\n");
+    print("ok 6 - in bar() after baz()\n");
 }
 
 int baz() {
-    print("ok..5\n");
+    print("ok 5 - in baz()\n");
 }
     
 

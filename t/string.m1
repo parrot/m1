@@ -1,5 +1,5 @@
 int main() {
-   
+    print("1..20\n");
     string s[10];
     s[0] = "-----0---0-------\n";
     s[1] = "----0-----0------\n";  
@@ -12,13 +12,20 @@ int main() {
     s[8] = "-----0---0-------\n"; 
     s[9] = "----0-----0------\n"; 
 
-    int i = 1;
-    int numiter = 100;
+    int i = 0;
+    int j = 0;
+    int numiter = 20;
     while(numiter-- > 0) {
-        i = i % 10;
+        i = j % 10;
+        print("ok ");
+        print(j + 1);
+        print(" - "); 
+        if (j + 1 < 10)
+            print(" ");
+
         print(s[i]);
 
-        i++;
+        j++;
 
     }
 

@@ -10,9 +10,10 @@ int main() {
     o.x = 1;
     o.y = 2;
     
-    print("ok..");
+    print("ok ");
     print(o.x);
-    print("\nok..");
+    print(" - field access 1\n");
+    print("ok ");
     print(o.y);
-    print("\n");
+    print(" - field access 2\n");
 }
