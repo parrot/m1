@@ -537,7 +537,13 @@ check_block(M1_compiler *comp, m1_block *block) {
 
 static void 
 check_chunk(M1_compiler *comp, m1_chunk *c) {
-    push(comp->breakstack, 0); /* we're in a block, but not a block to break out of. */
+    /* We're in a block, but not a block to break out of. 
+       Ensure that top() won't fail, if there's nothing on the stack.
+       The value 0 is to reflect that no break or continue is allowed.
+       When checking while, do-while and for, a 1 is pushed. This needs
+       to be done on a stack, since iterating statements may be nested.
+     */
+    push(comp->breakstack, 0); 
     
     check_block(comp, c->block);
     
