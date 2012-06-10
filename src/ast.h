@@ -61,6 +61,7 @@ typedef struct m1_funcall {
 /* XXX can we use m1_funcall for this? */
 typedef struct m1_newexpr {
 	char                 *type;
+	struct m1_decl       *typedecl;
 	struct m1_expression *args;
 	
 } m1_newexpr;
@@ -147,7 +148,8 @@ typedef struct m1_unexpr {
 
 typedef struct m1_castexpr {
     struct m1_expression *expr;
-    char *type;    
+    char                 *type;    
+    m1_valuetype          targettype;
 } m1_castexpr;
 
 /* object types. */

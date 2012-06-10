@@ -273,12 +273,12 @@ assignexpr(M1_compiler *comp, m1_expression *lhs, int assignop, m1_expression *r
     node->expr.a->lhs = lhs->expr.t; /* unwrap the m1_object representing lhs from its m1_expression wrapper. */
     
     switch (assignop) {
-    	case OP_ASSIGN: /* normal case */
+    	case OP_ASSIGN: /* normal case, lhs = rhs. */
     		node->expr.a->rhs = rhs;        
     		break;
     	default: /* all other cases, such as: 
     	            a +=b => a = a + b; 
-    	            make a new binary expression node for a + b 
+    	            make a new binary expression node for a + b.
     	          */
     		node->expr.a->rhs = binexpr(comp, lhs, assignop, rhs);
     		break;
@@ -441,10 +441,29 @@ var(M1_compiler *comp, char *varname, m1_expression *init) {
 	return v;
 }
 
+/*
+
+Parameters are also represented by m1_var nodes.
+
+*/
+m1_var *
+parameter(M1_compiler *comp, char *paramtype, char *paramname) {
+    m1_var *p = (m1_var *)m1_malloc(sizeof(m1_var));
+
+    p->sym    = sym_new_symbol(comp,
+                               comp->currentsymtab,  /* enter in current chunk's symbol table */
+	                           paramname,            /* name of this parameter being declared */
+	                           paramtype,             
+	                           1);                   /* just 1 element, not an array. 
+	                                                    XXX this is possible though! */
+	                        
+    p->name   = paramname;
+    return p;
+}
+
 m1_var *
 array(M1_compiler *comp, char *varname, unsigned num_elems, m1_expression *init) {
     m1_var *v = make_var(comp, varname, init, num_elems);
-	
 	return v;
 }
 
@@ -558,10 +577,10 @@ struct_find_field(M1_compiler *comp, m1_struct *structdef, char *fieldname) {
     assert(fieldname != NULL);
     
     sfield = structdef->fields;
-        
+    
+    /* go through list of struct's member fields, and see whether <fieldname> is present. */    
     while (sfield != NULL) {
-        if (strcmp(sfield->name, fieldname) == 0) /* found! */
-        {
+        if (strcmp(sfield->name, fieldname) == 0) { /* found! */        
             return sfield;
         }
         sfield = sfield->next;   
@@ -569,42 +588,34 @@ struct_find_field(M1_compiler *comp, m1_struct *structdef, char *fieldname) {
     return sfield;        
 }
 
+
 /*
 
-Parameters are also represented by m1_var nodes.
+Open a new scope. This function returns a new m1_block object,
+which holds its own symboltable that will store all variables
+declared in this scope. Set comp's currentsymtab to this scope's
+symbol table.
 
 */
-m1_var *
-parameter(M1_compiler *comp, char *paramtype, char *paramname) {
-    m1_var *p = (m1_var *)m1_malloc(sizeof(m1_var));
-
-    p->sym = sym_new_symbol(comp,
-                            comp->currentsymtab,  /* enter in current chunk's symbol table */
-	                        paramname,                      /* name of this parameter being declared */
-	                        paramtype,
-	                        1);
-	                        
-    p->name    = paramname;
-    return p;
-}
-
 m1_expression *
-open_scope(M1_compiler *comp) {
-    
+open_scope(M1_compiler *comp) {    
     m1_expression *exp = block(comp);
-    /* link to current symbol table, which is the parent scope. */
-    fprintf(stderr, "Opening scope\n");
     
+    /* link to current symbol table, which is the parent scope. */    
     exp->expr.blck->locals.parentscope = comp->currentsymtab;
     comp->currentsymtab = &exp->expr.blck->locals;
 
     return exp;
 }
 
+/*
+
+Close the current scope. Comp's current symboltable is set to the
+previous (parent) scope. 
+
+*/
 void
 close_scope(M1_compiler *comp) {
-
-    fprintf(stderr, "Closing scope\n");
     comp->currentsymtab = comp->currentsymtab->parentscope;
 }
 

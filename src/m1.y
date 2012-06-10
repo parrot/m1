@@ -21,7 +21,12 @@
 extern int yylex(YYSTYPE *yylval, yyscan_t yyscanner);
 
 
+/*
 
+Parse errors are handled through yyerror.
+Increase the global (stored in comp) error count.
+
+*/
 int 
 yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 
@@ -338,9 +343,7 @@ chunks  : chunk
               }
               else {
                 $$ = $2; 
-              }
-
-              
+              }              
             }            
         ;
         

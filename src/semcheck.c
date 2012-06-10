@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "symtab.h"
 #include "semcheck.h"
 #include "ast.h"
@@ -300,7 +301,39 @@ check_switch(M1_compiler *comp, m1_switch *s) {
 
 static void
 check_newexpr(M1_compiler *comp, m1_newexpr *n) {
+    assert(comp != NULL);
+    assert(n != NULL);
+    fprintf(stderr, "[semcheck] check_new()\n");
+    n->typedecl = type_find_def(comp, n->type); /* find the decl for requested type */
     
+    if (n->typedecl == NULL) { 
+        fprintf(stderr, "Cannot find type '%s' requested for in new-statement\n", n->type); 
+        ++comp->errors;          
+    }
+    else {
+        fprintf(stderr, "Found type decl for 'new'\n");
+    }
+    
+}
+
+static void
+check_vardecl(M1_compiler *comp, m1_var *v) {
+    if (v->init) 
+        check_expr(comp, v->init);   
+}
+
+static void
+check_cast(M1_compiler *comp, m1_castexpr *expr) {
+    if (strcmp(expr->type, "int") == 0) {
+        expr->targettype = VAL_INT;
+    }
+    else if (strcmp(expr->type, "num") == 0) {
+        expr->targettype = VAL_FLOAT;
+    }
+    else {
+        fprintf(stderr, "wrong type in casting\n");
+        ++comp->errors;
+    }    
 }
 
 static m1_type
@@ -313,6 +346,9 @@ check_expr(M1_compiler *comp, m1_expression *e) {
     switch (e->type) {
         case EXPR_BLOCK:
             check_block(comp, e->expr.blck);
+            break;
+        case EXPR_CAST:
+            check_cast(comp, e->expr.cast);
             break;
         case EXPR_NUMBER:
             return TYPE_NUM;
@@ -374,6 +410,7 @@ check_expr(M1_compiler *comp, m1_expression *e) {
         case EXPR_CONSTDECL:
             break;
         case EXPR_VARDECL:
+            check_vardecl(comp, e->expr.v);
             break;
         case EXPR_SWITCH:
             check_switch(comp, e->expr.s);
@@ -407,7 +444,9 @@ check_block(M1_compiler *comp, m1_block *block) {
     m1_expression *iter = block->stats;
     
     assert(&block->locals != NULL);
+    
     comp->currentsymtab = &block->locals;
+    
     while (iter != NULL) {
         check_expr(comp, iter);
         iter = iter->next;   

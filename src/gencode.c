@@ -201,9 +201,7 @@ gencode_string(M1_compiler *comp, m1_literal *lit) {
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constidxreg.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", reg.no, constidxreg.no);
     
-    fprintf(stderr, "pushing reg with string on stack: %c%d\n", reg_chars[(int)reg.type], reg.no);
     pushreg(comp->regstack, reg);
-
 }
 
 
@@ -483,16 +481,15 @@ OBJECT_LINK-----> L1
 static void
 gencode_while(M1_compiler *comp, m1_whileexpr *w) {
 	/*
-	
 	   ...
-	   goto L2
-	L1
+	   goto LTEST
+	LBLOCK
 	  <block>
 	
-	L2:
-	   goto_if <cond>, L1
-	   ...
-	
+	LTEST:
+	   code for <cond>
+	   goto_if <cond>, LBLOCK
+	   ...	
 	*/
 	m1_reg reg;
 	int startlabel = gen_label(comp), 
@@ -514,7 +511,7 @@ gencode_while(M1_compiler *comp, m1_whileexpr *w) {
 	
 	fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", startlabel, reg_chars[(int)reg.type], reg.no);
 			
-	/* remove break label from stack. */
+	/* remove break and continue labels from stack. */
 	(void)pop(comp->breakstack);
 	(void)pop(comp->continuestack);
 }
@@ -1049,19 +1046,15 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     if (postfix == 0) { 
         /* prefix; return reg containing value before adding 1 */
     	reg.no = target.no; 
-    	fprintf(OUT, "\tset\tI%d, I%d, x\n", reg.no, target.no);
-
-    }	
-    else {
-        fprintf(OUT, "\tset\tI%d, I%d, x\n", reg.no, target.no);
     }
-        
+    
+    fprintf(OUT, "\tset\tI%d, I%d, x\n", reg.no, target.no);
+    
     pushreg(comp->regstack, reg);            
 }
 
 static void
-gencode_continue(M1_compiler *comp) {
-	
+gencode_continue(M1_compiler *comp) {	
     /* get label to jump to */
     int continuelabel = top(comp->continuestack);
 	
@@ -1071,7 +1064,6 @@ gencode_continue(M1_compiler *comp) {
 
 static void
 gencode_break(M1_compiler *comp) {
-	
     /* get label to jump to */
     int breaklabel = top(comp->breakstack);
 
@@ -1270,8 +1262,8 @@ gencode_print(M1_compiler *comp, m1_expression *expr) {
     
     gencode_expr(comp, expr);
     reg = popreg(comp->regstack);
-    fprintf(stderr, "[print] popped reg from stack %c%d\n", reg_chars[(int)reg.type], reg.no);
     
+    /* register to hold value "1" */    
     one = gen_reg(comp, VAL_INT);
     
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n",  one.no);
@@ -1284,14 +1276,7 @@ static void
 gencode_new(M1_compiler *comp, m1_newexpr *expr) {
 	m1_reg reg        = gen_reg(comp, VAL_INT); /* reg holding the pointer to new memory */
 	m1_reg sizereg    = gen_reg(comp, VAL_INT); /* reg holding the num. of bytes to alloc. */
-	unsigned size     = 0;
-    m1_decl *typedecl = type_find_def(comp, expr->type); /* find the decl for requested type */
-    
-    if (typedecl == NULL) { /* XXX need to check in semcheck. */
-        fprintf(stderr, "Cannot find type '%s' requested for in new-statement\n", expr->type);   
-        
-    }
-    size = type_get_size(typedecl);
+	unsigned size     = type_get_size(expr->typedecl);
 		
 	fprintf(OUT, "\tset_imm I%d, 0, %d\n", sizereg.no, size);
 	fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", reg.no, sizereg.no);
@@ -1399,7 +1384,6 @@ gencode_var(M1_compiler *comp, m1_var *v) {
         sym = v->sym;
         assert(sym != NULL);
         
-        fprintf(stderr, "array type; %d\n", sym->valtype);
         if (sym->regno == NO_REG_ALLOCATED_YET) {
             m1_reg reg = gen_reg(comp, sym->valtype);
             sym->regno = reg.no;
@@ -1447,22 +1431,20 @@ gencode_cast(M1_compiler *comp, m1_castexpr *expr) {
     m1_reg result;
     
     gencode_expr(comp, expr->expr);
-    reg = popreg(comp->regstack);
+    reg    = popreg(comp->regstack);
+    result = gen_reg(comp, expr->targettype);
     
-    /* XXX do these type checks in semcheck. */
-    if (strcmp(expr->type, "int") == 0) {
-        result = gen_reg(comp, VAL_INT);
-        fprintf(OUT, "\tntoi\tI%d, %c%d, x\n", result.no, reg_chars[(int)reg.type], reg.no);
+    switch (expr->targettype) {
+        case VAL_INT:
+            fprintf(OUT, "\tntoi\tI%d, %c%d, x\n", result.no, reg_chars[(int)reg.type], reg.no);
+            break;
+        case VAL_FLOAT:
+            fprintf(OUT, "\titon\tN%d, %c%d, x\n", result.no, reg_chars[(int)reg.type], reg.no);
+            break;
+        default:
+            assert(0);
+            break;
     }
-    else if (strcmp(expr->type, "num") == 0) {
-        result = gen_reg(comp, VAL_FLOAT);
-        fprintf(OUT, "\titon\tN%d, %c%d, x\n", result.no, reg_chars[(int)reg.type], reg.no);
-    }
-    else {
-        fprintf(stderr, "wrong type in casting\n");
-        exit(EXIT_FAILURE);   
-    }
-    
     pushreg(comp->regstack, result);
   
 }
