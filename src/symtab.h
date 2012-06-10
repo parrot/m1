@@ -80,11 +80,8 @@ typedef struct m1_symbol {
    symbol represents a constant.   
  */
 typedef struct m1_symboltable {
-    struct m1_symbol *syms;
-    int    constindex;                  /* one symboltable per constants segment, therefore keep
-                                           constindex local to the table. 
-                                         */
-    struct m1_symboltable *parentscope; /* pointer to outer scope */
+    struct m1_symbol      *syms;            /* list of symbols. */
+    struct m1_symboltable *parentscope;     /* pointer to outer scope */
 } m1_symboltable;
 
 
@@ -92,10 +89,10 @@ typedef struct m1_symboltable {
 extern m1_symboltable *new_symtab(void);
 extern void init_symtab(m1_symboltable *symtab);
 
-extern m1_symbol *sym_enter_str(m1_symboltable *table, char *name);
-extern m1_symbol *sym_enter_num(m1_symboltable *table, double val);
-extern m1_symbol *sym_enter_int(m1_symboltable *table, int val);
-extern m1_symbol *sym_enter_chunk(m1_symboltable *table, char *name);
+extern m1_symbol *sym_enter_str(M1_compiler *comp, m1_symboltable *table, char *name);
+extern m1_symbol *sym_enter_num(M1_compiler *comp, m1_symboltable *table, double val);
+extern m1_symbol *sym_enter_int(M1_compiler *comp, m1_symboltable *table, int val);
+extern m1_symbol *sym_enter_chunk(M1_compiler *comp, m1_symboltable *table, char *name);
 
 extern m1_symbol *sym_find_str(m1_symboltable *table, char *name);
 extern m1_symbol *sym_find_num(m1_symboltable *table, double val);

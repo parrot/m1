@@ -44,6 +44,11 @@ chunk(M1_compiler *comp, char *rettype, NOTNULL(char *name)) {
     
     assert(comp != NULL);
     
+    /* reset comp->constindex to 0 for each chunk. For each chunk, start
+       indexing its constants segment at 0.
+     */
+    comp->constindex = 0;
+    
     return c;   
 }
 
@@ -88,7 +93,7 @@ character(M1_compiler *comp, char ch) {
     m1_expression *expr      = expression(comp, EXPR_CHAR);
     expr->expr.l             = new_literal(VAL_INT);
     expr->expr.l->value.ival = (int)ch;
-    expr->expr.l->sym        = sym_enter_int(&comp->currentchunk->constants, (int)ch);
+    expr->expr.l->sym        = sym_enter_int(comp, &comp->currentchunk->constants, (int)ch);
     return expr;    
 }
 
@@ -100,7 +105,7 @@ number(M1_compiler *comp, double value) {
 	expr->expr.l             = new_literal(VAL_FLOAT);
     expr->expr.l->value.fval = value;
     /* store the constant in the constants segment. */
-    expr->expr.l->sym        = sym_enter_num(&comp->currentchunk->constants, value);   
+    expr->expr.l->sym        = sym_enter_num(comp, &comp->currentchunk->constants, value);   
     
 	return expr;	
 }
@@ -112,10 +117,11 @@ integer(M1_compiler *comp, int value) {
 	expr->expr.l             = new_literal(VAL_INT);
     expr->expr.l->value.ival = value;
     /* store the constant in the constants segment. */
-    expr->expr.l->sym        = sym_enter_int(&comp->currentchunk->constants, value);
+    expr->expr.l->sym        = sym_enter_int(comp, &comp->currentchunk->constants, value);
 
 	return expr;	
 }
+
 m1_expression *
 string(M1_compiler *comp, char *str) {
 	m1_expression *expr = expression(comp, EXPR_STRING);
@@ -129,7 +135,7 @@ string(M1_compiler *comp, char *str) {
     assert(&comp->currentchunk->constants != NULL);
     
     /* store the string in the constants segment. */
-    expr->expr.l->sym = sym_enter_str(&comp->currentchunk->constants, str);
+    expr->expr.l->sym = sym_enter_str(comp, &comp->currentchunk->constants, str);
 
 	return expr;	
 }
@@ -209,7 +215,7 @@ funcall(M1_compiler *comp, char *name, m1_expression *args) {
     expr->expr.f->arguments = args;	
     
 	/* enter name of function to invoke into constant table. */
-	sym_enter_chunk(&comp->currentchunk->constants, name);
+	sym_enter_chunk(comp, &comp->currentchunk->constants, name);
     return expr;   
 }
 

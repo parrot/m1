@@ -461,7 +461,7 @@ function_init   : return_type TK_IDENT
                           $$ = chunk(comp, $1, $2); 
                           comp->currentchunk = $$;
                           /* enter name of function declaration in table */
-                          sym_enter_chunk(&comp->currentchunk->constants, $2);
+                          sym_enter_chunk(comp, &comp->currentchunk->constants, $2);
                         }
                 ;
 

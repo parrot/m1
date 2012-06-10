@@ -58,11 +58,11 @@ typedef struct m1_funcall {
     
 } m1_funcall;
 
-/* XXX can we use m1_funcall for this? */
+
 typedef struct m1_newexpr {
-	char                 *type;
-	struct m1_decl       *typedecl;
-	struct m1_expression *args;
+	char                 *type;            /* name of new type to instantiate. */
+	struct m1_decl       *typedecl;        /* pointer to declaration of type. */
+	struct m1_expression *args;            /* arguments passed on to type's constructor. */    
 	
 } m1_newexpr;
 

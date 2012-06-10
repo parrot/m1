@@ -140,7 +140,7 @@ print_symboltable(m1_symboltable *table) {
 }
 
 m1_symbol *
-sym_enter_str(m1_symboltable *table, char *str) {
+sym_enter_str(M1_compiler *comp, m1_symboltable *table, char *str) {
     m1_symbol *sym;
     
     assert(table != NULL);
@@ -160,17 +160,17 @@ sym_enter_str(m1_symboltable *table, char *str) {
     
     sym->value.sval = str;
     sym->valtype    = VAL_STRING;
-    sym->constindex = table->constindex++;
+    sym->constindex = comp->constindex++;
     
     link_sym(table, sym);
     return sym;    
 }
 
 m1_symbol *
-sym_enter_chunk(m1_symboltable *table, char *name) {
+sym_enter_chunk(M1_compiler *comp, m1_symboltable *table, char *name) {
     m1_symbol *sym;
     /* a chunk is just stored as a name, but override the type. */
-    sym = sym_enter_str(table, name);        
+    sym = sym_enter_str(comp, table, name);        
     sym->valtype    = VAL_CHUNK;
     return sym;       
 }
@@ -181,7 +181,7 @@ sym_find_chunk(m1_symboltable *table, char *name) {
 }
 
 m1_symbol *
-sym_enter_num(m1_symboltable *table, double val) {
+sym_enter_num(M1_compiler *comp, m1_symboltable *table, double val) {
     m1_symbol *sym;
     
     sym = sym_find_num(table, val);
@@ -196,7 +196,7 @@ sym_enter_num(m1_symboltable *table, double val) {
     
     sym->value.fval = val;
     sym->valtype    = VAL_FLOAT;
-    sym->constindex = table->constindex++;
+    sym->constindex = comp->constindex++;
     
     link_sym(table, sym);
     
@@ -204,7 +204,7 @@ sym_enter_num(m1_symboltable *table, double val) {
 }
 
 m1_symbol *
-sym_enter_int(m1_symboltable *table, int val) {
+sym_enter_int(M1_compiler *comp, m1_symboltable *table, int val) {
     m1_symbol *sym;
            
     sym = sym_find_int(table, val);
@@ -220,7 +220,7 @@ sym_enter_int(m1_symboltable *table, int val) {
     
     sym->value.ival = val;
     sym->valtype    = VAL_INT;    
-    sym->constindex = table->constindex++;
+    sym->constindex = comp->constindex++;
     sym->next       = NULL;
     
     link_sym(table, sym);
