@@ -15,7 +15,9 @@ typedef void * yyscan_t;
 
 /* compiler struct that is passed around to ALL functions. */
 typedef struct M1_compiler {
-	unsigned               errors;
+	unsigned int           errors;
+	unsigned int           warnings;
+	
 	struct m1_chunk       *ast;	    /* root of the AST */
 	int				       constindex; /* constant table index counter */
 	int                    label;      /* label generator */

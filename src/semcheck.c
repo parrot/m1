@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include "symtab.h"
 #include "semcheck.h"
 #include "ast.h"
@@ -11,32 +12,84 @@
 
 static m1_type check_expr(M1_compiler *comp, m1_expression *e);
 static void check_block(M1_compiler *comp, m1_block *expr);
-static m1_type check_obj(M1_compiler *comp, m1_object *obj);
-
+static m1_type check_obj(M1_compiler *comp, m1_object *obj, unsigned line);
 
 
 static void
 type_error(M1_compiler *comp, unsigned line, char *msg) {
-    fprintf(stderr, "Error (line %d): %s\n", line, msg);
+    fprintf(stderr, "Error (line %d): %s.\n", line, msg);
     ++comp->errors;   
+}
+
+static void
+type_error_extra(M1_compiler *comp, unsigned line, char *msg, ...) {
+    va_list argp;
+    char *p;
+    char *s;
+    int i;
+    char fmtbuf[256];
+        
+    va_start(argp, msg);
+           
+    for (p = msg; *p != '\0'; p++) {
+        if (*p != '%') {
+            putchar(*p);
+            continue;
+        }
+        switch (*++p) {
+            case 'd':
+                i = va_arg(argp, int);
+                sprintf(fmtbuf, "%d", i);
+			    fputs(fmtbuf, stderr);
+    			break;
+
+            case 's': 
+                s = va_arg(argp, char *);
+                fputs(s, stderr);
+                break;
+            case '%':
+                putchar('%');
+                break;
+            default:
+                fprintf(stderr, "unrecognized error reporting format\n");
+                assert(0);
+                
+        }       
+               
+    }
+    
+    va_end(argp);
 }
 
 static void
 warning(M1_compiler *comp, unsigned line, char *msg) {
     assert(comp != NULL);
     fprintf(stderr, "Warning (line %d): %s\n", line, msg);   
+    ++comp->warnings;
 }
 
 
+/*
+
+Check assignments.
+
+Compare the types of the target (lhs) and the expression
+that is assigned to the target (rhs). They don't need to
+be exactly the same, but they need to be compatible.
+
+
+
+*/
 static void
-check_assign(M1_compiler *comp, m1_assignment *a) {
-    m1_type ltype = check_obj(comp, a->lhs);
+check_assign(M1_compiler *comp, m1_assignment *a, unsigned line) {
+    m1_type ltype = check_obj(comp, a->lhs, line);
     m1_type rtype = check_expr(comp, a->rhs);
     
+   
     if (ltype != rtype) {
-        type_error(comp, 0, 
+        type_error(comp, line, 
                    "type of left expression does not match type "
-                   "of right expression in assignment");   
+                   "of right expression in assignment\n");   
     }
     switch (ltype) {
         case TYPE_VOID:
@@ -53,12 +106,12 @@ check_assign(M1_compiler *comp, m1_assignment *a) {
 
 
 static m1_type
-check_obj(M1_compiler *comp, m1_object *obj) {
+check_obj(M1_compiler *comp, m1_object *obj, unsigned line) {
     m1_type t;
     if (obj->type == OBJECT_LINK) {
         
-        t = check_obj(comp, obj->parent);   
-        check_obj(comp, obj->obj.field);
+        t = check_obj(comp, obj->parent, line);   
+        check_obj(comp, obj->obj.field, line);
         
     }
     
@@ -70,8 +123,7 @@ check_obj(M1_compiler *comp, m1_object *obj) {
             
             
             if (sym == NULL) {
-                fprintf(stderr, "Undeclared variable '%s'\n", obj->obj.name);
-                ++comp->errors;
+                type_error_extra(comp, line, "Undeclared variable '%s'\n", obj->obj.name);
             }
             else
                 fprintf(stderr, "found\n");
@@ -88,7 +140,7 @@ check_obj(M1_compiler *comp, m1_object *obj) {
             m1_type t;
             t = check_expr(comp, obj->obj.index);
             if (t != TYPE_INT) {
-                type_error(comp, obj->line, "result of expression does not yield an integer value!");   
+                type_error(comp, obj->line, "result of expression does not yield an integer value!\n");   
             }
 
             break;          
@@ -101,12 +153,12 @@ check_obj(M1_compiler *comp, m1_object *obj) {
 }
 
 static void
-check_while(M1_compiler *comp, m1_whileexpr *w) {
+check_while(M1_compiler *comp, m1_whileexpr *w, unsigned line) {
 
     m1_type condtype = check_expr(comp, w->cond);
     
     if (condtype != TYPE_BOOL) {
-        type_error(comp, 0, "condition in while statement is not a boolean expression");       
+        warning(comp, line, "condition in while statement is not a boolean expression\n");       
     }
 
     check_expr(comp, w->block);
@@ -114,12 +166,12 @@ check_while(M1_compiler *comp, m1_whileexpr *w) {
 }
 
 static void
-check_dowhile(M1_compiler *comp, m1_whileexpr *w) {
+check_dowhile(M1_compiler *comp, m1_whileexpr *w, unsigned line) {
     m1_type condtype;
 
     condtype = check_expr(comp, w->cond);
     if (condtype != TYPE_BOOL) {
-        type_error(comp, 0, "condition in do-while statement is not a boolean expression");   
+        warning(comp, line, "condition in do-while statement is not a boolean expression\n");   
     }
     
     check_expr(comp, w->block);
@@ -127,7 +179,7 @@ check_dowhile(M1_compiler *comp, m1_whileexpr *w) {
 }
 
 static void
-check_for(M1_compiler *comp, m1_forexpr *i) {
+check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
 
     if (i->init)
         check_expr(comp, i->init);
@@ -135,7 +187,7 @@ check_for(M1_compiler *comp, m1_forexpr *i) {
     if (i->cond) {
         m1_type t = check_expr(comp, i->cond);
         if (t != TYPE_BOOL) {
-            type_error(comp, 0, "condition in for-loop is not a boolean expression");   
+            type_error(comp, line, "condition in for-loop is not a boolean expression\n");   
         }
         
     }
@@ -149,11 +201,11 @@ check_for(M1_compiler *comp, m1_forexpr *i) {
 }
 
 static void
-check_if(M1_compiler *comp, m1_ifexpr *i) {
+check_if(M1_compiler *comp, m1_ifexpr *i, unsigned line) {
 
     m1_type condtype = check_expr(comp, i->cond);
     if (condtype != TYPE_BOOL) {
-        type_error(comp, 0, "condition in if-statement does not yield boolean value");   
+        type_error(comp, line, "condition in if-statement does not yield boolean value\n");   
     }
 
     check_expr(comp, i->ifblock);
@@ -165,36 +217,36 @@ check_if(M1_compiler *comp, m1_ifexpr *i) {
 }
 
 static m1_type
-check_deref(M1_compiler *comp, m1_object *o) {
-    m1_type t = check_obj(comp, o);
+check_deref(M1_compiler *comp, m1_object *o, unsigned line) {
+    m1_type t = check_obj(comp, o, line);
     return t;
 }
 
 static m1_type
-check_address(M1_compiler *comp, m1_object *o) {
-    m1_type t = check_obj(comp, o);   
+check_address(M1_compiler *comp, m1_object *o, unsigned line) {
+    m1_type t = check_obj(comp, o, line);   
     return t;
 }
 
 static m1_type
-check_return(M1_compiler *comp, m1_expression *e) {
+check_return(M1_compiler *comp, m1_expression *e, unsigned line) {
     m1_type funtype;
     m1_type rettype = check_expr(comp, e);
     if (funtype != rettype) {
-        type_error(comp, 0, "type of return expression does not match function's return type");   
+        type_error(comp, line, "type of return expression does not match function's return type");   
     }
     return funtype;
 }
 
 static m1_type
-check_binary(M1_compiler *comp, m1_binexpr *b) {
+check_binary(M1_compiler *comp, m1_binexpr *b, unsigned line) {
     m1_type ltype, rtype;
     
     ltype = check_expr(comp, b->left);
     rtype = check_expr(comp, b->right);   
 
     if (ltype != rtype) {
-        type_error(comp, 0, "types of left and right operands do not match");   
+        type_error(comp, line, "types of left and right operands do not match");   
     }
     
     switch(b->op) {
@@ -205,7 +257,7 @@ check_binary(M1_compiler *comp, m1_binexpr *b) {
         case OP_MOD:
         case OP_XOR:
             if (ltype != TYPE_INT || ltype != TYPE_NUM || rtype != TYPE_INT || rtype != TYPE_NUM) {
-                type_error(comp, 0, "mathematical operator needs integer or floating-point expressions as operands");   
+                type_error(comp, line, "mathematical operator needs integer or floating-point expressions as operands");   
             }
             break;
         case OP_GT:
@@ -215,25 +267,25 @@ check_binary(M1_compiler *comp, m1_binexpr *b) {
         case OP_EQ:
         case OP_NE:
             if (ltype == TYPE_NUM) {
-                warning(comp, 0, "comparing floating-point numbers may not yield correct results");       
+                warning(comp, line, "comparing floating-point numbers may not yield correct results");       
             }
             else if (ltype == TYPE_STRING) {
-                type_error(comp, 0, "cannot apply comparison operator on strings");   
+                type_error(comp, line, "cannot apply comparison operator on strings");   
             }
             break;
         case OP_AND:
         case OP_OR:
             if (ltype != TYPE_BOOL) {
-                type_error(comp, 0, "left-hand expression in boolean expression is not boolean");
+                type_error(comp, line, "left-hand expression in boolean expression is not boolean");
             }
             if (rtype != TYPE_BOOL) {
-                type_error(comp, 0, "right-hand expression in boolean expression is not boolean");    
+                type_error(comp, line, "right-hand expression in boolean expression is not boolean");    
             }
             break;
         case OP_BAND:
         case OP_BOR:
             if (ltype != TYPE_INT) {
-                type_error(comp, 0, "cannot apply binary & or | operator on non-integer expressions");   
+                type_error(comp, line, "cannot apply binary & or | operator on non-integer expressions");   
             }
             break;
         default:
@@ -245,7 +297,7 @@ check_binary(M1_compiler *comp, m1_binexpr *b) {
 }
 
 static m1_type
-check_unary(M1_compiler *comp, m1_unexpr *u) {
+check_unary(M1_compiler *comp, m1_unexpr *u, unsigned line) {
     m1_type t = TYPE_VOID;
 
     t = check_expr(comp, u->expr);     
@@ -253,18 +305,18 @@ check_unary(M1_compiler *comp, m1_unexpr *u) {
         case UNOP_POSTINC:
         case UNOP_PREINC:
             if (t != TYPE_INT) {
-                type_error(comp, 0, "cannot apply '++' operator on non-integer expression");   
+                type_error(comp, line, "cannot apply '++' operator on non-integer expression");   
             }                    
             break;        
         case UNOP_POSTDEC:
         case UNOP_PREDEC:   
             if (t != TYPE_INT) {
-                type_error(comp, 0, "cannot apply '--' operator on non-integer expression");   
+                type_error(comp, line, "cannot apply '--' operator on non-integer expression");   
             }                    
             break;        
         case UNOP_NOT:
             if (t != TYPE_BOOL) {
-                type_error(comp, 0, "cannot apply '!' operator on non-boolean expression");
+                type_error(comp, line, "cannot apply '!' operator on non-boolean expression");
             }
             break;
         default:
@@ -275,17 +327,17 @@ check_unary(M1_compiler *comp, m1_unexpr *u) {
 }
 
 static void
-check_break(M1_compiler *comp) {
+check_break(M1_compiler *comp, unsigned line) {
     assert(comp != NULL);
 }
 
 static void
-check_continue(M1_compiler *comp) {
+check_continue(M1_compiler *comp, unsigned line) {
     assert(comp != NULL);
 }
 
 static m1_type
-check_funcall(M1_compiler *comp, m1_funcall *f) {
+check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
     m1_type rettype;
     assert(comp != NULL);
     assert(f != NULL);
@@ -293,37 +345,33 @@ check_funcall(M1_compiler *comp, m1_funcall *f) {
 }
 
 static void
-check_switch(M1_compiler *comp, m1_switch *s) {
+check_switch(M1_compiler *comp, m1_switch *s, unsigned line) {
     if (s->cases == NULL && s->defaultstat == NULL) {
-        warning(comp, 0, "no cases nor a default statement in switch statement");   
+        warning(comp, line, "no cases nor a default statement in switch statement");   
     }   
 }
 
 static void
-check_newexpr(M1_compiler *comp, m1_newexpr *n) {
+check_newexpr(M1_compiler *comp, m1_newexpr *n, unsigned line) {
     assert(comp != NULL);
     assert(n != NULL);
-    fprintf(stderr, "[semcheck] check_new()\n");
+
     n->typedecl = type_find_def(comp, n->type); /* find the decl for requested type */
     
     if (n->typedecl == NULL) { 
-        fprintf(stderr, "Cannot find type '%s' requested for in new-statement\n", n->type); 
-        ++comp->errors;          
-    }
-    else {
-        fprintf(stderr, "Found type decl for 'new'\n");
+        type_error_extra(comp, line, "Cannot find type '%s' requested for in new-statement\n", n->type);         
     }
     
 }
 
 static void
-check_vardecl(M1_compiler *comp, m1_var *v) {
+check_vardecl(M1_compiler *comp, m1_var *v, unsigned line) {
     if (v->init) 
         check_expr(comp, v->init);   
 }
 
 static void
-check_cast(M1_compiler *comp, m1_castexpr *expr) {
+check_cast(M1_compiler *comp, m1_castexpr *expr, unsigned line) {
     if (strcmp(expr->type, "int") == 0) {
         expr->targettype = VAL_INT;
     }
@@ -348,7 +396,7 @@ check_expr(M1_compiler *comp, m1_expression *e) {
             check_block(comp, e->expr.blck);
             break;
         case EXPR_CAST:
-            check_cast(comp, e->expr.cast);
+            check_cast(comp, e->expr.cast, e->line);
             break;
         case EXPR_NUMBER:
             return TYPE_NUM;
@@ -363,61 +411,61 @@ check_expr(M1_compiler *comp, m1_expression *e) {
             return TYPE_BOOL;
             
         case EXPR_BINARY:
-            return check_binary(comp, e->expr.b);
+            return check_binary(comp, e->expr.b, e->line);
             
         case EXPR_UNARY:
-            return check_unary(comp, e->expr.u);
+            return check_unary(comp, e->expr.u, e->line);
 
         case EXPR_FUNCALL:
-            return check_funcall(comp, e->expr.f);
+            return check_funcall(comp, e->expr.f, e->line);
 
         case EXPR_ASSIGN:
-            check_assign(comp, e->expr.a);
+            check_assign(comp, e->expr.a, e->line);
             break;
         case EXPR_IF:   
-            check_if(comp, e->expr.i);
+            check_if(comp, e->expr.i, e->line);
             break;
         case EXPR_WHILE:
-            check_while(comp, e->expr.w);
+            check_while(comp, e->expr.w, e->line);
             break;
         case EXPR_DOWHILE:
-            check_dowhile(comp, e->expr.w);
+            check_dowhile(comp, e->expr.w, e->line);
             break;
         case EXPR_FOR:
-            check_for(comp, e->expr.o);
+            check_for(comp, e->expr.o, e->line);
             break;
         case EXPR_RETURN:
-            return check_return(comp, e->expr.e);
+            return check_return(comp, e->expr.e, e->line);
             break;
         case EXPR_NULL:
             return TYPE_NULL;
             break;
         case EXPR_DEREF:
-            return check_deref(comp, e->expr.t);
+            return check_deref(comp, e->expr.t, e->line);
             break;
         case EXPR_ADDRESS:
-            return check_address(comp, e->expr.t);
+            return check_address(comp, e->expr.t, e->line);
             break;
         case EXPR_OBJECT:
-            return check_obj(comp, e->expr.t);
+            return check_obj(comp, e->expr.t, e->line);
             break;
         case EXPR_BREAK:
-            check_break(comp);
+            check_break(comp, e->line);
             break;            
         case EXPR_CONTINUE:
-            check_continue(comp);
+            check_continue(comp, e->line);
             break;   
         case EXPR_CONSTDECL:
             break;
         case EXPR_VARDECL:
-            check_vardecl(comp, e->expr.v);
+            check_vardecl(comp, e->expr.v, e->line);
             break;
         case EXPR_SWITCH:
-            check_switch(comp, e->expr.s);
+            check_switch(comp, e->expr.s, e->line);
             break;
             
         case EXPR_NEW:
-            check_newexpr(comp, e->expr.n);
+            check_newexpr(comp, e->expr.n, e->line);
             break;
         case EXPR_PRINT:
             check_expr(comp, e->expr.e);
@@ -425,18 +473,13 @@ check_expr(M1_compiler *comp, m1_expression *e) {
                 
         default:
             fprintf(stderr, "unknown expr type (%d)", e->type);   
-            exit(EXIT_FAILURE);
+            assert(0); /* shouldn't happen. */
     }   
     return t;
 }
 
 
 
-static void 
-check_chunk(M1_compiler *comp, m1_chunk *c) {
-
-    check_block(comp, c->block);
-}
 
 static void
 check_block(M1_compiler *comp, m1_block *block) {
@@ -445,14 +488,22 @@ check_block(M1_compiler *comp, m1_block *block) {
     
     assert(&block->locals != NULL);
     
+    /* set currentsymtab to this block's symbol table. */
     comp->currentsymtab = &block->locals;
     
     while (iter != NULL) {
         check_expr(comp, iter);
         iter = iter->next;   
     }   
+    /* closing block, so set current symbol table to the parent scope's symtab. */
     comp->currentsymtab = block->locals.parentscope;
 }
+
+static void 
+check_chunk(M1_compiler *comp, m1_chunk *c) {
+    check_block(comp, c->block);
+}
+
 
 void 
 check(M1_compiler *comp, m1_chunk *ast) {
