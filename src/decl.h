@@ -47,6 +47,7 @@ typedef struct m1_decl {
     
 } m1_decl;
 
+extern void print_type(m1_decl *type);
 
 extern m1_decl *type_find_def(M1_compiler *, char *type);
 extern m1_decl *type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structdef);

@@ -6,6 +6,11 @@
 #include "ast.h"
 
 
+void
+print_type(m1_decl *type) {
+    fprintf(stderr, "TYPE: [%s]\n", type->name);   
+}
+
 /*
 
 Find the declaration for type <typename>.

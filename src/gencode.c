@@ -1436,10 +1436,10 @@ gencode_cast(M1_compiler *comp, m1_castexpr *expr) {
     
     switch (expr->targettype) {
         case VAL_INT:
-            fprintf(OUT, "\tntoi\tI%d, %c%d, x\n", result.no, reg_chars[(int)reg.type], reg.no);
+            fprintf(OUT, "\tconvert_i_n\tI%d, %c%d, x\n", result.no, reg_chars[(int)reg.type], reg.no);
             break;
         case VAL_FLOAT:
-            fprintf(OUT, "\titon\tN%d, %c%d, x\n", result.no, reg_chars[(int)reg.type], reg.no);
+            fprintf(OUT, "\tconvert_n_i\tN%d, %c%d, x\n", result.no, reg_chars[(int)reg.type], reg.no);
             break;
         default:
             assert(0);
