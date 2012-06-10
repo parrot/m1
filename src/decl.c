@@ -24,7 +24,6 @@ type_find_def(M1_compiler *comp, char *type) {
         assert(type != NULL);
         
         if (strcmp(iter->name, type) == 0) { /* found! */
-            fprintf(stderr, "Found type %s\n", type);
             return iter;
         }
         iter = iter->next;    

@@ -112,5 +112,13 @@ topreg(m1_regstack *stack) {
     return r;
 }
 
+int
+regstack_isempty(m1_regstack *stack) {
+    return stack->sp == 0;   
+}
 
+int
+intstack_isempty(m1_intstack *stack) {
+    return stack->sp == 0;   
+}
 

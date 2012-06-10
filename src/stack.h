@@ -40,5 +40,8 @@ extern m1_reg popreg(m1_regstack *stack);
 
 extern m1_reg topreg(m1_regstack *stack);
 
+extern int intstack_isempty(m1_intstack *stack) ;
+extern int regstack_isempty(m1_regstack *stack) ;
+
 #endif
 

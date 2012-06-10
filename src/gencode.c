@@ -1583,7 +1583,7 @@ gencode_consts(m1_symboltable *consttable) {
 	            break;
 			default:
 				fprintf(stderr, "unknown symbol type");
-				exit(EXIT_FAILURE);
+				assert(0); /* should never happen. */
 		}
 		iter = iter->next;	
 	}

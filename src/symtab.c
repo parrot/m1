@@ -72,7 +72,8 @@ sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *ty
     sym = sym_lookup_symbol(table, varname);
     
     if (sym != NULL) {
-        fprintf(stderr, "Error (line %d): already declared a variable '%s'\n", yyget_lineno(comp->yyscanner), varname); 
+        fprintf(stderr, "Error (line %d): already declared a variable '%s'\n", 
+                        yyget_lineno(comp->yyscanner), varname); 
         ++comp->errors;  
         return sym;  
     }
@@ -89,11 +90,7 @@ sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *ty
     sym->regno     = NO_REG_ALLOCATED_YET; /* need to allocate a register later. */  
     sym->next      = NULL;    /* symbols are stored in a list */
     
-    /* find the type declaration for the specified type. 
-    XXX perhaps do this in semcheck after the parsing is finished? 
-    */
-    sym->typedecl  = type_find_def(comp, type);
-    
+   
     link_sym(table, sym);
     
     return sym;   

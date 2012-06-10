@@ -414,8 +414,10 @@ static m1_var *
 make_var(M1_compiler *comp, char *varname, m1_expression *init, unsigned num_elems) {
     m1_var *v    = (m1_var *)m1_malloc(sizeof(m1_var));
     v->name      = varname;
+    v->type      = comp->parsingtype;
     v->init      = init;
     v->num_elems = num_elems;
+    
     /* enter this var. declaration into the symbol table; 
        store a pointer to the symbol in this var. */
     v->sym       = sym_new_symbol(comp, 

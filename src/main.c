@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+
 
 /* m1parser.h needs to be included /before/ m1lexer.h. */
 #include "m1parser.h"
@@ -14,7 +14,7 @@
 #include "gencode.h"
 #include "decl.h"
 
-
+#include <assert.h>
 
 extern int yyparse(yyscan_t yyscanner, struct M1_compiler * const comp);
 
@@ -72,6 +72,9 @@ main(int argc, char *argv[]) {
     fprintf(stderr, "parsing done\n");
     if (comp.errors == 0) 
     {
+        assert(intstack_isempty(comp.breakstack) != 0);
+        assert(intstack_isempty(comp.continuestack) != 0);
+        
     	check(&comp, comp.ast); /*  need to finish */
     	//if (comp.errors == 0) 
     	{

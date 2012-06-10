@@ -2,12 +2,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <assert.h>
+
 #include "symtab.h"
 #include "semcheck.h"
 #include "ast.h"
 #include "decl.h"
+#include "stack.h"
 
-#include <assert.h>
+
 
 
 static m1_type check_expr(M1_compiler *comp, m1_expression *e);
@@ -156,38 +159,44 @@ static void
 check_while(M1_compiler *comp, m1_whileexpr *w, unsigned line) {
 
     m1_type condtype = check_expr(comp, w->cond);
+    push(comp->breakstack, 1);
     
     if (condtype != TYPE_BOOL) {
         warning(comp, line, "condition in while statement is not a boolean expression\n");       
     }
 
     check_expr(comp, w->block);
-
+    (void)pop(comp->breakstack);
+    
 }
 
 static void
 check_dowhile(M1_compiler *comp, m1_whileexpr *w, unsigned line) {
     m1_type condtype;
-
+    push(comp->breakstack, 1);
+    
     condtype = check_expr(comp, w->cond);
     if (condtype != TYPE_BOOL) {
         warning(comp, line, "condition in do-while statement is not a boolean expression\n");   
     }
     
     check_expr(comp, w->block);
-
+    
+    (void)pop(comp->breakstack);
 }
 
 static void
 check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
 
+    push(comp->breakstack, 1);
+    
     if (i->init)
         check_expr(comp, i->init);
 
     if (i->cond) {
         m1_type t = check_expr(comp, i->cond);
         if (t != TYPE_BOOL) {
-            type_error(comp, line, "condition in for-loop is not a boolean expression\n");   
+            warning(comp, line, "condition in for-loop is not a boolean expression\n");   
         }
         
     }
@@ -198,6 +207,7 @@ check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
     if (i->block)
         check_expr(comp, i->block);
 
+    (void)pop(comp->breakstack);
 }
 
 static void
@@ -205,7 +215,7 @@ check_if(M1_compiler *comp, m1_ifexpr *i, unsigned line) {
 
     m1_type condtype = check_expr(comp, i->cond);
     if (condtype != TYPE_BOOL) {
-        type_error(comp, line, "condition in if-statement does not yield boolean value\n");   
+        warning(comp, line, "condition in if-statement does not yield boolean value\n");   
     }
 
     check_expr(comp, i->ifblock);
@@ -328,11 +338,18 @@ check_unary(M1_compiler *comp, m1_unexpr *u, unsigned line) {
 
 static void
 check_break(M1_compiler *comp, unsigned line) {
+    if (top(comp->breakstack) == 0) {
+        type_error(comp, line, "Cannot use 'break' in non-iterating block.");
+    }
+
     assert(comp != NULL);
 }
 
 static void
 check_continue(M1_compiler *comp, unsigned line) {
+    if (top(comp->breakstack) == 0) {
+        type_error(comp, line, "Cannot use 'continue' in non-iterating block.");
+    }
     assert(comp != NULL);
 }
 
@@ -368,6 +385,19 @@ static void
 check_vardecl(M1_compiler *comp, m1_var *v, unsigned line) {
     if (v->init) 
         check_expr(comp, v->init);   
+    
+    assert(v->sym != NULL);
+    
+    /* find the type declaration for the specified type. */
+    v->sym->typedecl = type_find_def(comp, v->type);
+
+    if (v->sym->typedecl == NULL) {        
+        type_error_extra(comp, line, "Cannot find type '%s'\n", v->type);   
+    }
+        
+    if (v->next) {
+        check_vardecl(comp, v->next, line);   
+    }
 }
 
 static void
@@ -501,7 +531,11 @@ check_block(M1_compiler *comp, m1_block *block) {
 
 static void 
 check_chunk(M1_compiler *comp, m1_chunk *c) {
+    push(comp->breakstack, 0); /* we're in a block, but not a block to break out of. */
+    
     check_block(comp, c->block);
+    
+    (void)pop(comp->breakstack); 
 }
 
 
