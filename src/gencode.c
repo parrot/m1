@@ -65,7 +65,8 @@ Allocate new registers as needed.
 static m1_reg
 gen_reg(M1_compiler *comp, m1_valuetype type) {
     m1_reg reg;
-    
+    assert(0);
+        
     assert(comp != NULL);
     assert(type < 4);
     
@@ -73,6 +74,51 @@ gen_reg(M1_compiler *comp, m1_valuetype type) {
 	reg.no   = comp->regs[type]++;   
  
     return reg;
+}
+
+
+static char registers[4][60];
+
+static m1_reg
+use_reg(M1_compiler *comp, m1_valuetype type) {
+    m1_reg r;
+    int i = 0;
+    /* look for first empty slot. */
+    while (registers[type][i] != 0 && i < 60) {
+        i++;
+    }
+    
+    if (i >= 60) fprintf(stderr, "Out of registers!\n");
+    else fprintf(stderr, "Allocating register %d\n", i);
+    /* set the register to "used". */
+    registers[type][i] = 1;
+    /* return the register. */
+    r.no   = i;    
+    r.type = type;
+    r.is_symbol = 0;
+    return r;
+}
+
+static void
+unuse_reg(M1_compiler *comp, m1_reg r) {
+    fprintf(stderr, "Unusing register NO:%d, SYMBOL:%s\n", r.no, r.is_symbol?"yes":"no");
+    if (r.is_symbol != 0) {
+        fprintf(stderr, "Unusing %d, but is a symbol so leave it\n", r.no);
+//        registers[r.type][r.no] = 2;    
+    }
+    else {
+        fprintf(stderr, "Unusing %d for good\n", r.no);
+        registers[r.type][r.no] = 0;
+    }
+    int i;
+    for (i = 0; i < 40; i++)
+        fprintf(stderr, "%2d ", i);
+    
+    fprintf(stderr, "\n");    
+    for (i = 0; i < 40; i++) {
+        fprintf(stderr, "%2d ", registers[r.type][i]);   
+    }
+    fprintf(stderr, "\n\n");
 }
 
 /*
@@ -110,17 +156,16 @@ gencode_number(M1_compiler *comp, m1_literal *lit) {
     assert(lit->type == VAL_FLOAT);
     assert(lit->sym != NULL);
        
-    reg        = gen_reg(comp, VAL_FLOAT);
-    constindex = gen_reg(comp, VAL_INT);
-   
-
+    reg        = use_reg(comp, VAL_FLOAT);
+    constindex = use_reg(comp, VAL_INT);
         
     //ins_set_imm(comp, &constindex, 0, lit->sym->constindex);
     //ins_deref(comp, &reg, CONSTS, &constindex);
     
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tN%d, CONSTS, I%d\n", reg.no, constindex.no);
-    
+
+    unuse_reg(comp, constindex);
     pushreg(comp->regstack, reg);
     
 } 
@@ -130,20 +175,19 @@ gencode_char(M1_compiler *comp, m1_literal *lit) {
 	/*
 	deref Nx, CONSTS, <const_id>
 	*/
-    m1_reg     reg, constindex;
+    m1_reg reg;
     
     assert(comp != NULL);
     assert(lit != NULL);
     assert(lit->type == VAL_INT);
     assert(lit->sym != NULL);
        
-    reg        = gen_reg(comp, VAL_INT);
-    constindex = gen_reg(comp, VAL_INT);
-   
+    reg = use_reg(comp, VAL_INT);
         
-    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
-    fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", reg.no, constindex.no);
-    
+    /* reuse the reg, first for the index, then for the result. */        
+    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", reg.no, lit->sym->constindex);
+    fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", reg.no, reg.no);
+        
     pushreg(comp->regstack, reg);
     
 }  
@@ -167,8 +211,8 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
     assert(lit->type == VAL_INT);
     assert(lit->sym != NULL);
 
-    reg = gen_reg(comp, VAL_INT);   
-    
+    reg = use_reg(comp, VAL_INT);
+      
     /* If the value is small enough, load it with set_imm; otherwise, take it from the constants table.
        set_imm X, Y, Z: set X to: 256 * Y + Z. All operands are 8 bit, so maximum value is 255. 
      */
@@ -179,10 +223,10 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
         fprintf(OUT, "\tset_imm\tI%d, %d, %d\n", reg.no, num256, remainder);
     } 
     else { /* too big enough for set_imm, so load it from constants segment. */
-        m1_reg constindex = gen_reg(comp, VAL_INT);
+        
+        fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", reg.no, lit->sym->constindex);
+        fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", reg.no, reg.no);
 
-        fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
-        fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", reg.no, constindex.no);
     }
     
     pushreg(comp->regstack, reg);
@@ -191,7 +235,7 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
 
 static void
 gencode_bool(M1_compiler *comp, int boolval) {
-    m1_reg reg = gen_reg(comp, VAL_INT);
+    m1_reg reg = use_reg(comp, VAL_INT);
     fprintf(OUT, "\tset_imm\t%d, 0, %d\n", reg.no, boolval);
     pushreg(comp->regstack, reg);   
 }
@@ -205,12 +249,14 @@ gencode_string(M1_compiler *comp, m1_literal *lit) {
     assert(lit != NULL);
     assert(lit->sym != NULL);
     assert(lit->type == VAL_STRING);
-   
-    reg         = gen_reg(comp, VAL_STRING);
-    constidxreg = gen_reg(comp, VAL_INT);
+    
+    reg         = use_reg(comp, VAL_STRING);
+    constidxreg = use_reg(comp, VAL_INT);
       
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constidxreg.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", reg.no, constidxreg.no);
+    
+    unuse_reg(comp, constidxreg);
     
     pushreg(comp->regstack, reg);
 }
@@ -250,14 +296,15 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
         fprintf(OUT, "\tset_ref\t%c%d, %c%d, %c%d\n", reg_chars[(int)parent.type], parent.no, 
                                                       reg_chars[(int)index.type], index.no,
                                                       reg_chars[(int)rhs.type], rhs.no);
+        unuse_reg(comp, index);                                                      
     }    
-          
+    unuse_reg(comp, rhs);      
 }
 
 static void
 gencode_null(M1_compiler *comp) {
 	m1_reg reg;
-	reg = gen_reg(comp, VAL_INT);
+    reg = use_reg(comp, VAL_INT);
 	/* "null" is just 0, but then in a "pointer" context. */
     fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", reg.no);
     
@@ -357,7 +404,9 @@ OBJECT_LINK-----> L1
              
         	/* if symbol has not register allocated yet, do it now. */
         	if (obj->sym->regno == NO_REG_ALLOCATED_YET) {
-                m1_reg r = gen_reg(comp, obj->sym->typedecl->valtype); 
+                //m1_reg r = gen_reg(comp, obj->sym->typedecl->valtype); 
+                m1_reg r        = use_reg(comp, obj->sym->typedecl->valtype);
+//                r.is_symbol     = 1;
                 obj->sym->regno = r.no;
         	}  
             
@@ -371,7 +420,8 @@ OBJECT_LINK-----> L1
                 reg.type = obj->sym->typedecl->valtype;     
             }
             
-        	reg.no = obj->sym->regno;        	
+        	reg.no = obj->sym->regno;    
+        	reg.is_symbol = 1;    	
                       
             /* return a pointer to this node by OUT parameter. */
             *parent = obj;
@@ -394,7 +444,7 @@ OBJECT_LINK-----> L1
             field    = struct_find_field(comp, (*parent)->sym->typedecl->d.s, obj->obj.name);
             assert(field != NULL); /* XXX need to check in semcheck. */
             offset   = field->offset;                        
-            fieldreg = gen_reg(comp, VAL_INT); /* reg for storing offset of field. */
+            fieldreg = use_reg(comp, VAL_INT);/* reg for storing offset of field. */
 
             /* load the offset into a reg. and make it available through the regstack. */
             fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", fieldreg.no, offset);             
@@ -413,8 +463,9 @@ OBJECT_LINK-----> L1
                     
                     m1_reg offsetreg = popreg(comp->regstack);
                     m1_reg parentreg = popreg(comp->regstack); 
-                    m1_reg reg       = gen_reg(comp, VAL_INT);
-                
+//                    m1_reg reg       = gen_reg(comp, VAL_INT);
+                    m1_reg reg = use_reg(comp, VAL_INT);
+                                   
                     fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)reg.type], reg.no,
                                                             reg_chars[(int)parentreg.type], parentreg.no,
                                                             reg_chars[(int)offsetreg.type], offsetreg.no);   
@@ -459,12 +510,14 @@ OBJECT_LINK-----> L1
                 
                 offsetreg = popreg(comp->regstack); /* containing the index. */
                 parentreg = popreg(comp->regstack); /* containing the struct or array */
-                result    = gen_reg(comp, (*parent)->sym->typedecl->valtype); /* target reg to store result. */
-                
+                result    = use_reg(comp, (*parent)->sym->typedecl->valtype); /* target reg to store result. */
                     
                 fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)result.type], result.no,
                                                             reg_chars[(int)parentreg.type], parentreg.no,
                                                             reg_chars[(int)offsetreg.type], offsetreg.no);   
+                unuse_reg(comp, parentreg);
+                unuse_reg(comp, offsetreg);
+                
                 pushreg(comp->regstack, result);
                 ++numregs_pushed;                                                            
             }
@@ -521,6 +574,8 @@ gencode_while(M1_compiler *comp, m1_whileexpr *w) {
 	reg = popreg(comp->regstack);
 	
 	fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", startlabel, reg_chars[(int)reg.type], reg.no);
+	
+	unuse_reg(comp, reg);
 			
 	/* remove break and continue labels from stack. */
 	(void)pop(comp->breakstack);
@@ -554,6 +609,8 @@ gencode_dowhile(M1_compiler *comp, m1_whileexpr *w) {
     fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", startlabel, reg_chars[(int)reg.type], reg.no);
 
     fprintf(OUT, "L%d:\n", endlabel);
+    
+    unuse_reg(comp, reg);
     
     (void)pop(comp->breakstack);
     (void)pop(comp->continuestack);
@@ -593,6 +650,8 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
         gencode_expr(comp, i->cond);
         reg = popreg(comp->regstack);
         fprintf(OUT, "\tgoto_if L%d, %c%d\n", blocklabel, reg_chars[(int)reg.type], reg.no);
+
+        unuse_reg(comp, reg);
     }   
 
     fprintf(OUT, "\tgoto L%d\n", endlabel);
@@ -637,6 +696,8 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
     
 	fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", iflabel, reg_chars[(int)condreg.type], condreg.no);
 
+    unuse_reg(comp, condreg);
+    
     /* else block */
     if (i->elseblock) {            	
         gencode_exprlist(comp, i->elseblock);     
@@ -700,6 +761,7 @@ gencode_or(M1_compiler *comp, m1_binexpr *b) {
 	fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[(int)left.type], left.no, 
 	                                       reg_chars[(int)right.type], right.no);
 	pushreg(comp->regstack, left);
+	unuse_reg(comp, right);
 	
 	fprintf(OUT, "L%d:\n", endlabel);
 		
@@ -735,6 +797,7 @@ gencode_and(M1_compiler *comp, m1_binexpr *b) {
 	fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[(int)left.type], left.no, reg_chars[(int)right.type], right.no);	
 	fprintf(OUT, "L%d:\n", endlabel);
 	
+	unuse_reg(comp, right);
 	pushreg(comp->regstack, left);
 }
 
@@ -760,8 +823,12 @@ ne_eq_common(M1_compiler *comp, m1_binexpr *b, int is_eq_op) {
     END:
     
     */
-    m1_reg reg, left, right;
-    int endlabel, eq_ne_label;
+    m1_reg reg, 
+           left, 
+           right;
+           
+    int endlabel, 
+        eq_ne_label;
     
     gencode_expr(comp, b->left);
     left = popreg(comp->regstack);
@@ -772,7 +839,8 @@ ne_eq_common(M1_compiler *comp, m1_binexpr *b, int is_eq_op) {
     endlabel    = gen_label(comp);
     eq_ne_label = gen_label(comp);
     
-    reg = gen_reg(comp, VAL_INT);
+    reg = use_reg(comp, VAL_INT);
+    
     fprintf(OUT, "\tsub_i\tI%d, %c%d, %c%d\n", reg.no, reg_chars[(int)left.type], left.no,
                                                       reg_chars[(int)right.type], right.no);
                                                       
@@ -783,6 +851,9 @@ ne_eq_common(M1_compiler *comp, m1_binexpr *b, int is_eq_op) {
     fprintf(OUT, "L%d:\n", eq_ne_label);
     fprintf(OUT, "\tset_imm\t%c%d, 0, %d\n", reg_chars[(int)reg.type], reg.no, !is_eq_op);
     fprintf(OUT, "L%d:\n", endlabel);
+    
+    unuse_reg(comp, left);
+    unuse_reg(comp, right);
     
     pushreg(comp->regstack, reg);
 }
@@ -800,7 +871,7 @@ gencode_eq(M1_compiler *comp, m1_binexpr *b) {
 static void
 gencode_lt(M1_compiler *comp, m1_binexpr *b) {
     /* for LT (<) operator, use the ISGT opcode, but swap its arguments. */
-    m1_reg result = gen_reg(comp, VAL_INT);
+    m1_reg result = use_reg(comp, VAL_INT);
     m1_reg left, right;
     
     gencode_expr(comp, b->left);
@@ -813,13 +884,15 @@ gencode_lt(M1_compiler *comp, m1_binexpr *b) {
                                                 reg_chars[(int)right.type], right.no,
                                                 reg_chars[(int)left.type], left.no);
 
+    unuse_reg(comp, left);
+    unuse_reg(comp, right);
     pushreg(comp->regstack, result);
 }
 
 static void
 gencode_le(M1_compiler *comp, m1_binexpr *b) {
     /* for LE (<=) operator, use the ISGE opcode, but swap its arguments. */
-    m1_reg result = gen_reg(comp, VAL_INT);
+    m1_reg result = use_reg(comp, VAL_INT);
     m1_reg left, right;
     
     gencode_expr(comp, b->left);
@@ -832,140 +905,368 @@ gencode_le(M1_compiler *comp, m1_binexpr *b) {
                                                 reg_chars[(int)right.type], right.no,
                                                 reg_chars[(int)left.type], left.no);
 
+    unuse_reg(comp, left);
+    unuse_reg(comp, right);
     pushreg(comp->regstack, result);
+}
+
+static void
+gencode_binary_assign(M1_compiler *comp, m1_binexpr *b) {
+    m1_reg left, right, target;
+    
+    gencode_expr(comp, b->left);
+    left = popreg(comp->regstack);
+
+    gencode_expr(comp, b->right);  
+    right  = popreg(comp->regstack);
+    
+    target = use_reg(comp, (m1_valuetype)left.type);    
+    fprintf(OUT, "\tset \t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
+                                               reg_chars[(int)left.type], left.no, 
+                                               reg_chars[(int)right.type], right.no);
+    unuse_reg(comp, left);
+    unuse_reg(comp, right);
+    pushreg(comp->regstack, target);                    
+}
+
+static void
+gencode_binary_xor(M1_compiler *comp, m1_binexpr *b) {
+    m1_reg left, right, target;
+    
+    gencode_expr(comp, b->left);
+    left = popreg(comp->regstack);
+
+    gencode_expr(comp, b->right);  
+    right  = popreg(comp->regstack);
+    
+    target = use_reg(comp, (m1_valuetype)left.type);    
+    fprintf(OUT, "\txor \t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
+                                               reg_chars[(int)left.type], left.no, 
+                                               reg_chars[(int)right.type], right.no);
+    unuse_reg(comp, left);
+    unuse_reg(comp, right);
+    pushreg(comp->regstack, target);                    
+}
+
+static void
+gencode_binary_and(M1_compiler *comp, m1_binexpr *b) {
+    m1_reg left, right, target;
+    
+    gencode_expr(comp, b->left);
+    left = popreg(comp->regstack);
+
+    gencode_expr(comp, b->right);  
+    right  = popreg(comp->regstack);
+    
+    target = use_reg(comp, (m1_valuetype)left.type);    
+    fprintf(OUT, "\tand \t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
+                                               reg_chars[(int)left.type], left.no, 
+                                               reg_chars[(int)right.type], right.no);
+    unuse_reg(comp, left);
+    unuse_reg(comp, right);
+    pushreg(comp->regstack, target);                    
+}
+
+static void
+gencode_binary_or(M1_compiler *comp, m1_binexpr *b) {
+    m1_reg left, right, target;
+    
+    gencode_expr(comp, b->left);
+    left = popreg(comp->regstack);
+
+    gencode_expr(comp, b->right);  
+    right  = popreg(comp->regstack);
+    
+    target = use_reg(comp, (m1_valuetype)left.type);    
+    fprintf(OUT, "\tor \t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
+                                               reg_chars[(int)left.type], left.no, 
+                                               reg_chars[(int)right.type], right.no);
+    unuse_reg(comp, left);
+    unuse_reg(comp, right);
+    pushreg(comp->regstack, target);                    
+}
+
+static void
+gencode_binary_plus(M1_compiler *comp, m1_binexpr *b) {
+    char *op;
+    m1_reg left, right, target;
+    
+    gencode_expr(comp, b->left);
+    left = popreg(comp->regstack);
+
+    if (left.type == VAL_INT)
+        op = "add_i";
+    else if (left.type == VAL_FLOAT)
+        op = "add_n";
+    else { /* should not happen */
+        fprintf(stderr, "wrong type for add");
+        exit(EXIT_FAILURE);
+    }
+    gencode_expr(comp, b->right);  
+    right  = popreg(comp->regstack);
+    
+    target = use_reg(comp, (m1_valuetype)left.type);    
+    fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", op, 
+                                             reg_chars[(int)target.type], target.no, 
+                                             reg_chars[(int)left.type], left.no, 
+                                             reg_chars[(int)right.type], right.no);
+    unuse_reg(comp, left);
+    unuse_reg(comp, right);
+    pushreg(comp->regstack, target);           
+    
+}
+
+static void
+gencode_binary_minus(M1_compiler *comp, m1_binexpr *b) {
+    char *op;
+    m1_reg left, right, target;
+    
+    gencode_expr(comp, b->left);
+    left = popreg(comp->regstack);
+
+    if (left.type == VAL_INT)
+        op = "sub_i";
+    else if (left.type == VAL_FLOAT)
+        op = "sub_n";
+    else { /* should not happen */
+        fprintf(stderr, "wrong type for sub");
+        exit(EXIT_FAILURE);
+    }
+    gencode_expr(comp, b->right);  
+    right  = popreg(comp->regstack);
+    
+    target = use_reg(comp, (m1_valuetype)left.type);    
+    fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", op, 
+                                             reg_chars[(int)target.type], target.no, 
+                                             reg_chars[(int)left.type], left.no, 
+                                             reg_chars[(int)right.type], right.no);
+    unuse_reg(comp, left);
+    unuse_reg(comp, right);
+    pushreg(comp->regstack, target);           
+    
+}
+
+static void
+gencode_binary_mult(M1_compiler *comp, m1_binexpr *b) {
+    char *op;
+    m1_reg left, right, target;
+    
+    gencode_expr(comp, b->left);
+    left = popreg(comp->regstack);
+
+    if (left.type == VAL_INT)
+        op = "mult_i";
+    else if (left.type == VAL_FLOAT)
+        op = "mult_n";
+    else { /* should not happen */
+        fprintf(stderr, "wrong type for mult");
+        exit(EXIT_FAILURE);
+    }
+    gencode_expr(comp, b->right);  
+    right  = popreg(comp->regstack);
+    
+    target = use_reg(comp, (m1_valuetype)left.type);    
+    fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", op, 
+                                             reg_chars[(int)target.type], target.no, 
+                                             reg_chars[(int)left.type], left.no, 
+                                             reg_chars[(int)right.type], right.no);
+    unuse_reg(comp, left);
+    unuse_reg(comp, right);
+    pushreg(comp->regstack, target);           
+    
+}
+
+static void
+gencode_binary_mod(M1_compiler *comp, m1_binexpr *b) {
+    char *op;
+    m1_reg left, right, target;
+    
+    gencode_expr(comp, b->left);
+    left = popreg(comp->regstack);
+
+    if (left.type == VAL_INT)
+        op = "mod_i";
+    else if (left.type == VAL_FLOAT)
+        op = "mod_n";
+    else { /* should not happen */
+        fprintf(stderr, "wrong type for mult");
+        exit(EXIT_FAILURE);
+    }
+    gencode_expr(comp, b->right);  
+    right  = popreg(comp->regstack);
+    
+    target = use_reg(comp, (m1_valuetype)left.type);    
+    fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", op, 
+                                             reg_chars[(int)target.type], target.no, 
+                                             reg_chars[(int)left.type], left.no, 
+                                             reg_chars[(int)right.type], right.no);
+    unuse_reg(comp, left);
+    unuse_reg(comp, right);
+    pushreg(comp->regstack, target);           
+    
+}
+
+static void
+gencode_binary_div(M1_compiler *comp, m1_binexpr *b) {
+    char *op;
+    m1_reg left, right, target;
+    
+    gencode_expr(comp, b->left);
+    left = popreg(comp->regstack);
+
+    if (left.type == VAL_INT)
+        op = "div_i";
+    else if (left.type == VAL_FLOAT)
+        op = "div_n";
+    else { /* should not happen */
+        fprintf(stderr, "wrong type for mult");
+        exit(EXIT_FAILURE);
+    }
+    gencode_expr(comp, b->right);  
+    right  = popreg(comp->regstack);
+    
+    target = use_reg(comp, (m1_valuetype)left.type);    
+    fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", op, 
+                                             reg_chars[(int)target.type], target.no, 
+                                             reg_chars[(int)left.type], left.no, 
+                                             reg_chars[(int)right.type], right.no);
+    unuse_reg(comp, left);
+    unuse_reg(comp, right);
+    pushreg(comp->regstack, target);           
+    
+}
+
+
+static void
+gencode_binary_isgt(M1_compiler *comp, m1_binexpr *b) {
+    char *op;
+    m1_reg left, right, target;
+    
+    gencode_expr(comp, b->left);
+    left = popreg(comp->regstack);
+
+    if (left.type == VAL_INT)
+        op = "isgt_i";
+    else if (left.type == VAL_FLOAT)
+        op = "isgt_n";
+    else { /* should not happen */
+        fprintf(stderr, "wrong type for mult");
+        exit(EXIT_FAILURE);
+    }
+    gencode_expr(comp, b->right);  
+    right  = popreg(comp->regstack);
+    
+    target = use_reg(comp, (m1_valuetype)left.type);    
+    fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", op, 
+                                             reg_chars[(int)target.type], target.no, 
+                                             reg_chars[(int)left.type], left.no, 
+                                             reg_chars[(int)right.type], right.no);
+    unuse_reg(comp, left);
+    unuse_reg(comp, right);
+    pushreg(comp->regstack, target);           
+    
+}
+
+static void
+gencode_binary_isge(M1_compiler *comp, m1_binexpr *b) {
+    char *op;
+    m1_reg left, right, target;
+    
+    gencode_expr(comp, b->left);
+    left = popreg(comp->regstack);
+
+    if (left.type == VAL_INT)
+        op = "isge_i";
+    else if (left.type == VAL_FLOAT)
+        op = "isge_n";
+    else { /* should not happen */
+        fprintf(stderr, "wrong type for mult");
+        exit(EXIT_FAILURE);
+    }
+    gencode_expr(comp, b->right);  
+    right  = popreg(comp->regstack);
+    
+    target = use_reg(comp, (m1_valuetype)left.type);    
+    fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", op, 
+                                             reg_chars[(int)target.type], target.no, 
+                                             reg_chars[(int)left.type], left.no, 
+                                             reg_chars[(int)right.type], right.no);
+    unuse_reg(comp, left);
+    unuse_reg(comp, right);
+    pushreg(comp->regstack, target);           
+    
 }
 
 
 static void
 gencode_binary(M1_compiler *comp, m1_binexpr *b) {
-    char  *op = NULL;
-    m1_reg left, 
-    	   right,
-    	   target;
-    
-    /* evaluate left and get result from stack */
-    gencode_expr(comp, b->left);
-    left = popreg(comp->regstack);
 
     switch(b->op) {
     	case OP_ASSIGN:
-    		op = "set"; /* in case of a = b = c; then b = c part is a binary expression */
+    		/* in case of a = b = c; then b = c part is a binary expression */
+    		gencode_binary_assign(comp, b);
     		break;
+
         case OP_PLUS:
-            if (left.type == VAL_INT)
-                op = "add_i";
-            else if (left.type == VAL_FLOAT)
-                op = "add_n";
-            else { /* should not happen */
-                fprintf(stderr, "wrong type for add");
-                exit(EXIT_FAILURE);
-            }
+            gencode_binary_plus(comp, b);
             break;
+            
         case OP_MINUS:
-             if (left.type == VAL_INT)
-                op = "sub_i";
-            else if (left.type == VAL_FLOAT)
-                op = "sub_n";
-            else { /* should not happen */
-                fprintf(stderr, "wrong type for sub");
-                exit(EXIT_FAILURE);
-            }
-
+            gencode_binary_minus(comp, b);
             break;
+            
         case OP_MUL:
-             if (left.type == VAL_INT)
-                op = "mult_i";
-            else if (left.type == VAL_FLOAT)
-                op = "mult_n";
-            else { /* should not happen */
-                fprintf(stderr, "wrong type for mul");
-                exit(EXIT_FAILURE);
-            }
+            gencode_binary_mult(comp, b);
+            break;
 
-            break;
         case OP_DIV:
-             if (left.type == VAL_INT)
-                op = "div_i";
-            else if (left.type == VAL_FLOAT)
-                op = "div_n";
-            else { /* should not happen */
-                fprintf(stderr, "wrong type for div");
-                exit(EXIT_FAILURE);
-            }
+            gencode_binary_div(comp, b);
             break;
+            
         case OP_MOD:
-            if (left.type == VAL_INT)
-                op = "mod_i";
-            else if (left.type == VAL_FLOAT)
-                op = "mod_n";
-            else { /* should not happen */
-                fprintf(stderr, "wrong type for mod");
-                exit(EXIT_FAILURE);
-            }
+            gencode_binary_mod(comp, b);
             break;
+            
         case OP_XOR:
-            op = "xor";
+            gencode_binary_xor(comp, b);
             break;
+            
         case OP_GT:
-            if (left.type == VAL_INT)
-                op = "isgt_i";    
-            else if (left.type == VAL_FLOAT)
-                op = "isgt_n";
-            else {
-                fprintf(stderr, "wrong type for isgt");
-                exit(EXIT_FAILURE);   
-            }
+            gencode_binary_isgt(comp, b);
             break;
+            
         case OP_GE:
-            if (left.type == VAL_INT)
-                op = "isge_i";    
-            else if (left.type == VAL_FLOAT)
-                op = "isge_n";
-            else {
-                fprintf(stderr, "wrong type for isge");
-                exit(EXIT_FAILURE);   
-            }
+            gencode_binary_isge(comp, b);
             break;
+            
         case OP_LT:
             gencode_lt(comp, b);
-            return;
+            break;
         case OP_LE:
             gencode_le(comp, b);
-            return;
+            break;
         case OP_EQ:
             gencode_eq(comp, b);
-            return;
+            break;
         case OP_NE: /* a != b;*/
             gencode_ne(comp, b);
-            return;
+            break;
         case OP_AND: /* a && b */
             gencode_and(comp, b);
-            return;
+            break;
         case OP_OR: /* a || b */
             gencode_or(comp, b);
-            return;
-        case OP_BAND:
-            op = "and";
             break;
+        case OP_BAND:
+            gencode_binary_and(comp, b);
+            break;            
         case OP_BOR:
-            op = "or";
+            gencode_binary_or(comp, b);
             break;
         default:
-            op = "unknown op";
-            break;   
-    }
-    
-    gencode_expr(comp, b->right);  
-    right  = popreg(comp->regstack);
-    
-    target = gen_reg(comp, (m1_valuetype)left.type);  
-    
-    fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", op, 
-                                             reg_chars[(int)target.type], target.no, 
-                                             reg_chars[(int)left.type], left.no, 
-                                             reg_chars[(int)right.type], right.no);
-    pushreg(comp->regstack, target);                                             
 
+            break;   
+    }                                
 }
 
 
@@ -978,10 +1279,9 @@ gencode_not(M1_compiler *comp, m1_unexpr *u) {
         label2;
     
     gencode_expr(comp, u->expr);
-    reg  = popreg(comp->regstack);
-    
-    temp = gen_reg(comp, VAL_INT);
-    
+    reg  = popreg(comp->regstack);  
+    temp = use_reg(comp, VAL_INT);
+      
     /* If reg is zero, make it nonzero (false->true).
        If it's non-zero, make it zero. (true->false). 
     */
@@ -1006,6 +1306,7 @@ gencode_not(M1_compiler *comp, m1_unexpr *u) {
     fprintf(OUT, "L%d:\n", label2);
     fprintf(OUT, "\tset\t%c%d, I%d, x\n", reg_chars[(int)reg.type], reg.no, temp.no);
     
+    unuse_reg(comp, reg);
     pushreg(comp->regstack, temp);
    
 }
@@ -1048,11 +1349,13 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     gencode_expr(comp, u->expr);
     reg = popreg(comp->regstack);
     
-    one    = gen_reg(comp, VAL_INT); /* register for holding constant 1. */
-    target = gen_reg(comp, VAL_INT); /* result register. */
     
-    fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", one.no);
-    fprintf(OUT, "\t%s\tI%d, I%d, I%d\n", op, target.no, reg.no, one.no);
+    target = use_reg(comp, VAL_INT);
+//    one    = use_reg(comp, VAL_INT);
+      
+    fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", target.no);
+    fprintf(OUT, "\t%s\tI%d, I%d, I%d\n", op, target.no, reg.no, target.no);
+    
     
     if (postfix == 0) { 
         /* prefix; return reg containing value before adding 1 */
@@ -1060,7 +1363,10 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     }
     
     fprintf(OUT, "\tset\tI%d, I%d, x\n", reg.no, target.no);
-    
+
+//    unuse_reg(comp, one);
+    unuse_reg(comp, target);
+        
     pushreg(comp->regstack, reg);            
 }
 
@@ -1093,17 +1399,21 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     }
 
     /* XXX: This just makes comp->regstack->sp won't be 0, which makes m1 happy */
-    m1_reg return_reg = gen_reg(comp, VAL_INT);
+    m1_reg return_reg = use_reg(comp, VAL_INT);
     pushreg(comp->regstack, return_reg);
-
+/*
     m1_reg cont_offset = gen_reg(comp, VAL_INT);
     m1_reg pc_reg = gen_reg(comp, VAL_INT);
     m1_reg cf_reg = gen_reg(comp, VAL_CHUNK);
+    */
+    m1_reg cont_offset = use_reg(comp, VAL_INT);
+    m1_reg pc_reg      = use_reg(comp, VAL_INT);
+    m1_reg cf_reg      = use_reg(comp, VAL_CHUNK);
     
     /* create a new call frame */
     /* alloc_cf: */
-    m1_reg sizereg = gen_reg(comp, VAL_INT);
-    m1_reg flagsreg = gen_reg(comp, VAL_INT);
+    m1_reg sizereg  = use_reg(comp, VAL_INT);
+    m1_reg flagsreg = use_reg(comp, VAL_INT);
     fprintf(OUT, "\tset_imm   I%d, 8, 0\n", sizereg.no);
     fprintf(OUT, "\tset_imm   I%d, 0, 0\n", flagsreg.no);
     fprintf(OUT, "\tgc_alloc  P%d, I%d, I%d\n", cf_reg.no, sizereg.no, flagsreg.no);
@@ -1115,7 +1425,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     int regindex = 12; /* points to I0. XXX */
     while (argiter != NULL) {
         m1_reg argreg;
-        m1_reg indexreg = gen_reg(comp, VAL_INT);
+        m1_reg indexreg = use_reg(comp, VAL_INT);
         gencode_expr(comp, argiter);
         argreg = popreg(comp->regstack);
         fprintf(OUT, "\tset_imm   I%d, 0, %d\n", indexreg.no, regindex);
@@ -1125,7 +1435,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     }
     
     /* init_cf_copy: */
-    m1_reg temp = gen_reg(comp, VAL_INT);
+    m1_reg temp = use_reg(comp, VAL_INT);    
     fprintf(OUT, "\tset_imm   I%d, 0, INTERP\n", temp.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, INTERP\n", cf_reg.no, temp.no);
     
@@ -1148,7 +1458,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     fprintf(OUT, "\tset_ref   P%d, I%d, P%d\n", cf_reg.no, temp.no, cf_reg.no);
     
     /* init_cf_zero: */
-    m1_reg temp2 = gen_reg(comp, VAL_INT);
+    m1_reg temp2 = use_reg(comp, VAL_INT);
     fprintf(OUT, "\tset_imm   I%d, 0, 0\n", temp.no);
     fprintf(OUT, "\tset_imm   I%d, 0, EH\n", temp2.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, I%d\n", cf_reg.no, temp2.no, temp.no); 
@@ -1188,7 +1498,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     fprintf(OUT, "\tset_imm    P%d, 0, %d\n", cf_reg.no, calledfun_index);
     fprintf(OUT, "\tderef      P%d, CONSTS, P%d\n", cf_reg.no, cf_reg.no);
     
-    m1_reg I0 = gen_reg(comp, VAL_INT);
+    m1_reg I0 = use_reg(comp, VAL_INT);    
     fprintf(OUT, "\tset_imm    I%d, 0, 0\n", I0.no);
     fprintf(OUT, "\tgoto_chunk P%d, I%d, x\n", cf_reg.no, I0.no);
 
@@ -1206,8 +1516,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     restore_cf:
     */
 
-    m1_reg I9 = gen_reg(comp, VAL_INT);
-  
+    m1_reg I9 = use_reg(comp, VAL_INT);  
 /*
     # set PCF[CHUNK] to the current call frame's CHUNK
     set_imm  I9,  0,  CHUNK
@@ -1248,7 +1557,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     set_imm I9,  0,  CF
     set_ref PCF, I9, PCF
     */
-    m1_reg I1 = gen_reg(comp, VAL_INT);
+    m1_reg I1 = use_reg(comp, VAL_INT);    
     fprintf(OUT, "\tset_imm   I%d, 0,   5\n", I1.no);
     fprintf(OUT, "\tadd_i     I%d, PC,  I%d\n", I1.no, I1.no);
     fprintf(OUT, "\tset_imm   I%d, 0,   PC\n", I9.no);
@@ -1275,23 +1584,29 @@ gencode_print(M1_compiler *comp, m1_expression *expr) {
     reg = popreg(comp->regstack);
     
     /* register to hold value "1" */    
-    one = gen_reg(comp, VAL_INT);
+    one = use_reg(comp, VAL_INT);    
     
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n",  one.no);
 	fprintf(OUT, "\tprint_%c\tI%d, %c%d, x\n", type_chars[(int)reg.type], one.no, 
 	                                           reg_chars[(int)reg.type], reg.no);
 		
+    unuse_reg(comp, one);
+    unuse_reg(comp, reg);
 }
 
 static void
 gencode_new(M1_compiler *comp, m1_newexpr *expr) {
-	m1_reg reg        = gen_reg(comp, VAL_INT); /* reg holding the pointer to new memory */
-	m1_reg sizereg    = gen_reg(comp, VAL_INT); /* reg holding the num. of bytes to alloc. */
+	//m1_reg reg        = gen_reg(comp, VAL_INT); /* reg holding the pointer to new memory */
+	//m1_reg sizereg    = gen_reg(comp, VAL_INT); /* reg holding the num. of bytes to alloc. */
+	m1_reg reg        = use_reg(comp, VAL_INT); /* reg holding the pointer to new memory */
+	m1_reg sizereg    = use_reg(comp, VAL_INT); /* reg holding the num. of bytes to alloc. */
+
 	unsigned size     = type_get_size(expr->typedecl);
 		
 	fprintf(OUT, "\tset_imm I%d, 0, %d\n", sizereg.no, size);
 	fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", reg.no, sizereg.no);
 	
+	unuse_reg(comp, sizereg);
 	pushreg(comp->regstack, reg);
 }
 
@@ -1329,9 +1644,9 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
     END: #break statements will go here.
       
     */
-    m1_reg   reg;
     m1_case *caseiter;
-    m1_reg   test     = gen_reg(comp, VAL_INT);
+    m1_reg   reg;    
+    m1_reg   test     = use_reg(comp, VAL_INT);    
     int      endlabel = gen_label(comp);
 
     
@@ -1365,6 +1680,9 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
     fprintf(OUT, "L%d:\n", endlabel);      
     (void)pop(comp->breakstack);
     
+    unuse_reg(comp, reg);
+    unuse_reg(comp, test);
+    
 }
 
 static void
@@ -1378,12 +1696,14 @@ gencode_var(M1_compiler *comp, m1_var *v) {
        reg = popreg(comp->regstack);
               
        assert(v->sym != NULL);
-       sym = v->sym;       
-       
+       sym = v->sym;              
        
        if (sym->regno == NO_REG_ALLOCATED_YET) {
             sym->regno = reg.no;
+            reg.is_symbol = 1;
        }
+       unuse_reg(comp, reg);
+              
     }
     
     if (v->num_elems > 1) { /* generate code to allocate memory on the heap for arrays */
@@ -1396,8 +1716,9 @@ gencode_var(M1_compiler *comp, m1_var *v) {
         assert(sym != NULL);
         
         if (sym->regno == NO_REG_ALLOCATED_YET) {
-            m1_reg reg = gen_reg(comp, sym->valtype);
-            sym->regno = reg.no;
+            m1_reg reg    = use_reg(comp, sym->valtype);
+            reg.is_symbol = 1;
+            sym->regno    = reg.no;
         }
         
         /* calculate total size of array. If smaller than 256*255,
@@ -1406,8 +1727,8 @@ gencode_var(M1_compiler *comp, m1_var *v) {
          */
         size = v->num_elems * elem_size;
         
-        memsize = gen_reg(comp, VAL_INT); /* reg to hold num of bytes to allocate */
-        
+        memsize = use_reg(comp, VAL_INT);
+              
         if (size < (256*255)) {
             int remainder = size % 256;   
             int num256    = (size - remainder) / 256;
@@ -1420,6 +1741,7 @@ gencode_var(M1_compiler *comp, m1_var *v) {
         }
         
         fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", sym->regno, memsize.no);
+        unuse_reg(comp, memsize);
     }
        
 }
@@ -1443,7 +1765,7 @@ gencode_cast(M1_compiler *comp, m1_castexpr *expr) {
     
     gencode_expr(comp, expr->expr);
     reg    = popreg(comp->regstack);
-    result = gen_reg(comp, expr->targettype);
+    result = use_reg(comp, expr->targettype);
     
     switch (expr->targettype) {
         case VAL_INT:
@@ -1456,6 +1778,7 @@ gencode_cast(M1_compiler *comp, m1_castexpr *expr) {
             assert(0);
             break;
     }
+
     pushreg(comp->regstack, result);
   
 }
@@ -1641,10 +1964,12 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *chunk) {
     /* XXX only generate in non-main functions. */
     
     if (strcmp(chunk->name, "main") != 0) {        
-        m1_reg retpc_reg   = gen_reg(comp, VAL_INT);    
-        m1_reg retpc_index = gen_reg(comp, VAL_INT);
-        m1_reg chunk_index = gen_reg(comp, VAL_INT);
-  
+//        m1_reg retpc_reg   = gen_reg(comp, VAL_INT);    
+//        m1_reg retpc_index = gen_reg(comp, VAL_INT);
+//        m1_reg chunk_index = gen_reg(comp, VAL_INT);
+        m1_reg retpc_reg   = use_reg(comp, VAL_INT);
+        m1_reg retpc_index = use_reg(comp, VAL_INT);
+        m1_reg chunk_index = use_reg(comp, VAL_INT);
         fprintf(OUT, "\tset_imm    I%d, 0, RETPC\n", retpc_index.no);
         fprintf(OUT, "\tderef      I%d, PCF, I%d\n", retpc_reg.no, retpc_index.no);
         fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
@@ -1705,7 +2030,9 @@ Iterate over the list of chunks, and generate code for each.
 void 
 gencode(M1_compiler *comp, m1_chunk *ast) {
     m1_chunk *iter = ast;
-                        
+
+    memset(registers, 0, sizeof(char) * 4 * 60);
+                            
     fprintf(OUT, ".version 0\n");
     
     while (iter != NULL) {     

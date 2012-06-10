@@ -7,8 +7,10 @@
 
 /* to store registers; I42 -> no=42, type=VAL_INT */
 typedef struct m1_reg {
-    int no;
-    int type;
+    int no;         /* number of register. */
+    int type;       /* type of register. */
+    int is_symbol;  /* flag whether register is allocated to a symbol. */
+    
 } m1_reg;
 
 extern void gencode(M1_compiler *comp, m1_chunk *ast);
