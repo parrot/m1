@@ -26,6 +26,7 @@ typedef struct m1_chunk {
         
 } m1_chunk;
 
+/* Struct to represent each struct field. */
 typedef struct m1_structfield {
     char        *name;              /* name of struct member. */
     char        *type;              /* type of struct member. */
@@ -45,20 +46,21 @@ typedef struct m1_struct {
       
 } m1_struct;
 
-
+/* To represent "lhs = rhs" statements. */
 typedef struct m1_assignment {
     struct m1_object     *lhs;
     struct m1_expression *rhs;
     
 } m1_assignment;
 
+/* To represent function call statements. */
 typedef struct m1_funcall {
     char                 *name;
     struct m1_expression *arguments;
     
 } m1_funcall;
 
-
+/* To represent new expressions (new Object(x, y, z) ). */
 typedef struct m1_newexpr {
 	char                 *type;            /* name of new type to instantiate. */
 	struct m1_decl       *typedecl;        /* pointer to declaration of type. */
@@ -124,6 +126,7 @@ typedef enum m1_binop {
     OP_LSH
 } m1_binop;
 
+/* To represent binary expressions, like a + b. */
 typedef struct m1_binexpr {
     struct m1_expression *left;
     struct m1_expression *right;
@@ -131,18 +134,20 @@ typedef struct m1_binexpr {
         
 } m1_binexpr;
 
+
 typedef enum m1_unop {
     UNOP_POSTINC,  /* a++ */
     UNOP_POSTDEC,  /* a-- */
     UNOP_PREINC,   /* ++a */
     UNOP_PREDEC,   /* --a */
     UNOP_NOT       /* !a  */
-    /* unary minus is handled by multiplying by -1 */
+    /* There is no UNOP_NEG: unary minus is handled by multiplying by -1 */
 } m1_unop;
 
+/* for unary expressions, like -x, and !y. */
 typedef struct m1_unexpr {
-    struct m1_expression *expr;
-    m1_unop op;
+    struct m1_expression *expr;     
+    m1_unop op;                     
     
 } m1_unexpr;
 

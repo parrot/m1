@@ -88,6 +88,15 @@ warning(M1_compiler *comp, unsigned line, char *msg) {
 }
 
 
+static void
+check_exprlist(M1_compiler *comp, m1_expression *expr) {
+    m1_expression *iter = expr;
+    while (iter != NULL) {
+        check_expr(comp, iter);
+        iter = iter->next;   
+    }
+}
+
 /*
 
 Check assignments.
@@ -171,7 +180,7 @@ check_while(M1_compiler *comp, m1_whileexpr *w, unsigned line) {
         warning(comp, line, "condition in while statement is not a boolean expression\n");       
     }
 
-    check_expr(comp, w->block);
+    check_exprlist(comp, w->block);
     (void)pop(comp->breakstack);
     
 }
@@ -187,7 +196,7 @@ check_dowhile(M1_compiler *comp, m1_whileexpr *w, unsigned line) {
         warning(comp, line, "condition in do-while statement is not a boolean expression\n");   
     }
     
-    check_expr(comp, w->block);
+    check_exprlist(comp, w->block);
     
     (void)pop(comp->breakstack);
 }
@@ -212,7 +221,7 @@ check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
         check_expr(comp, i->step);
 
     if (i->block)
-        check_expr(comp, i->block);
+        check_exprlist(comp, i->block);
 
     (void)pop(comp->breakstack);
 }
@@ -225,10 +234,10 @@ check_if(M1_compiler *comp, m1_ifexpr *i, unsigned line) {
         warning(comp, line, "condition in if-statement does not yield boolean value\n");   
     }
 
-    check_expr(comp, i->ifblock);
+    check_exprlist(comp, i->ifblock);
 
     if (i->elseblock) {
-        check_expr(comp, i->elseblock);
+        check_exprlist(comp, i->elseblock);
     }
            
 }
@@ -380,9 +389,24 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
 
 static void
 check_switch(M1_compiler *comp, m1_switch *s, unsigned line) {
+    push(comp->breakstack, 1);
+    
     if (s->cases == NULL && s->defaultstat == NULL) {
         warning(comp, line, "no cases nor a default statement in switch statement");   
     }   
+    check_expr(comp, s->selector);
+    
+    if (s->cases) {
+        m1_case *iter = s->cases;
+        while (iter != NULL) {
+            check_exprlist(comp, iter->block);
+            iter = iter->next;   
+        }   
+    }
+    if (s->defaultstat)
+        check_exprlist(comp, s->defaultstat);
+        
+    (void)pop(comp->breakstack);
 }
 
 static void
@@ -546,17 +570,14 @@ check_expr(M1_compiler *comp, m1_expression *e) {
 static void
 check_block(M1_compiler *comp, m1_block *block) {
     assert(block != NULL);
-    m1_expression *iter = block->stats;
     
     assert(&block->locals != NULL);
     
+        
     /* set currentsymtab to this block's symbol table. */
     comp->currentsymtab = &block->locals;
-    
-    while (iter != NULL) {
-        check_expr(comp, iter);
-        iter = iter->next;   
-    }   
+    check_exprlist(comp, block->stats);
+       
     /* closing block, so set current symbol table to the parent scope's symtab. */
     comp->currentsymtab = block->locals.parentscope;
 }
