@@ -467,6 +467,8 @@ OBJECT_LINK-----> L1
                     fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)reg.type], reg.no,
                                                             reg_chars[(int)parentreg.type], parentreg.no,
                                                             reg_chars[(int)offsetreg.type], offsetreg.no);   
+                    unuse_reg(comp, offsetreg);
+                    unuse_reg(comp, parentreg);
                     pushreg(comp->regstack, reg);
                     ++numregs_pushed;                                                           
                 }
@@ -481,8 +483,9 @@ OBJECT_LINK-----> L1
         {
             m1_reg reg;
             gencode_obj(comp, obj->obj.field, parent, is_target);
-        	reg = popreg(comp->regstack);
-        	fprintf(OUT, "\tadd_i <struct>, I%d\n", reg.no);
+            reg = popreg(comp->regstack);
+            fprintf(OUT, "\tadd_i <struct>, I%d\n", reg.no);
+            unuse_reg(comp, reg);
             break;
         }
         case OBJECT_INDEX: /* b in a[b] */        
@@ -691,8 +694,8 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
 	
     gencode_expr(comp, i->cond);
     condreg = popreg(comp->regstack);
-    
-	fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", iflabel, reg_chars[(int)condreg.type], condreg.no);
+
+    fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", iflabel, reg_chars[(int)condreg.type], condreg.no);
 
     unuse_reg(comp, condreg);
     
@@ -703,7 +706,7 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
     fprintf(OUT, "\tgoto L%d\n", endlabel);
     
     /* if block */
-	fprintf(OUT, "L%d:\n", iflabel);
+    fprintf(OUT, "L%d:\n", iflabel);
     gencode_exprlist(comp, i->ifblock);
 			
     fprintf(OUT, "L%d:\n", endlabel);
@@ -1426,8 +1429,11 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
         argreg = popreg(comp->regstack);
         fprintf(OUT, "\tset_imm   I%d, 0, %d\n", indexreg.no, regindex);
         fprintf(OUT, "\tset_ref   P%d, I%d, I%d\n", cf_reg.no, indexreg.no, argreg.no);
+
         regindex++;
         argiter = argiter->next;   
+
+        unuse_reg(comp, argreg);
     }
     
     /* init_cf_copy: */
@@ -1685,6 +1691,9 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
         
         caseiter = caseiter->next;   
     }
+
+    unuse_reg(comp, test);
+    unuse_reg(comp, reg);
     
     if (expr->defaultstat) {
        gencode_expr(comp, expr->defaultstat); 
@@ -1693,8 +1702,6 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
     fprintf(OUT, "L%d:\n", endlabel);      
     (void)pop(comp->breakstack);
     
-    unuse_reg(comp, reg);
-    unuse_reg(comp, test);
     
 }
 
@@ -1792,6 +1799,7 @@ gencode_cast(M1_compiler *comp, m1_castexpr *expr) {
             break;
     }
 
+    unuse_reg(comp, reg);
     pushreg(comp->regstack, result);
   
 }
