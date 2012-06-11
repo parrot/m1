@@ -1,12 +1,19 @@
 
 int main() {
     int a, b, c;
+    print("1..3\n");
     
     a = b = c = 1;
     
+    print("ok ");
     print(a);
+    print("\nok ");
+    b = c = ++a;
     print(b);
+    print("\nok ");
+    c = ++a;
     print(c);
+    print("\n");
     
     
 }
