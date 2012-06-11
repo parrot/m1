@@ -85,7 +85,7 @@ use_reg(M1_compiler *comp, m1_valuetype type) {
     else fprintf(stderr, "Allocating register %d\n", i);
     
     /* set the register to "used". */
-    registers[type][i] = 1;
+    registers[type][i] =  REG_USED;
     
     /* return the register. */
     r.no        = i;    
@@ -1373,6 +1373,7 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     
     if (postfix == 1) { /* postfix; give back the register containing the OLD value. */
     	pushreg(comp->regstack, oldval);
+        unuse_reg(comp, reg);
     }
     else { /* prefix; give back the register containing the NEW value. */
         pushreg(comp->regstack, reg);
