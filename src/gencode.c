@@ -2066,21 +2066,36 @@ Generate a function to setup the vtable.
 */
 static void
 gencode_pmc_vtable(M1_compiler *comp, m1_pmc *pmc) {
+    m1_chunk *methoditer = pmc->methods;
+    
+    /* add methods to this special init chunk's const table. 
+       Since this chunk is generated in code and not from the AST,
+       manually reset comp's constindex first, otherwise the constant segment's
+       entries get the wrong numbers.
+     */
+    comp->constindex = 0;
+    while (methoditer != NULL) {
+        sym_enter_chunk(comp, &comp->currentchunk->constants, methoditer->name);
+        methoditer = methoditer->next;    
+    }
+    
     fprintf(OUT, ".chunk \"__%s_init_vtable__\"\n", pmc->name);
-    fprintf(OUT, ".constants\n");
-//    gencode_consts(comp, );
+    gencode_consts(&comp->currentchunk->constants);
     fprintf(OUT, ".metadata\n");
     fprintf(OUT, ".bytecode\n");
     
     m1_reg indexreg      = use_reg(comp, VAL_INT);
     m1_reg vtablereg     = use_reg(comp, VAL_CHUNK);
     m1_reg methodreg     = use_reg(comp, VAL_CHUNK);
-    m1_chunk *methoditer = pmc->methods;
+
+    
     
     int i = 0;
     /* allocate memory for a vtable. */
     fprintf(OUT, "\tset_imm\tI%d, 0, 100\n", indexreg.no);    
     fprintf(OUT, "\tgc_alloc\tP%d, I%d, x\n", vtablereg.no, indexreg.no);
+
+    methoditer = pmc->methods;
     
     while (methoditer != NULL) {
         /* generate code to copy the pointer to the chunk into the vtable. */
