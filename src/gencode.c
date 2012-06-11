@@ -1531,8 +1531,6 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     return_reg = use_reg(comp, VAL_INT);
     pushreg(comp->regstack, return_reg);
 
-
-
     /*
     # We're back, so fix the parent call frame's PC and activate it.
     # The current CF's CHUNK, CONSTS, etc are updated by goto_chunk, so use
@@ -1999,18 +1997,22 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *chunk) {
     /* XXX only generate in non-main functions. */
     
     if (strcmp(chunk->name, "main") != 0) {        
+        m1_reg chunk_index;
         m1_reg retpc_reg   = use_reg(comp, VAL_INT);
         m1_reg retpc_index = use_reg(comp, VAL_INT);
-        m1_reg chunk_index = use_reg(comp, VAL_INT);
 
         fprintf(OUT, "\tset_imm    I%d, 0, RETPC\n", retpc_index.no);
         fprintf(OUT, "\tderef      I%d, PCF, I%d\n", retpc_reg.no, retpc_index.no);
+
+        unuse_reg(comp, retpc_index);
+
+        chunk_index = use_reg(comp, VAL_INT);
+
         fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
         fprintf(OUT, "\tderef      I%d, PCF, I%d\n", chunk_index.no, chunk_index.no);
         fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", chunk_index.no, retpc_reg.no);        
 
         unuse_reg(comp, retpc_reg);
-        unuse_reg(comp, retpc_index);
         unuse_reg(comp, chunk_index);
     }
 }
