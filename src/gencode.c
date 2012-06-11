@@ -31,8 +31,8 @@ This happens in gencode_number().
 #include "ann.h"
 
 #define OUT	stdout
-#define REG_TYPE_NUM 4
-#define REG_NUM 61
+#define REG_TYPE_NUM    4
+#define REG_NUM         61
 
 #define M1DEBUG 1
 
@@ -59,20 +59,13 @@ static const char reg_chars[REG_TYPE_NUM] = {'I', 'N', 'S', 'P'};
   }
 */
 
-
+/* XXX will go into compiler struct, as it needs to be thread-safe. */
 static char registers[REG_TYPE_NUM][REG_NUM];
 
 static void
-reset_reg() {
-    int type = 0;
-
-    for(; type < REG_TYPE_NUM; type++) {
-        int i = 0;
-        while (i < REG_NUM) {
-            registers[type][i] = 0;
-            i++;
-        }
-    }
+reset_reg(M1_compiler *comp) {
+    /* Set all fields in the registers table to 0. */
+    memset(registers, 0, sizeof(char) * REG_NUM * REG_TYPE_NUM);    
 }
 
 static m1_reg
@@ -86,15 +79,23 @@ use_reg(M1_compiler *comp, m1_valuetype type) {
     
     if (i >= REG_NUM) fprintf(stderr, "Out of registers!\n");
     else fprintf(stderr, "Allocating register %d\n", i);
+    
     /* set the register to "used". */
     registers[type][i] = 1;
-    /* return the register. */
-    r.no   = i;    
-    r.type = type;
+    
+    /* return the register. Ensure is_symbol flag is clear. */
+    r.no        = i;    
+    r.type      = type;
     r.is_symbol = 0;
     return r;
 }
 
+/*
+
+Make register C<r> available again, unless it's assigned to a symbol.
+In that case, the register is left alone. 
+
+*/
 static void
 unuse_reg(M1_compiler *comp, m1_reg r) {
     fprintf(stderr, "Unusing register NO:%d, SYMBOL:%s\n", r.no, r.is_symbol?"yes":"no");
@@ -106,6 +107,7 @@ unuse_reg(M1_compiler *comp, m1_reg r) {
         fprintf(stderr, "Unusing %d for good\n", r.no);
         registers[r.type][r.no] = 0;
     }
+    /* XXX this is for debugging. */
     int i;
     for (i = 0; i < 40; i++)
         fprintf(stderr, "%2d ", i);
@@ -1679,8 +1681,10 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
     caseiter = expr->cases;    
     while (caseiter != NULL) {
         int testlabel;
-        
-        fprintf(OUT, "\tsub_i\tI%d, I%d, I%d\n", test.no, reg.no, caseiter->selector);
+        /* XXX TODO handle numbers > 255 */
+        /* reuse register "test". */
+        fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", test.no, caseiter->selector);
+        fprintf(OUT, "\tsub_i\tI%d, I%d, I%d\n", test.no, reg.no, test.no);
      
         testlabel = gen_label(comp);
         fprintf(OUT, "\tgoto_if L%d, I%d\n", testlabel, test.no);
@@ -1757,6 +1761,7 @@ gencode_var(M1_compiler *comp, m1_var *v) {
         else {
             m1_symbol *sizesym = sym_find_int(&comp->currentchunk->constants, size);
             assert(sizesym != NULL);
+            /* XXX fix this. 3rd op should be a reg. */
             fprintf(OUT, "\tderef\tI%d, CONSTS, %d\n", memsize.no, sizesym->constindex);
         }
         
@@ -2028,7 +2033,7 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     fprintf(OUT, ".chunk \"%s\"\n", c->name);    
 
     /* for each chunk, reset the register allocator */
-    reset_reg();
+    reset_reg(comp);
         
     gencode_consts(&c->constants);
     gencode_metadata(c);
@@ -2052,7 +2057,6 @@ void
 gencode(M1_compiler *comp, m1_chunk *ast) {
     m1_chunk *iter = ast;
 
-    memset(registers, 0, sizeof(char) * 4 * 60);
                             
     fprintf(OUT, ".version 0\n");
     
