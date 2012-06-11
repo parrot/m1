@@ -31,8 +31,8 @@ This happens in gencode_number().
 #include "ann.h"
 
 #define OUT	stdout
-#define REG_TYPE_NUM 4
-#define REG_NUM 61
+#define REG_TYPE_NUM    4
+#define REG_NUM         61
 
 #define M1DEBUG 1
 
@@ -59,20 +59,13 @@ static const char reg_chars[REG_TYPE_NUM] = {'I', 'N', 'S', 'P'};
   }
 */
 
-
+/* XXX will go into compiler struct, as it needs to be thread-safe. */
 static char registers[REG_TYPE_NUM][REG_NUM];
 
 static void
-reset_reg() {
-    int type = 0;
-
-    for(; type < REG_TYPE_NUM; type++) {
-        int i = 0;
-        while (i < REG_NUM) {
-            registers[type][i] = 0;
-            i++;
-        }
-    }
+reset_reg(M1_compiler *comp) {
+    /* Set all fields in the registers table to 0. */
+    memset(registers, 0, sizeof(char) * REG_NUM * REG_TYPE_NUM);    
 }
 
 static m1_reg
@@ -114,6 +107,7 @@ unuse_reg(M1_compiler *comp, m1_reg r) {
         fprintf(stderr, "Unusing %d for good\n", r.no);
         registers[r.type][r.no] = 0;
     }
+    /* XXX this is for debugging. */
     int i;
     for (i = 0; i < 40; i++)
         fprintf(stderr, "%2d ", i);
@@ -2031,7 +2025,7 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     fprintf(OUT, ".chunk \"%s\"\n", c->name);    
 
     /* for each chunk, reset the register allocator */
-    reset_reg();
+    reset_reg(comp);
         
     gencode_consts(&c->constants);
     gencode_metadata(c);
@@ -2055,7 +2049,6 @@ void
 gencode(M1_compiler *comp, m1_chunk *ast) {
     m1_chunk *iter = ast;
 
-    memset(registers, 0, sizeof(char) * 4 * 60);
                             
     fprintf(OUT, ".version 0\n");
     
