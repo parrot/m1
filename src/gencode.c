@@ -73,7 +73,7 @@ use_reg(M1_compiler *comp, m1_valuetype type) {
     m1_reg r;
     int i = 0;
     /* look for first empty slot. */
-    while (registers[type][i] != 0 && i < REG_NUM) {
+    while (i < REG_NUM && registers[type][i] != 0) {
         i++;
     }
     
@@ -90,6 +90,17 @@ use_reg(M1_compiler *comp, m1_valuetype type) {
     return r;
 }
 
+static void
+freeze_reg(M1_compiler *comp, m1_reg r) {
+    assert(comp != NULL);
+    assert(registers[r.type][r.no] == 1);
+    assert(r.type < REG_TYPE_NUM);
+    assert(r.no < REG_NUM);
+    assert(r.no >= 0);
+    
+    registers[r.type][r.no] = 2;   
+}
+
 /*
 
 Make register C<r> available again, unless it's assigned to a symbol.
@@ -101,11 +112,12 @@ unuse_reg(M1_compiler *comp, m1_reg r) {
     fprintf(stderr, "Unusing register NO:%d, SYMBOL:%s\n", r.no, r.is_symbol?"yes":"no");
     if (r.is_symbol != 0) {
         fprintf(stderr, "Unusing %d, but is a symbol so leave it\n", r.no);
-//        registers[r.type][r.no] = 2;    
+//        registers[r.type][r.no] = 2;    /* mark it as "frozen" */
     }
     else {
         fprintf(stderr, "Unusing %d for good\n", r.no);
-        registers[r.type][r.no] = 0;
+        /* XXX Work in Progress. this is a bit buggy at the moment. */
+       // registers[r.type][r.no] = 0;
     }
     /* XXX this is for debugging. */
     int i;
@@ -1353,7 +1365,7 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     
     
     target = use_reg(comp, VAL_INT);
-//    one    = use_reg(comp, VAL_INT);
+
       
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", target.no);
     fprintf(OUT, "\t%s\tI%d, I%d, I%d\n", op, target.no, reg.no, target.no);
@@ -1366,7 +1378,6 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     
     fprintf(OUT, "\tset\tI%d, I%d, x\n", reg.no, target.no);
 
-//    unuse_reg(comp, one);
     unuse_reg(comp, target);
         
     pushreg(comp->regstack, reg);            
@@ -1401,17 +1412,13 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
         return;
     }
 
-/*
-    m1_reg cont_offset = gen_reg(comp, VAL_INT);
-    m1_reg pc_reg = gen_reg(comp, VAL_INT);
-    m1_reg cf_reg = gen_reg(comp, VAL_CHUNK);
-    */
-    m1_reg cf_reg      = use_reg(comp, VAL_CHUNK);
+
+    m1_reg cf_reg   = use_reg(comp, VAL_CHUNK);
+    m1_reg sizereg  = use_reg(comp, VAL_INT);
+    m1_reg flagsreg = use_reg(comp, VAL_INT);
     
     /* create a new call frame */
     /* alloc_cf: */
-    m1_reg sizereg  = use_reg(comp, VAL_INT);
-    m1_reg flagsreg = use_reg(comp, VAL_INT);
     fprintf(OUT, "\tset_imm   I%d, 8, 0\n", sizereg.no); /* XXX: why $2 = 8 ? */
     fprintf(OUT, "\tset_imm   I%d, 0, 0\n", flagsreg.no);
     fprintf(OUT, "\tgc_alloc  P%d, I%d, I%d\n", cf_reg.no, sizereg.no, flagsreg.no);
@@ -1617,8 +1624,6 @@ gencode_print(M1_compiler *comp, m1_expression *expr) {
 
 static void
 gencode_new(M1_compiler *comp, m1_newexpr *expr) {
-	//m1_reg reg        = gen_reg(comp, VAL_INT); /* reg holding the pointer to new memory */
-	//m1_reg sizereg    = gen_reg(comp, VAL_INT); /* reg holding the num. of bytes to alloc. */
 	m1_reg reg        = use_reg(comp, VAL_INT); /* reg holding the pointer to new memory */
 	m1_reg sizereg    = use_reg(comp, VAL_INT); /* reg holding the num. of bytes to alloc. */
 
