@@ -1,0 +1,35 @@
+int main() {
+    int a = 1; /* 00001 */
+    int b = 2; /* 00010 */
+    int c = 4; /* 00100 */
+    int d = 3; /* 00011 */
+    int e = 0; /* 00000 */
+    
+    print("1..5\n");
+    
+    if (a & b) {
+        print("not ok 1\n");
+    }
+    else
+        print("ok 1\n");
+           
+    if (a | b) 
+        print("ok 2\n");
+    else
+        print("not ok 2\n");           
+        
+    if (a & d)
+        print("ok 3\n");
+    else
+        print("not ok 3\n");
+        
+    if (c | e == c)
+        print("ok 4\n");
+    else
+        print("not ok 4\n");
+        
+    if (a ^ b == 3) // 0001 ^ 0010 = 0011                
+        print("ok 5\n");
+    else
+        print("not ok 5\n");
+}

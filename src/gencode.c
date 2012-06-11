@@ -993,6 +993,7 @@ gencode_binary_or(M1_compiler *comp, m1_binexpr *b) {
     gencode_binary_bitwise(comp, b, "or");
 }
 
+
 static void
 gencode_binary_plus(M1_compiler *comp, m1_binexpr *b) {
     char *op;
@@ -1213,39 +1214,30 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
     		/* in case of a = b = c; then b = c part is a binary expression */
     		gencode_binary_assign(comp, b);
     		break;
-
         case OP_PLUS:
             gencode_binary_plus(comp, b);
-            break;
-            
+            break;            
         case OP_MINUS:
             gencode_binary_minus(comp, b);
-            break;
-            
+            break;            
         case OP_MUL:
             gencode_binary_mult(comp, b);
             break;
-
         case OP_DIV:
             gencode_binary_div(comp, b);
-            break;
-            
+            break;            
         case OP_MOD:
             gencode_binary_mod(comp, b);
-            break;
-            
+            break;            
         case OP_XOR:
             gencode_binary_xor(comp, b);
-            break;
-            
+            break;            
         case OP_GT:
             gencode_binary_isgt(comp, b);
-            break;
-            
+            break;            
         case OP_GE:
             gencode_binary_isge(comp, b);
-            break;
-            
+            break;            
         case OP_LT:
             gencode_lt(comp, b);
             break;
