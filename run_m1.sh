@@ -8,9 +8,8 @@ filename=${1%.*}
 file_suffixe=${1##*.}
 [ "$file_suffixe" = 'm1' ] || { echo "file suffixe is not 'm1'"; exit 1; }
 
-echo "running $1..."
 ./m1 $1 2>/dev/null > $filename.m0
-[ -s $filename.m0 ] || { echo "nok..outputs a empty file $filename.m0 when compiling $1"; exit 1; }
+[ -s $filename.m0 ] || { echo "error: outputs a empty file $filename.m0 when compiling $1"; exit 1; }
 ./m0_assembler.pl $filename.m0 >/dev/null
 ./m0 $filename.m0b || { exit 1; }
 exit 0
