@@ -258,12 +258,12 @@ gencode_string(M1_compiler *comp, m1_literal *lit) {
 
 static void
 gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
-	m1_reg     lhs,    /* register holding result of left hand side  */
-	           rhs;    /* register holding result of right hand side */
-	m1_object *parent; /* pointer storage needed for code generation of LHS. */
-	unsigned   obj_reg_count; /* number of regs holding result of LHS (can be aggregate/indexed) */
+    m1_reg     lhs,    /* register holding result of left hand side  */
+               rhs;    /* register holding result of right hand side */
+    m1_object *parent;    /* pointer storage needed for code generation of LHS. */
+    unsigned   obj_reg_count; /* number of regs holding result of LHS (can be aggregate/indexed) */
 		
-	assert(a != NULL);
+    assert(a != NULL);
 	
     gencode_expr(comp, a->rhs);
     rhs = popreg(comp->regstack);
@@ -291,7 +291,9 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
                                                       reg_chars[(int)index.type], index.no,
                                                       reg_chars[(int)rhs.type], rhs.no);
         unuse_reg(comp, index);                                                      
+        unuse_reg(comp, parent);
     }    
+
     unuse_reg(comp, rhs);      
 }
 
@@ -1460,6 +1462,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
 
     fprintf(OUT, "\tset_imm   I%d, 0, SPILLCF\n", temp2.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, I%d\n", cf_reg.no, temp2.no, temp.no);
+
     unuse_reg(comp, temp2);
 
     /* init_cf_retpc: */    
@@ -1499,6 +1502,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     m1_reg I0 = use_reg(comp, VAL_INT);    
     fprintf(OUT, "\tset_imm    I%d, 0, 0\n", I0.no);
     fprintf(OUT, "\tgoto_chunk P%d, I%d, x\n", cf_reg.no, I0.no);
+
     unuse_reg(comp, I0);
     unuse_reg(comp, cf_reg);
 
@@ -1568,6 +1572,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     fprintf(OUT, "\tset_imm   I%d, 0,   CF\n", I9.no);         
     fprintf(OUT, "\tset_ref   PCF, I%d, PCF\n", I9.no);
     unuse_reg(comp, I9);
+    unuse_reg(comp, I1);
     /* invoke_cf: */
     
     /*
