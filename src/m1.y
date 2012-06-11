@@ -200,9 +200,6 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              switch_stat
              const_declaration
              var_declaration
-
-             pmc_attributes
-             pmc_attr
              unexpr
              m0_block
              print_stat
@@ -228,6 +225,9 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
               
 %type <sfld> struct_members 
              struct_member
+             pmc_attributes
+             pmc_attr
+
              
 %type <strct> struct_definition
 %type <pmc>   pmc_definition
@@ -443,10 +443,11 @@ pmc_attributes  : pmc_attr
                     }
                 ;
                 
-pmc_attr		: var_declaration
+pmc_attr		: struct_member
                 ;
                 
-pmc_methods     : pmc_method
+pmc_methods     : /* empty */
+                    { $$ = NULL; }
                 | pmc_methods pmc_method
                     {
                        /* link in reverse order. */

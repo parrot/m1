@@ -394,7 +394,7 @@ newstruct(M1_compiler *comp, char *name, m1_structfield *fields) {
 }
 
 m1_pmc *
-newpmc(M1_compiler *comp, char *name, m1_expression *fields, m1_chunk *methods) {
+newpmc(M1_compiler *comp, char *name, m1_structfield *fields, m1_chunk *methods) {
     m1_pmc *pmc  = (m1_pmc *)m1_malloc(sizeof(m1_pmc));
     
     pmc->name    = name; 
