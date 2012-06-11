@@ -86,15 +86,23 @@ use_reg(M1_compiler *comp, m1_valuetype type) {
     
     if (i >= REG_NUM) fprintf(stderr, "Out of registers!\n");
     else fprintf(stderr, "Allocating register %d\n", i);
+    
     /* set the register to "used". */
     registers[type][i] = 1;
-    /* return the register. */
-    r.no   = i;    
-    r.type = type;
+    
+    /* return the register. Ensure is_symbol flag is clear. */
+    r.no        = i;    
+    r.type      = type;
     r.is_symbol = 0;
     return r;
 }
 
+/*
+
+Make register C<r> available again, unless it's assigned to a symbol.
+In that case, the register is left alone. 
+
+*/
 static void
 unuse_reg(M1_compiler *comp, m1_reg r) {
     fprintf(stderr, "Unusing register NO:%d, SYMBOL:%s\n", r.no, r.is_symbol?"yes":"no");
@@ -1673,8 +1681,10 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
     caseiter = expr->cases;    
     while (caseiter != NULL) {
         int testlabel;
-        
-        fprintf(OUT, "\tsub_i\tI%d, I%d, I%d\n", test.no, reg.no, caseiter->selector);
+        /* XXX TODO handle numbers > 255 */
+        /* reuse register "test". */
+        fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", test.no, caseiter->selector);
+        fprintf(OUT, "\tsub_i\tI%d, I%d, I%d\n", test.no, reg.no, test.no);
      
         testlabel = gen_label(comp);
         fprintf(OUT, "\tgoto_if L%d, I%d\n", testlabel, test.no);
@@ -1750,6 +1760,7 @@ gencode_var(M1_compiler *comp, m1_var *v) {
         else {
             m1_symbol *sizesym = sym_find_int(&comp->currentchunk->constants, size);
             assert(sizesym != NULL);
+            /* XXX fix this. 3rd op should be a reg. */
             fprintf(OUT, "\tderef\tI%d, CONSTS, %d\n", memsize.no, sizesym->constindex);
         }
         
@@ -1791,7 +1802,7 @@ gencode_cast(M1_compiler *comp, m1_castexpr *expr) {
             assert(0);
             break;
     }
-
+    unuse_reg(comp, reg);
     pushreg(comp->regstack, result);
   
 }
