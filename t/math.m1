@@ -1,0 +1,64 @@
+int main() {
+    
+    int a = 1, b = 2, c = 3;
+    
+    print("1..12\n");
+    print("ok ");
+    print(a);   //1
+    print("\n");
+    
+    print("ok ");
+    print(b); //2
+    print("\n");
+
+    print("ok ");
+    print(c); //3
+    print("\n");
+    
+    a = b + c - a;
+    print("ok ");
+    print(a); //4
+    print("\n");
+
+    a = 5 * 1;
+    print("ok ");
+    print(a); //5
+    print("\n");
+   
+    print("ok ");
+    print(b * c); //6
+    print("\n");
+
+    a = 1 + 2 * 3;
+    print("ok ");
+    print(a); // 7
+    print("\n");
+    
+    a = 14 - 2 * 3;
+    print("ok ");
+    print(a); // 8
+    print("\n");
+
+    a = 27 / 3;    
+    print("ok ");
+    print(a); // 9
+    print("\n");
+    
+    a = 10 % 11;
+    print("ok ");
+    print(a); // 10
+    print("\n");
+    
+    a = 10 % 2 + 11 * 1;
+    print("ok ");
+    print(a); // 11
+    print("\n");
+
+    a = 2 * (2 + 2) * 3 / 2;
+    print("ok ");
+    print(a);
+    print("\n");
+
+
+
+}

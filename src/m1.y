@@ -545,10 +545,7 @@ struct_members      : struct_member
                     ;
                     
 struct_member       : return_type TK_IDENT ';'
-                        { 
-                           M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
-                           $$ = structfield(comp, $2, $1); 
-                        }
+                        { $$ = structfield((M1_compiler *)yyget_extra(yyscanner), $2, $1); }
                     ;                                        
         
 block   : open_block statements close_block
@@ -561,7 +558,7 @@ block   : open_block statements close_block
 open_block: '{'   /* create a new block, set currentsymtab to its symbol table. */
                   { $$ = open_scope((M1_compiler *)yyget_extra(yyscanner)); }
 
-close_block: '}'  
+close_block: '}'  /* close the current block, restore currentsymtab to the enclosing scope's symtab. */
                   { close_scope((M1_compiler *)yyget_extra(yyscanner)); }
                           
 statements  : /* empty */
