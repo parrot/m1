@@ -1,7 +1,10 @@
 pmc integer {
     
     int value;
+ 
+    vtable method int init() {
         
+    }       
 }
 
 int main() {

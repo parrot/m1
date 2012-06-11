@@ -2058,6 +2058,19 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     gencode_chunk_return(comp, c);
 }
 
+
+static void
+gencode_pmc(M1_compiler *comp, m1_pmc *pmc) {
+    /* XXX generate code for initialization, setting up vtables etc.*/
+    
+    /* generate code for the methods. */
+    m1_chunk *methoditer = pmc->methods;
+    while (methoditer != NULL) {
+        gencode_chunk(comp, methoditer);
+        methoditer = methoditer->next;   
+    }    
+}
+
 /*
 
 Top-level function to drive the code generation phase.
@@ -2067,7 +2080,7 @@ Iterate over the list of chunks, and generate code for each.
 void 
 gencode(M1_compiler *comp, m1_chunk *ast) {
     m1_chunk *iter = ast;
-
+    m1_decl *decliter;
                             
     fprintf(OUT, ".version 0\n");
     
@@ -2078,6 +2091,17 @@ gencode(M1_compiler *comp, m1_chunk *ast) {
         comp->currentchunk = iter;   
         gencode_chunk(comp, iter);
         iter = iter->next;   
+    }
+    
+    /* after the normal chunks, generate code for PMC methods. */
+    decliter = comp->declarations;
+    while (decliter != NULL) {
+        /* find the PMC definitions. */
+        if (decliter->decltype == DECL_PMC) {
+            m1_pmc *pmc = decliter->d.p;    
+            gencode_pmc(comp, pmc);
+        }
+        decliter = decliter->next;   
     }
 }
 
