@@ -52,7 +52,8 @@ type_error_extra(M1_compiler *comp, unsigned line, char *msg, ...) {
            
     for (p = msg; *p != '\0'; p++) {
         if (*p != '%') {
-            putchar(*p);
+            putc(*p, stderr);
+
             continue;
         }
         switch (*++p) {
@@ -76,6 +77,7 @@ type_error_extra(M1_compiler *comp, unsigned line, char *msg, ...) {
         }       
                
     }
+    fprintf(stderr, "\n");
     
     va_end(argp);
 }
@@ -409,7 +411,7 @@ check_switch(M1_compiler *comp, m1_switch *s, unsigned line) {
     (void)pop(comp->breakstack);
 }
 
-static void
+static m1_decl *
 check_newexpr(M1_compiler *comp, m1_newexpr *n, unsigned line) {
     assert(comp != NULL);
     assert(n != NULL);
@@ -419,7 +421,7 @@ check_newexpr(M1_compiler *comp, m1_newexpr *n, unsigned line) {
     if (n->typedecl == NULL) { 
         type_error_extra(comp, line, "Cannot find type '%s' requested for in new-statement\n", n->type);         
     }
-    
+    return n->typedecl;
 }
 
 static void
@@ -551,7 +553,7 @@ check_expr(M1_compiler *comp, m1_expression *e) {
             break;
             
         case EXPR_NEW:
-            check_newexpr(comp, e->expr.n, e->line);
+            return check_newexpr(comp, e->expr.n, e->line);
             break;
         case EXPR_PRINT:
             check_expr(comp, e->expr.e);

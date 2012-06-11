@@ -11,6 +11,9 @@ int main() {
     print("1..1\n");
     print("ok 1 - PMC parsed correctly\n");    
     
+    integer i;
+    i = new integer();
+//    i.init();
 }
 
 

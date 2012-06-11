@@ -321,7 +321,7 @@ extern int yyget_lineno(yyscan_t yyscanner);
 extern m1_chunk *chunk(M1_compiler *comp, char *rettype, char *name);
 
 extern m1_expression *expression(M1_compiler *comp, m1_expr_type type);       
-extern m1_expression *funcall(M1_compiler *comp, char *name, m1_expression *args);
+extern m1_expression *funcall(M1_compiler *comp, m1_object *fun, m1_expression *args);
             
 extern m1_object *object(M1_compiler *comp, m1_object_type type);            
 extern void obj_set_ident(m1_object *node, char *ident);

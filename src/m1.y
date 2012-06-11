@@ -719,10 +719,9 @@ default_case: /* empty */
             | "default" ':' statements
             	{ $$ = $3; }
             ;
-             
-/* TODO: at some point we want x.y(); replace TK_IDENT with "lhs". Get this working first though*/           
-function_call_expr  : TK_IDENT '(' arguments ')' 
-                         { $$ = funcall((M1_compiler *)yyget_extra(yyscanner), $1, $3); }
+                       
+function_call_expr  : lhs '(' arguments ')' 
+                         { $$ = funcall((M1_compiler *)yyget_extra(yyscanner), $1->expr.t, $3); }
                     ;
                     
 function_call_stat  : function_call_expr ';'

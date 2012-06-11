@@ -81,8 +81,8 @@ use_reg(M1_compiler *comp, m1_valuetype type) {
         i++;
     }
     
-    if (i >= REG_NUM) fprintf(stderr, "Out of registers!\n");
-    else fprintf(stderr, "Allocating register %d\n", i);
+    //if (i >= REG_NUM) fprintf(stderr, "Out of registers!\n");
+    //else fprintf(stderr, "Allocating register %d\n", i);
     
     /* set the register to "used". */
     registers[type][i] =  REG_USED;
@@ -113,10 +113,11 @@ static void
 unuse_reg(M1_compiler *comp, m1_reg r) {
 
     if (registers[r.type][r.no] != REG_SYMBOL) {
-        fprintf(stderr, "Unusing %d for good\n", r.no);        
+        //fprintf(stderr, "Unusing %d for good\n", r.no);        
         registers[r.type][r.no] = REG_UNUSED;
     }
     /* XXX this is for debugging. */
+   /*
     int i;
     for (i = 0; i < 40; i++)
         fprintf(stderr, "%2d ", i);
@@ -126,6 +127,7 @@ unuse_reg(M1_compiler *comp, m1_reg r) {
         fprintf(stderr, "%2d ", registers[r.type][i]);   
     }
     fprintf(stderr, "\n\n");
+   */
 }
 
 /*
@@ -1404,14 +1406,16 @@ gencode_break(M1_compiler *comp) {
 
 static void
 gencode_funcall(M1_compiler *comp, m1_funcall *f) {
-    m1_symbol *fun = sym_find_chunk(&comp->currentchunk->constants, f->name);
+    m1_symbol *fun;
+    fun = sym_find_chunk(&comp->currentchunk->constants, f->name);
     m1_reg pc_reg, cont_offset, return_reg;
     
-    if (fun == NULL) { /* XXX need to check in semcheck */
+    if (fun == NULL) { // XXX need to check in semcheck 
         fprintf(stderr, "Cant find function '%s'\n", f->name);
         ++comp->errors;
         return;
     }
+    
 
 
     m1_reg cf_reg   = use_reg(comp, VAL_CHUNK);
