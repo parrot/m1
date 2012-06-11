@@ -959,7 +959,7 @@ gencode_binary_assign(M1_compiler *comp, m1_binexpr *b) {
 }
 
 static void
-gencode_binary_xor(M1_compiler *comp, m1_binexpr *b) {
+gencode_binary_bitwise(M1_compiler *comp, m1_binexpr *b, char const * const op) {
     m1_reg left, right, target;
     
     gencode_expr(comp, b->left);
@@ -969,50 +969,28 @@ gencode_binary_xor(M1_compiler *comp, m1_binexpr *b) {
     right  = popreg(comp->regstack);
     
     target = use_reg(comp, (m1_valuetype)left.type);    
-    fprintf(OUT, "\txor \t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
-                                               reg_chars[(int)left.type], left.no, 
-                                               reg_chars[(int)right.type], right.no);
+    fprintf(OUT, "\t%s \t%c%d, %c%d, %c%d\n", op, reg_chars[(int)target.type], target.no, 
+                                                  reg_chars[(int)left.type], left.no, 
+                                                  reg_chars[(int)right.type], right.no);
     unuse_reg(comp, left);
     unuse_reg(comp, right);
     pushreg(comp->regstack, target);                    
+    
 }
 
 static void
-gencode_binary_and(M1_compiler *comp, m1_binexpr *b) {
-    m1_reg left, right, target;
-    
-    gencode_expr(comp, b->left);
-    left = popreg(comp->regstack);
+gencode_binary_xor(M1_compiler *comp, m1_binexpr *b) {
+    gencode_binary_bitwise(comp, b, "xor");
+} 
 
-    gencode_expr(comp, b->right);  
-    right  = popreg(comp->regstack);
-    
-    target = use_reg(comp, (m1_valuetype)left.type);    
-    fprintf(OUT, "\tand \t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
-                                               reg_chars[(int)left.type], left.no, 
-                                               reg_chars[(int)right.type], right.no);
-    unuse_reg(comp, left);
-    unuse_reg(comp, right);
-    pushreg(comp->regstack, target);                    
+static void
+gencode_binary_and(M1_compiler *comp, m1_binexpr *b) {
+    gencode_binary_bitwise(comp, b, "and");
 }
 
 static void
 gencode_binary_or(M1_compiler *comp, m1_binexpr *b) {
-    m1_reg left, right, target;
-    
-    gencode_expr(comp, b->left);
-    left = popreg(comp->regstack);
-
-    gencode_expr(comp, b->right);  
-    right  = popreg(comp->regstack);
-    
-    target = use_reg(comp, (m1_valuetype)left.type);    
-    fprintf(OUT, "\tor \t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
-                                               reg_chars[(int)left.type], left.no, 
-                                               reg_chars[(int)right.type], right.no);
-    unuse_reg(comp, left);
-    unuse_reg(comp, right);
-    pushreg(comp->regstack, target);                    
+    gencode_binary_bitwise(comp, b, "or");
 }
 
 static void
