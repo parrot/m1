@@ -149,6 +149,9 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
               chunks 
               chunk 
               TOP
+              method_init
+              pmc_method
+              pmc_methods
 
 
              
@@ -197,6 +200,9 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              switch_stat
              const_declaration
              var_declaration
+
+             pmc_attributes
+             pmc_attr
              unexpr
              m0_block
              print_stat
@@ -412,11 +418,12 @@ namespace_definition: "namespace" TK_IDENT ';'
                          }    
                      ;    
 
-pmc_definition	: "pmc" TK_IDENT extends_clause '{'  pmc_items '}'
+pmc_definition	: "pmc" TK_IDENT extends_clause '{'  pmc_attributes pmc_methods '}'
                     {          
                        M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
-                       $$ = newpmc(comp, $2, NULL); 
+                       $$ = newpmc(comp, $2, $5, $6); 
                        type_enter_pmc(comp, $2, $$);
+                       
                     }
                 ;
                                 
@@ -428,20 +435,41 @@ id_list			: TK_IDENT
                 | id_list ',' TK_IDENT
                 ;                
 
-pmc_items		: /* empty */
-                | pmc_items pmc_item
+pmc_attributes  : pmc_attr
+                | pmc_attributes pmc_attr
+                    { 
+                        $2->next = $1;
+                        $$ = $2;                        
+                    }
                 ;
                 
-pmc_item		: pmc_attr
-				| pmc_method
-				;
-
 pmc_attr		: var_declaration
                 ;
+                
+pmc_methods     : pmc_method
+                | pmc_methods pmc_method
+                    {
+                       /* link in reverse order. */
+                       $2->next = $1;
+                       $$ = $2;    
+                    }
+                ;                                
 
-pmc_method		: opt_vtable "method" TK_IDENT '(' parameters ')' block 
-                    {}
+pmc_method		: method_init '(' parameters ')' block 
+                    {
+                       $1->block = $5->expr.blck;
+                       $$ = $1;    
+                    }
 				;
+				
+method_init     : opt_vtable "method" type TK_IDENT	
+                    {
+                      M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);  
+                      $$ = chunk(comp, $3, $4);
+                      comp->currentchunk = $$;
+                         
+                    }			
+                ;
 				
 opt_vtable      : /* empty */
                 | "vtable"
