@@ -31,6 +31,8 @@ This happens in gencode_number().
 #include "ann.h"
 
 #define OUT	stdout
+#define REG_TYPE_NUM 4
+#define REG_NUM 61
 
 #define M1DEBUG 1
 
@@ -45,8 +47,8 @@ static void gencode_expr(M1_compiler *comp, m1_expression *e);
 static void gencode_block(M1_compiler *comp, m1_block *block);
 static unsigned gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target);
 
-static const char type_chars[4] = {'i', 'n', 's', 'p'};
-static const char reg_chars[4] = {'I', 'N', 'S', 'P'};
+static const char type_chars[REG_TYPE_NUM] = {'i', 'n', 's', 'p'};
+static const char reg_chars[REG_TYPE_NUM] = {'I', 'N', 'S', 'P'};
 
 /*
 #define M1_GEN_INS(name, cf, ops, pc) { \
@@ -58,15 +60,15 @@ static const char reg_chars[4] = {'I', 'N', 'S', 'P'};
 */
 
 
-static char registers[4][61];
+static char registers[REG_TYPE_NUM][REG_NUM];
 
 static void
 reset_reg() {
     int type = 0;
 
-    for(; type <= 3; type++) {
+    for(; type < REG_TYPE_NUM; type++) {
         int i = 0;
-        while (i <= 60) {
+        while (i < REG_NUM) {
             registers[type][i] = 0;
             i++;
         }
@@ -78,11 +80,11 @@ use_reg(M1_compiler *comp, m1_valuetype type) {
     m1_reg r;
     int i = 0;
     /* look for first empty slot. */
-    while (registers[type][i] != 0 && i <= 60) {
+    while (registers[type][i] != 0 && i < REG_NUM) {
         i++;
     }
     
-    if (i > 60) fprintf(stderr, "Out of registers!\n");
+    if (i >= REG_NUM) fprintf(stderr, "Out of registers!\n");
     else fprintf(stderr, "Allocating register %d\n", i);
     /* set the register to "used". */
     registers[type][i] = 1;
