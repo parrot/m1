@@ -36,6 +36,7 @@ typedef struct m1_decl {
     
     union { 
         struct m1_struct *s;    /* struct declaration. */
+        struct m1_pmc    *p;    /* PMC declaration */
         struct m1_enum   *e;    /* enum declaration */
         unsigned          size; /* size of basic type whenever DECL_INT, DECL_FLOAT, DECL_STRING. */
     } d;
@@ -51,8 +52,9 @@ extern void print_type(m1_decl *type);
 
 extern m1_decl *type_find_def(M1_compiler *, char *type);
 extern m1_decl *type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structdef);
-extern m1_decl *type_enter_type(M1_compiler *comp, char *type, m1_decl_type decltype, unsigned size);
+extern m1_decl *type_enter_pmc(M1_compiler *comp, char *pmcname, struct m1_pmc *pmcdef);
 
+extern m1_decl *type_enter_type(M1_compiler *comp, char *type, m1_decl_type decltype, unsigned size);
 extern m1_decl *type_enter_enum(M1_compiler *comp, char *enumname, struct m1_enum *enumdef);
 
 extern unsigned type_get_size(m1_decl *decl);

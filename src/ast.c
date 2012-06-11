@@ -393,6 +393,13 @@ newstruct(M1_compiler *comp, char *name, m1_structfield *fields) {
     return str;   
 }
 
+m1_pmc *
+newpmc(M1_compiler *comp, char *name, m1_structfield *fields) {
+    m1_pmc *pmc;
+    
+    return pmc;    
+}
+
 m1_enum *
 newenum(M1_compiler *comp, char *name, m1_enumconst *enumconstants) {
     m1_enum *en  = (m1_enum *)m1_malloc(sizeof(m1_enum));

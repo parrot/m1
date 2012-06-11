@@ -64,7 +64,6 @@ random list of items:
 * implement parameter and argument handling
 * implement namespaces and their handling
 * implement PMCs
-* any other keywords? e.g., continue? 
 * implement semantic checker (a thorough one!)
 * finish code generator
 * do we want member functions: x.y(); ? (prob for PMCs)

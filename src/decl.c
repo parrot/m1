@@ -72,6 +72,24 @@ type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structd
 
 /*
 
+Enter a new PMC declaration that goes by name <pmcname>.
+
+*/
+m1_decl *
+type_enter_pmc(M1_compiler *comp, char *pmcname, struct m1_pmc *pmcdef) {
+    m1_decl *decl = make_decl(comp, DECL_PMC);
+    decl->name    = pmcname;
+    decl->d.p     = pmcdef;
+    
+    /* link in list of declarations. */
+    decl->next = comp->declarations;
+    comp->declarations = decl;
+    
+    return decl;    
+}
+
+/*
+
 Enter a new enumeration declaration that goes by <enumname>.
 
 */

@@ -51,6 +51,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
     struct m1_statement     *stat;
     struct m1_object        *obj;
     struct m1_struct        *strct;
+    struct m1_pmc           *pmc;
     struct m1_enum          *enm;
     struct m1_structfield   *sfld;
     struct m1_var           *var;
@@ -223,6 +224,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              struct_member
              
 %type <strct> struct_definition
+%type <pmc>   pmc_definition
 
 %type <enm> enum_definition
              
@@ -355,9 +357,7 @@ chunk   : function_definition
            fprintf(stderr, "namespaces are not implemented yet!\n");
            }
         | pmc_definition
-           { $$ = NULL; /* TODO */ 
-           fprintf(stderr, "PMC definitions are not implemented yet!\n");
-           }
+           { $$ = NULL; }
         | enum_definition
            { $$ = NULL; }
         ;        
@@ -412,8 +412,12 @@ namespace_definition: "namespace" TK_IDENT ';'
                          }    
                      ;    
 
-/* TODO: PMC handling */
 pmc_definition	: "pmc" TK_IDENT extends_clause '{'  pmc_items '}'
+                    {          
+                       M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
+                       $$ = newpmc(comp, $2, NULL); 
+                       type_enter_pmc(comp, $2, $$);
+                    }
                 ;
                                 
 extends_clause	: /* empty */

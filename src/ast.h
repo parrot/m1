@@ -46,6 +46,14 @@ typedef struct m1_struct {
       
 } m1_struct;
 
+typedef struct m1_pmc {
+    char    *name;
+    unsigned size;
+    
+    struct m1_structfield *fields;
+    
+} m1_pmc;
+
 /* To represent "lhs = rhs" statements. */
 typedef struct m1_assignment {
     struct m1_object     *lhs;
@@ -320,7 +328,7 @@ extern void obj_set_ident(m1_object *node, char *ident);
 extern m1_structfield *structfield(M1_compiler *comp, char *name, char *type);
 
 extern m1_struct *newstruct(M1_compiler *comp, char *name, m1_structfield *fields);
-
+extern m1_pmc *newpmc(M1_compiler *comp, char *name, m1_structfield *fields);
 
 extern m1_expression *ifexpr(M1_compiler *comp, m1_expression *cond, m1_expression *ifblock, m1_expression *elseblock);
 extern m1_expression *whileexpr(M1_compiler *comp, m1_expression *cond, m1_expression *block);
