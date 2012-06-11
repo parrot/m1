@@ -58,7 +58,7 @@ static const char reg_chars[4] = {'I', 'N', 'S', 'P'};
 */
 
 
-static char registers[4][60];
+static char registers[4][61];
 
 static void
 reset_reg() {
@@ -66,7 +66,7 @@ reset_reg() {
 
     for(; type <= 3; type++) {
         int i = 0;
-        while (i < 60) {
+        while (i <= 60) {
             registers[type][i] = 0;
             i++;
         }
@@ -78,11 +78,11 @@ use_reg(M1_compiler *comp, m1_valuetype type) {
     m1_reg r;
     int i = 0;
     /* look for first empty slot. */
-    while (registers[type][i] != 0 && i < 60) {
+    while (registers[type][i] != 0 && i <= 60) {
         i++;
     }
     
-    if (i >= 60) fprintf(stderr, "Out of registers!\n");
+    if (i > 60) fprintf(stderr, "Out of registers!\n");
     else fprintf(stderr, "Allocating register %d\n", i);
     /* set the register to "used". */
     registers[type][i] = 1;
