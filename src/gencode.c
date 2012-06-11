@@ -1317,8 +1317,7 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     char  *op;
     int    postfix = 0;
     m1_reg reg, 
-           target, 
-           one;
+           target; 
     
     switch (u->op) {
         case UNOP_POSTINC:
@@ -1414,9 +1413,12 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     /* alloc_cf: */
     m1_reg sizereg  = use_reg(comp, VAL_INT);
     m1_reg flagsreg = use_reg(comp, VAL_INT);
-    fprintf(OUT, "\tset_imm   I%d, 8, 0\n", sizereg.no);
+    fprintf(OUT, "\tset_imm   I%d, 8, 0\n", sizereg.no); /* XXX: why $2 = 8 ? */
     fprintf(OUT, "\tset_imm   I%d, 0, 0\n", flagsreg.no);
     fprintf(OUT, "\tgc_alloc  P%d, I%d, I%d\n", cf_reg.no, sizereg.no, flagsreg.no);
+    unuse_reg(comp, sizereg);
+    unuse_reg(comp, flagsreg);
+
     
     /* store arguments in registers of new callframe.
        XXX this still needs to be specced for M0's calling conventions. */
@@ -1468,10 +1470,12 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
 
     fprintf(OUT, "\tset_imm   I%d, 0, SPILLCF\n", temp2.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, I%d\n", cf_reg.no, temp2.no, temp.no);
+    unuse_reg(comp, temp2);
 
     /* init_cf_retpc: */    
     fprintf(OUT, "\tset_imm   I%d, 0, 10\n", temp.no);
     fprintf(OUT, "\tadd_i     RETPC, PC, I%d\n", temp.no);
+    unuse_reg(comp, temp);
     
     /* init_cf_pc */
     fprintf(OUT, "\tset_imm   I%d, 0, 3\n", cont_offset.no);
@@ -1501,6 +1505,8 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     m1_reg I0 = use_reg(comp, VAL_INT);    
     fprintf(OUT, "\tset_imm    I%d, 0, 0\n", I0.no);
     fprintf(OUT, "\tgoto_chunk P%d, I%d, x\n", cf_reg.no, I0.no);
+    unuse_reg(comp, I0);
+    unuse_reg(comp, cf_reg);
 
 
 
@@ -1564,12 +1570,14 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     fprintf(OUT, "\tset_ref   PCF, I%d, I%d\n", I9.no, I1.no);
     fprintf(OUT, "\tset_imm   I%d, 0,   CF\n", I9.no);         
     fprintf(OUT, "\tset_ref   PCF, I%d, PCF\n", I9.no);
+    unuse_reg(comp, I9);
     /* invoke_cf: */
     
     /*
     set     CF, PCF, x
     */
     fprintf(OUT, "\tset       CF, PCF, x\n");
+    
     
           
 }
@@ -1587,8 +1595,8 @@ gencode_print(M1_compiler *comp, m1_expression *expr) {
     one = use_reg(comp, VAL_INT);    
     
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n",  one.no);
-	fprintf(OUT, "\tprint_%c\tI%d, %c%d, x\n", type_chars[(int)reg.type], one.no, 
-	                                           reg_chars[(int)reg.type], reg.no);
+    fprintf(OUT, "\tprint_%c\tI%d, %c%d, x\n", type_chars[(int)reg.type], one.no, 
+	                                       reg_chars[(int)reg.type], reg.no);
 		
     unuse_reg(comp, one);
     unuse_reg(comp, reg);
@@ -1975,6 +1983,9 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *chunk) {
         fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
         fprintf(OUT, "\tderef      I%d, PCF, I%d\n", chunk_index.no, chunk_index.no);
         fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", chunk_index.no, retpc_reg.no);        
+        unuse_reg(comp, retpc_reg);
+        unuse_reg(comp, retpc_index);
+        unuse_reg(comp, chunk_index);
     }
 }
 
