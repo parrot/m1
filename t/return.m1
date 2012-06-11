@@ -5,10 +5,10 @@ int main() {
     if (i == 1) {
         print("ok ");
         print(i);
-        print(" - return value ok\n");
+        print(" - # TODO - return values not implemented yet\n");
     }
     else 
-        print("not ok - returning values not implemented yet!\n"); 
+        print("not ok - # TODO - return values not implemented yet\n"); 
 }
 
 int foo() {

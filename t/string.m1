@@ -15,7 +15,7 @@ int main() {
     int i = 0;
     int j = 0;
     int numiter = 20;
-    while(numiter-- > 0) {
+    while(numiter > 0) {
         i = j % 10;
         print("ok ");
         print(j + 1);
@@ -26,6 +26,7 @@ int main() {
         print(s[i]);
 
         j++;
+        numiter--;
 
     }
 

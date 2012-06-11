@@ -1,5 +1,5 @@
 int main() {
-    
+    print("1..10\n");
     int i;
     for (i = 1; i <= 10; i++) {
         
