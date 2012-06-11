@@ -7,9 +7,8 @@
 
 /* to store registers; I42 -> no=42, type=VAL_INT */
 typedef struct m1_reg {
-    int no;         /* number of register. */
-    int type;       /* type of register. */
-    int is_symbol;  /* flag whether register is allocated to a symbol. */
+    short no;         /* number of register. */
+    short type;       /* type of register. */
     
 } m1_reg;
 

@@ -87,17 +87,15 @@ use_reg(M1_compiler *comp, m1_valuetype type) {
     /* set the register to "used". */
     registers[type][i] = 1;
     
-    /* return the register. Ensure is_symbol flag is clear. */
+    /* return the register. */
     r.no        = i;    
     r.type      = type;
-    r.is_symbol = REG_UNUSED;
     return r;
 }
 
 static void
 freeze_reg(M1_compiler *comp, m1_reg r) {
     assert(comp != NULL);
-//    assert(registers[r.type][r.no] == REG_USED);
     assert(r.type < REG_TYPE_NUM);
     assert(r.no < REG_NUM);
     assert(r.no >= 0);
@@ -113,8 +111,7 @@ In that case, the register is left alone.
 */
 static void
 unuse_reg(M1_compiler *comp, m1_reg r) {
-    fprintf(stderr, "Unusing register NO:%d, SYMBOL:%s\n", r.no, r.is_symbol?"yes":"no");
-//    if (r.is_symbol == REG_USED) {
+
     if (registers[r.type][r.no] != REG_SYMBOL) {
         fprintf(stderr, "Unusing %d for good\n", r.no);        
         registers[r.type][r.no] = REG_UNUSED;
@@ -418,7 +415,6 @@ OBJECT_LINK-----> L1
         	if (obj->sym->regno == NO_REG_ALLOCATED_YET) {
 
                 m1_reg r        = use_reg(comp, obj->sym->typedecl->valtype);
-//                r.is_symbol     = 1;
                 freeze_reg(comp, r);
                 obj->sym->regno = r.no;
         	}  
@@ -434,7 +430,6 @@ OBJECT_LINK-----> L1
             }
             
         	reg.no = obj->sym->regno;    
-        	reg.is_symbol = 1; 
         	freeze_reg(comp, reg);   	
                       
             /* return a pointer to this node by OUT parameter. */
@@ -477,8 +472,7 @@ OBJECT_LINK-----> L1
                     
                     m1_reg offsetreg = popreg(comp->regstack);
                     m1_reg parentreg = popreg(comp->regstack); 
-//                    m1_reg reg       = gen_reg(comp, VAL_INT);
-                    m1_reg reg = use_reg(comp, VAL_INT);
+                    m1_reg reg       = use_reg(comp, VAL_INT);
                                    
                     fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)reg.type], reg.no,
                                                             reg_chars[(int)parentreg.type], parentreg.no,
@@ -1365,17 +1359,15 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     gencode_expr(comp, u->expr);
     reg = popreg(comp->regstack);
     
-    
-    oldval = use_reg(comp, VAL_INT);
-     
-    /*  x++:
-    
-        target = 1
-        target = target + x
-
-    */  
+    /* register to hold the value "1". */        
     m1_reg one = use_reg(comp, VAL_INT);
-    fprintf(OUT, "\tset\tI%d, I%d, x\n", oldval.no, reg.no);
+    
+    /* if it's a postfix op, then need to save the old value. */
+    if (postfix == 1) {
+        oldval = use_reg(comp, VAL_INT);
+        fprintf(OUT, "\tset\tI%d, I%d, x\n", oldval.no, reg.no);
+    }
+    
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", one.no);
     fprintf(OUT, "\t%s\tI%d, I%d, I%d\n", op, reg.no, reg.no, one.no);    
     
@@ -1386,6 +1378,7 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
         pushreg(comp->regstack, reg);
     }
 
+    /* release the register that was holding the constant "1". */
     unuse_reg(comp, one);       
             
 }
@@ -1736,7 +1729,6 @@ gencode_var(M1_compiler *comp, m1_var *v) {
        
        if (sym->regno == NO_REG_ALLOCATED_YET) {
             sym->regno = reg.no;
-            reg.is_symbol = 1;
             freeze_reg(comp, reg);
        }
        unuse_reg(comp, reg);
@@ -1753,10 +1745,9 @@ gencode_var(M1_compiler *comp, m1_var *v) {
         assert(sym != NULL);
         
         if (sym->regno == NO_REG_ALLOCATED_YET) {
-            m1_reg reg    = use_reg(comp, sym->valtype);
-            reg.is_symbol = 1;
+            m1_reg reg = use_reg(comp, sym->valtype);
+            sym->regno = reg.no;
             freeze_reg(comp, reg);
-            sym->regno    = reg.no;
         }
         
         /* calculate total size of array. If smaller than 256*255,
@@ -2004,17 +1995,16 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *chunk) {
     /* XXX only generate in non-main functions. */
     
     if (strcmp(chunk->name, "main") != 0) {        
-//        m1_reg retpc_reg   = gen_reg(comp, VAL_INT);    
-//        m1_reg retpc_index = gen_reg(comp, VAL_INT);
-//        m1_reg chunk_index = gen_reg(comp, VAL_INT);
         m1_reg retpc_reg   = use_reg(comp, VAL_INT);
         m1_reg retpc_index = use_reg(comp, VAL_INT);
         m1_reg chunk_index = use_reg(comp, VAL_INT);
+
         fprintf(OUT, "\tset_imm    I%d, 0, RETPC\n", retpc_index.no);
         fprintf(OUT, "\tderef      I%d, PCF, I%d\n", retpc_reg.no, retpc_index.no);
         fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
         fprintf(OUT, "\tderef      I%d, PCF, I%d\n", chunk_index.no, chunk_index.no);
         fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", chunk_index.no, retpc_reg.no);        
+
         unuse_reg(comp, retpc_reg);
         unuse_reg(comp, retpc_index);
         unuse_reg(comp, chunk_index);
