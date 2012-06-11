@@ -68,12 +68,16 @@ reset_reg(M1_compiler *comp) {
     memset(registers, 0, sizeof(char) * REG_NUM * REG_TYPE_NUM);    
 }
 
+#define REG_UNUSED  0
+#define REG_USED    1
+#define REG_SYMBOL  2
+
 static m1_reg
 use_reg(M1_compiler *comp, m1_valuetype type) {
     m1_reg r;
     int i = 0;
     /* look for first empty slot. */
-    while (i < REG_NUM && registers[type][i] != 0) {
+    while (i < REG_NUM && registers[type][i] != REG_UNUSED) {
         i++;
     }
     
@@ -86,19 +90,19 @@ use_reg(M1_compiler *comp, m1_valuetype type) {
     /* return the register. Ensure is_symbol flag is clear. */
     r.no        = i;    
     r.type      = type;
-    r.is_symbol = 0;
+    r.is_symbol = REG_UNUSED;
     return r;
 }
 
 static void
 freeze_reg(M1_compiler *comp, m1_reg r) {
     assert(comp != NULL);
-    assert(registers[r.type][r.no] == 1);
+//    assert(registers[r.type][r.no] == REG_USED);
     assert(r.type < REG_TYPE_NUM);
     assert(r.no < REG_NUM);
     assert(r.no >= 0);
     
-    registers[r.type][r.no] = 2;   
+    registers[r.type][r.no] = REG_SYMBOL;   
 }
 
 /*
@@ -110,14 +114,10 @@ In that case, the register is left alone.
 static void
 unuse_reg(M1_compiler *comp, m1_reg r) {
     fprintf(stderr, "Unusing register NO:%d, SYMBOL:%s\n", r.no, r.is_symbol?"yes":"no");
-    if (r.is_symbol != 0) {
-        fprintf(stderr, "Unusing %d, but is a symbol so leave it\n", r.no);
-//        registers[r.type][r.no] = 2;    /* mark it as "frozen" */
-    }
-    else {
-        fprintf(stderr, "Unusing %d for good\n", r.no);
-        /* XXX Work in Progress. this is a bit buggy at the moment. */
-       // registers[r.type][r.no] = 0;
+//    if (r.is_symbol == REG_USED) {
+    if (registers[r.type][r.no] != REG_SYMBOL) {
+        fprintf(stderr, "Unusing %d for good\n", r.no);        
+        registers[r.type][r.no] = REG_UNUSED;
     }
     /* XXX this is for debugging. */
     int i;
@@ -416,9 +416,10 @@ OBJECT_LINK-----> L1
              
         	/* if symbol has not register allocated yet, do it now. */
         	if (obj->sym->regno == NO_REG_ALLOCATED_YET) {
-                //m1_reg r = gen_reg(comp, obj->sym->typedecl->valtype); 
+
                 m1_reg r        = use_reg(comp, obj->sym->typedecl->valtype);
 //                r.is_symbol     = 1;
+                freeze_reg(comp, r);
                 obj->sym->regno = r.no;
         	}  
             
@@ -433,7 +434,8 @@ OBJECT_LINK-----> L1
             }
             
         	reg.no = obj->sym->regno;    
-        	reg.is_symbol = 1;    	
+        	reg.is_symbol = 1; 
+        	freeze_reg(comp, reg);   	
                       
             /* return a pointer to this node by OUT parameter. */
             *parent = obj;
@@ -1332,7 +1334,7 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     char  *op;
     int    postfix = 0;
     m1_reg reg, 
-           target; 
+           oldval; 
     
     switch (u->op) {
         case UNOP_POSTINC:
@@ -1364,23 +1366,28 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     reg = popreg(comp->regstack);
     
     
-    target = use_reg(comp, VAL_INT);
+    oldval = use_reg(comp, VAL_INT);
+     
+    /*  x++:
+    
+        target = 1
+        target = target + x
 
-      
-    fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", target.no);
-    fprintf(OUT, "\t%s\tI%d, I%d, I%d\n", op, target.no, reg.no, target.no);
+    */  
+    m1_reg one = use_reg(comp, VAL_INT);
+    fprintf(OUT, "\tset\tI%d, I%d, x\n", oldval.no, reg.no);
+    fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", one.no);
+    fprintf(OUT, "\t%s\tI%d, I%d, I%d\n", op, reg.no, reg.no, one.no);    
     
-    
-    if (postfix == 0) { 
-        /* prefix; return reg containing value before adding 1 */
-    	reg.no = target.no; 
+    if (postfix == 1) { /* postfix; give back the register containing the OLD value. */
+    	pushreg(comp->regstack, oldval);
     }
-    
-    fprintf(OUT, "\tset\tI%d, I%d, x\n", reg.no, target.no);
+    else { /* prefix; give back the register containing the NEW value. */
+        pushreg(comp->regstack, reg);
+    }
 
-    unuse_reg(comp, target);
-        
-    pushreg(comp->regstack, reg);            
+    unuse_reg(comp, one);       
+            
 }
 
 static void
@@ -1730,6 +1737,7 @@ gencode_var(M1_compiler *comp, m1_var *v) {
        if (sym->regno == NO_REG_ALLOCATED_YET) {
             sym->regno = reg.no;
             reg.is_symbol = 1;
+            freeze_reg(comp, reg);
        }
        unuse_reg(comp, reg);
               
@@ -1747,6 +1755,7 @@ gencode_var(M1_compiler *comp, m1_var *v) {
         if (sym->regno == NO_REG_ALLOCATED_YET) {
             m1_reg reg    = use_reg(comp, sym->valtype);
             reg.is_symbol = 1;
+            freeze_reg(comp, reg);
             sym->regno    = reg.no;
         }
         

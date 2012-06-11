@@ -1,0 +1,28 @@
+
+
+int main() {
+    int x, y;
+    print("1..4\n");
+    x = 1;
+    y = 3;
+    
+
+    print("ok ");
+    print(x);   // should print 1.
+    print("\n");
+
+    print("ok ");
+    print(++x); // should print 2.
+    print("\n");
+
+    
+    print("ok ");
+    print(y++); // should print 3.
+    print("\n");
+    
+    print("ok ");
+    print(y); // should print 4.
+    print("\n");
+    
+
+}
