@@ -57,27 +57,21 @@ static const char reg_chars[4] = {'I', 'N', 'S', 'P'};
   }
 */
 
-/*
-
-Allocate new registers as needed.
-
-*/
-static m1_reg
-gen_reg(M1_compiler *comp, m1_valuetype type) {
-    m1_reg reg;
-    assert(0);
-        
-    assert(comp != NULL);
-    assert(type < 4);
-    
-    reg.type = type;
-	reg.no   = comp->regs[type]++;   
- 
-    return reg;
-}
-
 
 static char registers[4][60];
+
+static void
+reset_reg() {
+    int type = 0;
+
+    for(; type <= 3; type++) {
+        int i = 0;
+        while (i < 60) {
+            registers[type][i] = 0;
+            i++;
+        }
+    }
+}
 
 static m1_reg
 use_reg(M1_compiler *comp, m1_valuetype type) {
@@ -1390,7 +1384,7 @@ gencode_break(M1_compiler *comp) {
 static void
 gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     m1_symbol *fun = sym_find_chunk(&comp->currentchunk->constants, f->name);
-    m1_reg pc_reg, cont_offset;
+    m1_reg pc_reg, cont_offset, return_reg;
     
     if (fun == NULL) { /* XXX need to check in semcheck */
         fprintf(stderr, "Cant find function '%s'\n", f->name);
@@ -1398,9 +1392,6 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
         return;
     }
 
-    /* XXX: This just makes comp->regstack->sp won't be 0, which makes m1 happy */
-    m1_reg return_reg = use_reg(comp, VAL_INT);
-    pushreg(comp->regstack, return_reg);
 /*
     m1_reg cont_offset = gen_reg(comp, VAL_INT);
     m1_reg pc_reg = gen_reg(comp, VAL_INT);
@@ -1511,6 +1502,9 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     unuse_reg(comp, I0);
     unuse_reg(comp, cf_reg);
 
+    /* XXX: This just makes comp->regstack->sp won't be 0, which makes m1 happy */
+    return_reg = use_reg(comp, VAL_INT);
+    pushreg(comp->regstack, return_reg);
 
 
 
@@ -1996,9 +1990,6 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *chunk) {
 
 static void 
 gencode_chunk(M1_compiler *comp, m1_chunk *c) {
-    
-    int i;
-   
 #define PRELOAD_0_AND_1     0
     
 #if PRELOAD_0_AND_1    
@@ -2020,9 +2011,9 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
 #endif
 
     fprintf(OUT, ".chunk \"%s\"\n", c->name);    
+
     /* for each chunk, reset the register allocator */
-    for (i = 0; i < NUM_TYPES; ++i)
-        comp->regs[i] = 0;
+    reset_reg();
         
     gencode_consts(&c->constants);
     gencode_metadata(c);
