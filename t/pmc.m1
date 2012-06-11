@@ -3,8 +3,24 @@ pmc integer {
     int value;
  
     vtable method int init() {
+        /*
+        add();
+        sub();
+        tostring();        
+        */
+    }   
+    
+    method int add() {
         
-    }       
+    }
+    
+    method int sub() {
+        
+    }
+    
+    method string tostring() {
+           
+    }    
 }
 
 int main() {

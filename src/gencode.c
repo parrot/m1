@@ -2062,17 +2062,59 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     gencode_chunk_return(comp, c);
 }
 
+/*
+
+Generate a function to setup the vtable. 
+
+*/
+static void
+gencode_pmc_vtable(M1_compiler *comp, m1_pmc *pmc) {
+    fprintf(OUT, ".chunk \"__%s_init_vtable__\"\n", pmc->name);
+    fprintf(OUT, ".constants\n");
+//    gencode_consts(comp, );
+    fprintf(OUT, ".metadata\n");
+    fprintf(OUT, ".bytecode\n");
+    
+    m1_reg indexreg      = use_reg(comp, VAL_INT);
+    m1_reg vtablereg     = use_reg(comp, VAL_CHUNK);
+    m1_reg methodreg     = use_reg(comp, VAL_CHUNK);
+    m1_chunk *methoditer = pmc->methods;
+    
+    int i = 0;
+    /* allocate memory for a vtable. */
+    fprintf(OUT, "\tset_imm\tI%d, 0, 100\n", indexreg.no);    
+    fprintf(OUT, "\tgc_alloc\tP%d, I%d, x\n", vtablereg.no, indexreg.no);
+    
+    while (methoditer != NULL) {
+        /* generate code to copy the pointer to the chunk into the vtable. */
+        fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", indexreg.no, i++);
+        fprintf(OUT, "\tderef\tP%d, CONSTS, I%d\n", methodreg.no, indexreg.no);
+        fprintf(OUT, "\tset_ref\tP%d, I%d, P%d\n", vtablereg.no, indexreg.no, methodreg.no);
+        methoditer = methoditer->next;   
+    }
+    
+    /* XXX need to generate code to return the vtable object. */
+    
+    unuse_reg(comp, methodreg);
+    unuse_reg(comp, indexreg);
+       
+}
 
 static void
 gencode_pmc(M1_compiler *comp, m1_pmc *pmc) {
-    /* XXX generate code for initialization, setting up vtables etc.*/
+
     
     /* generate code for the methods. */
     m1_chunk *methoditer = pmc->methods;
     while (methoditer != NULL) {
+        /* set current chunk to this method. */
+        comp->currentchunk = methoditer;   
         gencode_chunk(comp, methoditer);
         methoditer = methoditer->next;   
     }    
+    
+    /* XXX generate code for initialization, setting up vtables etc.*/    
+    gencode_pmc_vtable(comp, pmc);
 }
 
 /*

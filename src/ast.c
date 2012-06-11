@@ -218,6 +218,8 @@ funcall(M1_compiler *comp, m1_object *fun, m1_expression *args) {
     expr->expr.f->arguments = args;	
     
 	/* enter name of function to invoke into constant table. */
+	// replace this somehow. Get access to the vtable of the object and copy the
+	// method reference from that into this chunk's const segment.
 	sym_enter_chunk(comp, &comp->currentchunk->constants, fun->obj.name);
     return expr;   
 }
