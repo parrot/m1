@@ -31,8 +31,7 @@ This happens in gencode_number().
 #include "ann.h"
 
 #define OUT	stdout
-#define REG_TYPE_NUM    4
-#define REG_NUM         61
+
 
 #define M1DEBUG 1
 
@@ -59,13 +58,11 @@ static const char reg_chars[REG_TYPE_NUM] = {'I', 'N', 'S', 'P'};
   }
 */
 
-/* XXX will go into compiler struct, as it needs to be thread-safe. */
-static char registers[REG_TYPE_NUM][REG_NUM];
 
 static void
 reset_reg(M1_compiler *comp) {
     /* Set all fields in the registers table to 0. */
-    memset(registers, 0, sizeof(char) * REG_NUM * REG_TYPE_NUM);    
+    memset(comp->registers, 0, sizeof(char) * REG_NUM * REG_TYPE_NUM);    
 }
 
 #define REG_UNUSED  0
@@ -77,7 +74,7 @@ use_reg(M1_compiler *comp, m1_valuetype type) {
     m1_reg r;
     int i = 0;
     /* look for first empty slot. */
-    while (i < REG_NUM && registers[type][i] != REG_UNUSED) {
+    while (i < REG_NUM && comp->registers[type][i] != REG_UNUSED) {
         i++;
     }
     
@@ -85,7 +82,7 @@ use_reg(M1_compiler *comp, m1_valuetype type) {
     //else fprintf(stderr, "Allocating register %d\n", i);
     
     /* set the register to "used". */
-    registers[type][i] =  REG_USED;
+    comp->registers[type][i] =  REG_USED;
     
     /* return the register. */
     r.no        = i;    
@@ -100,7 +97,7 @@ freeze_reg(M1_compiler *comp, m1_reg r) {
     assert(r.no < REG_NUM);
     assert(r.no >= 0);
     
-    registers[r.type][r.no] = REG_SYMBOL;   
+    comp->registers[r.type][r.no] = REG_SYMBOL;   
 }
 
 /*
@@ -112,9 +109,9 @@ In that case, the register is left alone.
 static void
 unuse_reg(M1_compiler *comp, m1_reg r) {
 
-    if (registers[r.type][r.no] != REG_SYMBOL) {
+    if (comp->registers[r.type][r.no] != REG_SYMBOL) {
         //fprintf(stderr, "Unusing %d for good\n", r.no);        
-        registers[r.type][r.no] = REG_UNUSED;
+        comp->registers[r.type][r.no] = REG_UNUSED;
     }
     /* XXX this is for debugging. */
    /*

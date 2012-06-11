@@ -2,7 +2,10 @@
 #ifndef __M1_COMPILER__
 #define __M1_COMPILER__
 
-#define NUM_TYPES   4
+#define NUM_TYPES       4
+
+#define REG_TYPE_NUM    4
+#define REG_NUM         61
 
 
 /* needed for declaring yyscan_t as a member of compiler struct below. */
@@ -41,6 +44,8 @@ typedef struct M1_compiler {
 	struct m1_symboltable *currentsymtab;
 	
 	int                    enum_const_counter; /* for parsing enums that don't specify values. */
+	
+	char                   registers[REG_TYPE_NUM][REG_NUM];
 	
 } M1_compiler;
 
