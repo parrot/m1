@@ -920,9 +920,30 @@ gencode_le(M1_compiler *comp, m1_binexpr *b) {
     pushreg(comp->regstack, result);
 }
 
+/*
+
+The parse tree for:
+
+    a = b = c = 42;
+
+... looks like this:
+
+        =
+      /   \
+     a     =
+          /  \
+         b    =
+             /  \
+            c    42
+
+            
+Assign 42 to c, then either of them to b, and then either of them 
+(b or (c or 42)) to a. Doesn't matter which one.
+            
+*/
 static void
 gencode_binary_assign(M1_compiler *comp, m1_binexpr *b) {
-    m1_reg left, right, target;
+    m1_reg left, right;
     
     gencode_expr(comp, b->left);
     left = popreg(comp->regstack);
@@ -930,13 +951,11 @@ gencode_binary_assign(M1_compiler *comp, m1_binexpr *b) {
     gencode_expr(comp, b->right);  
     right  = popreg(comp->regstack);
     
-    target = use_reg(comp, (m1_valuetype)left.type);    
-    fprintf(OUT, "\tset \t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
-                                               reg_chars[(int)left.type], left.no, 
-                                               reg_chars[(int)right.type], right.no);
+    fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)left.type], left.no, 
+                                            reg_chars[(int)right.type], right.no);
+
     unuse_reg(comp, left);
-    unuse_reg(comp, right);
-    pushreg(comp->regstack, target);                    
+    pushreg(comp->regstack, right);                    
 }
 
 static void
@@ -1769,9 +1788,12 @@ gencode_var(M1_compiler *comp, m1_var *v) {
         }
         else {
             m1_symbol *sizesym = sym_find_int(&comp->currentchunk->constants, size);
+            m1_reg indexreg = use_reg(comp, VAL_INT);
             assert(sizesym != NULL);
-            /* XXX fix this. 3rd op should be a reg. */
-            fprintf(OUT, "\tderef\tI%d, CONSTS, %d\n", memsize.no, sizesym->constindex);
+            /* XXX this will fail if the const index in the CONSTS segment > 255. */
+            fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", indexreg.no, sizesym->constindex); 
+            fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", memsize.no, indexreg.no);
+            unuse_reg(comp, indexreg);
         }
         
         fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", sym->regno, memsize.no);
@@ -2023,7 +2045,18 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *chunk) {
 static void 
 gencode_chunk(M1_compiler *comp, m1_chunk *c) {
 #define PRELOAD_0_AND_1     0
+
+    fprintf(OUT, ".chunk \"%s\"\n", c->name);    
+
+    /* for each chunk, reset the register allocator */
+    reset_reg(comp);
+        
+    gencode_consts(&c->constants);
+    gencode_metadata(c);
     
+    fprintf(OUT, ".bytecode\n");  
+    
+        
 #if PRELOAD_0_AND_1    
     m1_reg r0, r1;
     
@@ -2041,16 +2074,6 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", r1.no); 
 
 #endif
-
-    fprintf(OUT, ".chunk \"%s\"\n", c->name);    
-
-    /* for each chunk, reset the register allocator */
-    reset_reg(comp);
-        
-    gencode_consts(&c->constants);
-    gencode_metadata(c);
-    
-    fprintf(OUT, ".bytecode\n");    
     
     /* generate code for statements */
     gencode_block(comp, c->block);

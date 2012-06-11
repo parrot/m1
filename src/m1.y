@@ -302,7 +302,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 
 
 %left  ':' 
-%nonassoc TK_INC_ASSIGN '='
+%right TK_INC_ASSIGN '='
 %left TK_AND TK_OR 
 %left TK_LE TK_GE TK_LT TK_GT TK_EQ TK_NE
 %left TK_LSH TK_RSH
