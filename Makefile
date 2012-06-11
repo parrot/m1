@@ -68,8 +68,11 @@ src/main$(O): src/m1parser.h src/main.c
 src/decl$(O): src/decl.c src/decl.h
 	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/decl.c
 
+test-v: m1$(EXE)
+	prove -r -v --exec ./run_m1.sh t/*.m1
+
 test: m1$(EXE)
-	find t/ -name '*.m1' -type f -print | xargs -n1 ./run_m1.sh
+	prove -r --exec ./run_m1.sh t/*.m1
 
 clean:
 	$(RM) -rf src/m1parser.* \
