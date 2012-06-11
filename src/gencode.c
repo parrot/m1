@@ -1390,6 +1390,7 @@ gencode_break(M1_compiler *comp) {
 static void
 gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     m1_symbol *fun = sym_find_chunk(&comp->currentchunk->constants, f->name);
+    m1_reg pc_reg, cont_offset;
     
     if (fun == NULL) { /* XXX need to check in semcheck */
         fprintf(stderr, "Cant find function '%s'\n", f->name);
@@ -1405,8 +1406,6 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     m1_reg pc_reg = gen_reg(comp, VAL_INT);
     m1_reg cf_reg = gen_reg(comp, VAL_CHUNK);
     */
-    m1_reg cont_offset = use_reg(comp, VAL_INT);
-    m1_reg pc_reg      = use_reg(comp, VAL_INT);
     m1_reg cf_reg      = use_reg(comp, VAL_CHUNK);
     
     /* create a new call frame */
@@ -1475,7 +1474,11 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     /* init_cf_retpc: */    
     fprintf(OUT, "\tset_imm   I%d, 0, 10\n", temp.no);
     fprintf(OUT, "\tadd_i     RETPC, PC, I%d\n", temp.no);
+
     unuse_reg(comp, temp);
+
+    cont_offset = use_reg(comp, VAL_INT);
+    pc_reg      = use_reg(comp, VAL_INT);
     
     /* init_cf_pc */
     fprintf(OUT, "\tset_imm   I%d, 0, 3\n", cont_offset.no);
@@ -1589,6 +1592,7 @@ gencode_print(M1_compiler *comp, m1_expression *expr) {
     m1_reg one;
     
     gencode_expr(comp, expr);
+
     reg = popreg(comp->regstack);
     
     /* register to hold value "1" */    
