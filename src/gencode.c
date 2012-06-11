@@ -1442,6 +1442,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
         regindex++;
         argiter = argiter->next;   
 
+        unuse_reg(comp, indexreg);
         unuse_reg(comp, argreg);
     }
     
@@ -1496,6 +1497,9 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     fprintf(OUT, "\tadd_i     I%d, I%d, PC\n", cont_offset.no, cont_offset.no);
     fprintf(OUT, "\tset_imm   I%d, 0, PC\n", pc_reg.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, I%d\n", cf_reg.no, pc_reg.no, cont_offset.no); 
+
+    unuse_reg(comp, cont_offset);
+    unuse_reg(comp, pc_reg);
 
     fprintf(OUT, "\tset       CF, P%d, x\n", cf_reg.no);
      
