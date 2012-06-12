@@ -69,10 +69,10 @@ src/decl$(O): src/decl.c src/decl.h
 	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/decl.c
 
 test-v: m1$(EXE)
-	prove -r -v --exec ./run_m1.sh t/*.m1
+	prove -r -v --ext .m1 --exec ./run_m1.sh t/
 
 test: m1$(EXE)
-	prove -r --exec ./run_m1.sh t/*.m1
+	prove -r --ext .m1 --exec ./run_m1.sh t/
 
 clean:
 	$(RM) -rf src/m1parser.* \
