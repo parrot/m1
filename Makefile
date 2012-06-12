@@ -27,7 +27,7 @@ M1_O_FILES = \
 	src/main$(O) \
 
 m1$(EXE): $(M1_O_FILES)
-	$(CC) -I$(@D) -o m1$(EXE) $(M1_O_FILES)
+	$(CC) -pg -fprofile-arcs -ftest-coverage -I$(@D) -o m1$(EXE) $(M1_O_FILES)
 
 src/m1lexer$(O): src/m1lexer.c
 	$(CC) $(CFLAGS) -I$(@D) -o $@ -c src/m1lexer.c
