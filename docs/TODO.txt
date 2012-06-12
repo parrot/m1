@@ -41,6 +41,7 @@ What's working?
 * PMC definitions (incl methods)
 * tests run using "prove" (make test).
 * register allocation.
+* integer (only) parameters and arguments.
 
 What's not working?
 -------------------
