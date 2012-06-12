@@ -482,7 +482,6 @@ parameter(M1_compiler *comp, char *paramtype, char *paramname) {
 
 void
 enter_param(M1_compiler *comp, m1_var *parameter) {
-    fprintf(stderr, "Entering param '%s'\n", parameter->name);
     assert(parameter->type != NULL);
     assert(parameter->name != NULL);
     parameter->sym = sym_new_symbol(comp, 

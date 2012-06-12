@@ -139,8 +139,8 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line) {
         }
         case OBJECT_MAIN: {
             /* look up identifier's declaration. */
-            m1_symbol *sym = sym_lookup_symbol(comp->currentsymtab, obj->obj.name);
-                        
+            m1_symbol *sym = sym_lookup_symbol(comp->currentsymtab, obj->obj.name);            
+
             if (sym == NULL) {
                 type_error_extra(comp, line, "Undeclared variable '%s'\n", obj->obj.name);
             }

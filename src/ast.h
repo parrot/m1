@@ -21,7 +21,8 @@ typedef struct m1_chunk {
     struct m1_block      *block;        /* list of statements. */
 
     struct m1_var        *parameters;   /* list of parameters */
-
+    unsigned              num_params;   /* parameter count. */
+    
     unsigned              line;         /* line of function declaration. */    
     struct m1_symboltable constants;    /* constants used in this chunk */
         

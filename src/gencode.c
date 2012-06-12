@@ -82,7 +82,7 @@ use_reg(M1_compiler *comp, m1_valuetype type) {
     //else fprintf(stderr, "Allocating register %d\n", i);
     
     /* set the register to "used". */
-    comp->registers[type][i] =  REG_USED;
+    comp->registers[type][i] = REG_USED;
     
     /* return the register. */
     r.no        = i;    
@@ -108,9 +108,10 @@ In that case, the register is left alone.
 */
 static void
 unuse_reg(M1_compiler *comp, m1_reg r) {
-
+    //return;
+    
     if (comp->registers[r.type][r.no] != REG_SYMBOL) {
-        //fprintf(stderr, "Unusing %d for good\n", r.no);        
+        fprintf(stderr, "Unusing %d for good\n", r.no);        
         comp->registers[r.type][r.no] = REG_UNUSED;
     }
     /* XXX this is for debugging. */
@@ -1433,7 +1434,8 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
         regindex++;
         argiter = argiter->next;   
 
-        unuse_reg(comp, indexreg);
+/* indexreg should NOT be unused. XXX need to find out why. */
+//        unuse_reg(comp, indexreg);
         unuse_reg(comp, argreg);
     }
     
@@ -2011,6 +2013,26 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *chunk) {
     }
 }
 
+static void
+gencode_parameters(M1_compiler *comp, m1_chunk *chunk) {
+    m1_var *paramiter = chunk->parameters;
+    fprintf(stderr, "[gencode] parameters for chunk (%d)\n", chunk->num_params);
+    
+    if (chunk->num_params > 0)
+        assert(paramiter != NULL);
+    
+            
+    while (paramiter != NULL) {
+        m1_reg r = use_reg(comp, VAL_INT); /* TODO: fix type. */
+//        fprintf(stderr, "Assigning register %d to parameter %s\n", r.no, paramiter->name);
+        paramiter->sym->regno = r.no;
+        freeze_reg(comp, r);
+        fprintf(stderr, "Frozen reg %d for parameter %s\n", r.no, paramiter->name);
+        
+        paramiter = paramiter->next;   
+    }
+}
+
 
 static void 
 gencode_chunk(M1_compiler *comp, m1_chunk *c) {
@@ -2045,6 +2067,7 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
 
 #endif
     
+    gencode_parameters(comp, c);
     /* generate code for statements */
     gencode_block(comp, c->block);
     

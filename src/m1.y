@@ -481,17 +481,20 @@ function_definition : function_init '(' parameters ')' open_block statements '}'
                           M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);  
                           $1->block = $5->expr.blck; 
                           block_set_stat($5, $6);    
-                          
+                          $$ = $1;
+                          $$->parameters = $3;
+                                                    
                           /* add parameters here. */
                           m1_var *paramiter = $3;
                           while (paramiter != NULL) {
                             
-                            enter_param(comp, paramiter);
+                            enter_param(comp, paramiter);                            
                             paramiter = paramiter->next; 
+                            ++$$->num_params;
                           }
                           /* now close the scope. */
                           close_scope(comp);                      
-                          $$ = $1;
+
                         }
                     ;
 
