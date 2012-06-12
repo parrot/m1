@@ -1422,7 +1422,11 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
        XXX this still needs to be specced for M0's calling conventions. */
        
     m1_expression *argiter = f->arguments;
-    int regindex = 12; /* points to I0. XXX */
+
+#define M0_REG_I0      12
+ 
+    int regindex = M0_REG_I0; 
+    
     while (argiter != NULL) {
         m1_reg argreg;
         m1_reg indexreg = use_reg(comp, VAL_INT);
@@ -1433,11 +1437,14 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
 
         regindex++;
         argiter = argiter->next;   
-
-/* indexreg should NOT be unused. XXX need to find out why. */
-//        unuse_reg(comp, indexreg);
+    
+        /* indexreg should NOT be unused. XXX need to find out why. 
+        unuse_reg(comp, indexreg);
+        */
         unuse_reg(comp, argreg);
+        
     }
+
     
     /* init_cf_copy: */
     m1_reg temp = use_reg(comp, VAL_INT);    
