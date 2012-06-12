@@ -1423,19 +1423,26 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
        
     m1_expression *argiter = f->arguments;
 
-#define M0_REG_I0      12
+#define M0_REG_I0   12
+#define M0_REG_N0   73       
+#define M0_REG_S0   134
+#define M0_REG_P0   195
  
-    int regindex = M0_REG_I0; 
+    int regindexes[4] = { M0_REG_I0, 
+                          M0_REG_N0, 
+                          M0_REG_S0, 
+                          M0_REG_P0};
     
     while (argiter != NULL) {
         m1_reg argreg;
         m1_reg indexreg = use_reg(comp, VAL_INT);
         gencode_expr(comp, argiter);
         argreg = popreg(comp->regstack);
-        fprintf(OUT, "\tset_imm   I%d, 0, %d\n", indexreg.no, regindex);
-        fprintf(OUT, "\tset_ref   P%d, I%d, I%d\n", cf_reg.no, indexreg.no, argreg.no);
+        fprintf(OUT, "\tset_imm   I%d, 0, %d\n", indexreg.no, regindexes[argreg.type]);
+        fprintf(OUT, "\tset_ref   P%d, I%d, %c%d\n", cf_reg.no, indexreg.no, reg_chars[(int)argreg.type], argreg.no);
 
-        regindex++;
+        regindexes[argreg.type]++;
+        
         argiter = argiter->next;   
     
         /* indexreg should NOT be unused. XXX need to find out why. 
@@ -2030,7 +2037,7 @@ gencode_parameters(M1_compiler *comp, m1_chunk *chunk) {
     
             
     while (paramiter != NULL) {
-        m1_reg r = use_reg(comp, VAL_INT); /* TODO: fix type. */
+        m1_reg r = use_reg(comp, paramiter->sym->valtype); 
 //        fprintf(stderr, "Assigning register %d to parameter %s\n", r.no, paramiter->name);
         paramiter->sym->regno = r.no;
         freeze_reg(comp, r);
