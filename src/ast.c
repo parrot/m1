@@ -474,16 +474,23 @@ Parameters are also represented by m1_var nodes.
 m1_var *
 parameter(M1_compiler *comp, char *paramtype, char *paramname) {
     m1_var *p = (m1_var *)m1_malloc(sizeof(m1_var));
-
-    p->sym    = sym_new_symbol(comp,
-                               comp->currentsymtab,  /* enter in current chunk's symbol table */
-	                           paramname,            /* name of this parameter being declared */
-	                           paramtype,             
-	                           1);                   /* just 1 element, not an array. 
-	                                                    XXX this is possible though! */
-	                        
+    p->type   = paramtype;   	                        
     p->name   = paramname;
+    /* cannot enter into a symbol table, as there is not yet an active symbol table. */
     return p;
+}
+
+void
+enter_param(M1_compiler *comp, m1_var *parameter) {
+    fprintf(stderr, "Entering param '%s'\n", parameter->name);
+    assert(parameter->type != NULL);
+    assert(parameter->name != NULL);
+    parameter->sym = sym_new_symbol(comp, 
+                                    comp->currentsymtab, 
+                                    parameter->name,
+                                    parameter->type, 
+                                    1);       
+    assert(parameter->sym != NULL);                                    
 }
 
 m1_var *

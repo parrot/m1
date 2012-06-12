@@ -476,9 +476,21 @@ opt_vtable      : /* empty */
                 | "vtable"
                 ;				
                                         
-function_definition : function_init '(' parameters ')' block
+function_definition : function_init '(' parameters ')' open_block statements '}' 
                         {  
-                          $1->block = $5->expr.blck;                           
+                          M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);  
+                          $1->block = $5->expr.blck; 
+                          block_set_stat($5, $6);    
+                          
+                          /* add parameters here. */
+                          m1_var *paramiter = $3;
+                          while (paramiter != NULL) {
+                            
+                            enter_param(comp, paramiter);
+                            paramiter = paramiter->next; 
+                          }
+                          /* now close the scope. */
+                          close_scope(comp);                      
                           $$ = $1;
                         }
                     ;

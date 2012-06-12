@@ -584,6 +584,15 @@ check_block(M1_compiler *comp, m1_block *block) {
     comp->currentsymtab = block->locals.parentscope;
 }
 
+static void
+check_parameters(M1_compiler *comp, m1_var *parameters, unsigned line) {
+    m1_var *paramiter = parameters;
+    while (paramiter != NULL) {
+        check_vardecl(comp, paramiter, line);
+        paramiter = paramiter->next;
+    }   
+}
+
 static void 
 check_chunk(M1_compiler *comp, m1_chunk *c) {
     /* We're in a block, but not a block to break out of. 
@@ -594,6 +603,7 @@ check_chunk(M1_compiler *comp, m1_chunk *c) {
      */
     push(comp->breakstack, 0); 
     
+    check_parameters(comp, c->parameters, c->line);
     check_block(comp, c->block);
     
     (void)pop(comp->breakstack); 

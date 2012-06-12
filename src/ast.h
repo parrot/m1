@@ -21,7 +21,8 @@ typedef struct m1_chunk {
     struct m1_block      *block;        /* list of statements. */
 
     struct m1_var        *parameters;   /* list of parameters */
-    
+
+    unsigned              line;         /* line of function declaration. */    
     struct m1_symboltable constants;    /* constants used in this chunk */
         
 } m1_chunk;
@@ -383,6 +384,7 @@ extern void block_set_stat(m1_expression *block, m1_expression *stat);
 extern struct m1_expression *open_scope(M1_compiler *comp);
 extern void close_scope(M1_compiler *comp);
 
+extern void enter_param(M1_compiler *comp, m1_var *parameter);
 
 #endif
 
