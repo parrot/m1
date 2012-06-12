@@ -1,0 +1,8 @@
+int main(int a, int b) {
+    print("1..1\n");   
+    
+    a = 1;
+    print("ok ");
+    print(a);
+    print(" - parameter is declared as a local.\n");
+}

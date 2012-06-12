@@ -589,6 +589,10 @@ check_parameters(M1_compiler *comp, m1_var *parameters, unsigned line) {
     m1_var *paramiter = parameters;
     while (paramiter != NULL) {
         check_vardecl(comp, paramiter, line);
+        
+        assert(paramiter->sym != NULL);
+        assert(paramiter->sym->typedecl != NULL);
+        
         paramiter = paramiter->next;
     }   
 }

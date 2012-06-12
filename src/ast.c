@@ -490,6 +490,10 @@ enter_param(M1_compiler *comp, m1_var *parameter) {
                                     parameter->name,
                                     parameter->type, 
                                     1);       
+
+                                        
+    parameter->sym->typedecl = type_find_def(comp, parameter->type);
+                                    
     assert(parameter->sym != NULL);                                    
 }
 
