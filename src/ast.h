@@ -70,6 +70,7 @@ typedef struct m1_assignment {
 typedef struct m1_funcall {
     char                 *name;
     struct m1_expression *arguments;
+    struct m1_decl       *typedecl;
     
 } m1_funcall;
 

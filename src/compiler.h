@@ -43,6 +43,8 @@ typedef struct M1_compiler {
 		
 	struct m1_symboltable *currentsymtab;
 	
+	struct m1_symboltable *globalsymtab;
+	
 	int                    enum_const_counter; /* for parsing enums that don't specify values. */
 	
 	char                   registers[REG_TYPE_NUM][REG_NUM];

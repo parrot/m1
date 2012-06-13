@@ -41,6 +41,11 @@ This happens in gencode_number().
     #define debug(x)
 #endif
 
+/* See PDD32 for these constants. */
+#define M0_REG_I0   12
+#define M0_REG_N0   73       
+#define M0_REG_S0   134
+#define M0_REG_P0   195
 
 static void gencode_expr(M1_compiler *comp, m1_expression *e);
 static void gencode_block(M1_compiler *comp, m1_block *block);
@@ -745,25 +750,32 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
     m1_reg retpc_reg   = use_reg(comp, VAL_INT);
     m1_reg retpc_index = use_reg(comp, VAL_INT);
 
-    fprintf(OUT, "\tset_imm    I%d, 0, RETPC\n", retpc_index.no);
-    fprintf(OUT, "\tderef      I%d, PCF, I%d\n", retpc_reg.no, retpc_index.no);
 
     unuse_reg(comp, retpc_index);
     
     if (e != NULL) {
+        /* returning a value:
+          
+           <code for expr> # result is stored in RY.
+           
+           set_imm IX, 0, R0   # get the number of index R0 and store in IX
+           set_ref CF, IX, RY  # store value in RY in CF[IX].
+        */
         gencode_expr(comp, e);
         m1_reg r = popreg(comp->regstack);
         m1_reg indexreg = use_reg(comp, VAL_INT);
         /* load the number of register I0 */
         fprintf(OUT, "\tset_imm\tI%d, 0, I0\n", indexreg.no);
         /* index the current callframe, and set in its I0 register the value from the return expression. */
-        fprintf(OUT, "\tset_ref\tCF, I%d, I%d\n", indexreg.no, r.no);
+        fprintf(OUT, "\tset_ref\tCF, I%d, %c%d\n", indexreg.no, reg_chars[(int)r.type], r.no);
         pushreg(comp->regstack, r);
 
     }
 
     chunk_index = use_reg(comp, VAL_INT);
 
+    fprintf(OUT, "\tset_imm    I%d, 0, RETPC\n", retpc_index.no);
+    fprintf(OUT, "\tderef      I%d, PCF, I%d\n", retpc_reg.no, retpc_index.no);
     fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
     fprintf(OUT, "\tderef      I%d, PCF, I%d\n", chunk_index.no, chunk_index.no);
     fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", chunk_index.no, retpc_reg.no);        
@@ -1426,7 +1438,8 @@ static void
 gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     m1_symbol *fun;
     fun = sym_find_chunk(&comp->currentchunk->constants, f->name);
-    m1_reg pc_reg, cont_offset, return_reg;
+    m1_reg pc_reg,     
+           cont_offset;
     
     if (fun == NULL) { // XXX need to check in semcheck 
         fprintf(stderr, "Cant find function '%s'\n", f->name);
@@ -1434,8 +1447,6 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
         return;
     }
     
-
-
     m1_reg cf_reg   = use_reg(comp, VAL_CHUNK);
     m1_reg sizereg  = use_reg(comp, VAL_INT);
     m1_reg flagsreg = use_reg(comp, VAL_INT);
@@ -1454,10 +1465,6 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
        
     m1_expression *argiter = f->arguments;
 
-#define M0_REG_I0   12
-#define M0_REG_N0   73       
-#define M0_REG_S0   134
-#define M0_REG_P0   195
  
     int regindexes[4] = { M0_REG_I0, 
                           M0_REG_N0, 
@@ -1561,19 +1568,6 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     m1_reg I0 = use_reg(comp, VAL_INT);    
     fprintf(OUT, "\tset_imm    I%d, 0, 0\n", I0.no);
     fprintf(OUT, "\tgoto_chunk P%d, I%d, x\n", cf_reg.no, I0.no);
-
-
-    /* XXX: This just makes comp->regstack->sp won't be 0, which makes m1 happy */
- 
-/*
-    return_reg.no = 60;
-    return_reg.type = VAL_INT;
-    
-    m1_reg idxreg = use_reg(comp, VAL_INT);
-//    fprintf(OUT, "\tset\tI%d, I60, x\n", idxreg.no);   
-    fprintf(OUT, "\tderef\tI%d, CF, 72\n", idxreg.no);
-    pushreg(comp->regstack, idxreg);
-*/
     unuse_reg(comp, I0);
 
 
@@ -1645,17 +1639,24 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     */
     fprintf(OUT, "\tset       CF, PCF, x\n");
     
-    return_reg.no = 60;
-    return_reg.type = VAL_INT;
     
+    /* generate code to get the return value. */
+    /*
+     set_imm IX, 0, R0  # get the number of register R0 into IX
+     deref   RY, PZ, IX # index the callee's CF with that index, and store result in RY
+    
+    */
     /* retrieve the return value. */
-    m1_reg idxreg = use_reg(comp, VAL_INT);
+    m1_reg idxreg = use_reg(comp, f->typedecl->valtype);
     /* load the number of register I0. */
-    fprintf(OUT, "\tset_imm\tI%d, 0, I0\n", idxreg.no);   
-    /* index the callee's frame (Px) with the index _of_ register I0. That's where the callee
-       left any return value. 
+    fprintf(OUT, "\tset_imm\tI%d, 0, %c0\n", idxreg.no, reg_chars[(int)idxreg.type]);   
+    
+    /* index the callee's frame (Px) with the index _of_ register X0. 
+       That's where the callee left any return value. 
      */
-    fprintf(OUT, "\tderef\tI%d, P%d, I%d\n", idxreg.no, cf_reg.no, idxreg.no);
+    fprintf(OUT, "\tderef\t%c%d, P%d, I%d\n", reg_chars[(int)idxreg.type], idxreg.no, 
+                                              cf_reg.no, idxreg.no);
+                                               
     /* make it available for use by another statement. */
     pushreg(comp->regstack, idxreg);
     
@@ -2013,7 +2014,7 @@ gencode_consts(m1_symboltable *consttable) {
 	            fprintf(OUT, "%d &%s\n", iter->constindex, iter->value.sval);
 	            break;
 			default:
-				fprintf(stderr, "unknown symbol type");
+				fprintf(stderr, "unknown symbol type (%d)\n", iter->valtype);
 				assert(0); /* should never happen. */
 		}
 		iter = iter->next;	

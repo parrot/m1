@@ -1,18 +1,13 @@
 int main() {
     print("1..1\n");
-    int i = 2;
-    i = foo(i);
-  //  string ok = getok();
-  //  print(ok);
-   print("ok "); // can't return strings yet, only ints at this moment.
+    int i; // = 1; // this doesn't work yet.
+    string ok = getok();
+    print(ok);
+    i = 1;
     print(i);    
     print("\n");
 }
 
-
-int foo(int j) {    
-    return j - 1;
-}
 
 string getok() {
     string s = "ok ";

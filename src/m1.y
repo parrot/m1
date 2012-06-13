@@ -480,7 +480,9 @@ function_definition : function_init '(' parameters ')' open_block statements '}'
                         {  
                           M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);  
                           $1->block = $5->expr.blck; 
+                          /* store the list of statements ($6) in the block ($5). */
                           block_set_stat($5, $6);    
+                          
                           $$ = $1;
                           $$->parameters = $3;
                                                     
@@ -508,8 +510,12 @@ function_init   : return_type TK_IDENT
                           M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);                          
                           $$ = chunk(comp, $1, $2); 
                           comp->currentchunk = $$;
+
                           /* enter name of function declaration in table */
                           sym_enter_chunk(comp, &comp->currentchunk->constants, $2);
+                          
+                          /* enter name of function in global symbol table. */
+                          sym_new_symbol(comp, comp->globalsymtab, $2, $1, 1);
                         }
                 ;
 
