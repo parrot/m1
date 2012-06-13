@@ -3,6 +3,7 @@ m1
 *.m0
 *.m0b
 *.exe
+*.out
 m1lexer.*
 m1parser.*
 /*.m1
