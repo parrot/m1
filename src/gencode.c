@@ -434,7 +434,8 @@ OBJECT_LINK-----> L1
                 obj->sym->regno = r.no;
         	}  
             
-            if (obj->sym->num_elems > 1) { /* it's an array! */
+            /* get the storage type. */
+            if (obj->sym->num_elems > 1) { /* it's an array! store it in an int register. */
                 reg.type = VAL_INT;                
             }
             else { 

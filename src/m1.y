@@ -169,8 +169,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 
 %type <fval> TK_NUMBER
 
-%type <expr> expression 
-             open_block
+%type <expr> expression              
              binexpr 
              inc_or_dec_expr 
              function_call_expr 
@@ -212,6 +211,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              opt_ret_expr
              expr_list
 
+%type <blck>  open_block
              
 %type <instr> m0_instructions
               m0_instr
@@ -480,7 +480,7 @@ function_definition : function_init '(' parameters ')' open_block statements '}'
                         {  
                           M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);  
                           /* we only want the m1_block object, so remove its m1_expression wrapper. */
-                          $1->block = $5->expr.blck; 
+                          $1->block = $5; 
                           /* store the list of statements ($6) in the block ($5). */
                           block_set_stat($5, $6);    
                           
@@ -573,8 +573,11 @@ struct_member       : return_type TK_IDENT ';'
         
 block   : open_block statements close_block
             {  
-                $$ = $1; 
+                /* a <block> isa <statement>, so need to wrap it as a m1_expression. */
+                m1_expression *e = expression((M1_compiler *)yyget_extra(yyscanner), EXPR_BLOCK);
+                e->expr.blck     = $1;
                 block_set_stat($1, $2);
+                $$ = e;                                
             }
         ;
         

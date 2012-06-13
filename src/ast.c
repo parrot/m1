@@ -53,19 +53,10 @@ chunk( ARGIN_NOTNULL( M1_compiler * const comp ), ARGIN( char *rettype ), ARGIN_
     return c;   
 }
 
-m1_expression *
-block( ARGIN_NOTNULL( M1_compiler *comp ) ) 
-{
-    m1_expression *expr = expression(comp, EXPR_BLOCK);
-    expr->expr.blck     = (m1_block *)m1_malloc(sizeof(m1_block)); 
-    
-    init_symtab(&expr->expr.blck->locals);
-    return expr;   
-}
 
 void 
-block_set_stat(ARGIN(m1_expression *block), m1_expression *stat) {
-    block->expr.blck->stats = stat;   
+block_set_stat(ARGIN(m1_block *block), m1_expression *stat) {
+    block->stats = stat;   
 }    
 
 m1_expression *
@@ -629,6 +620,15 @@ struct_find_field(M1_compiler *comp, m1_struct *structdef, char *fieldname) {
     return sfield;        
 }
 
+m1_block *
+block( ARGIN_NOTNULL( M1_compiler *comp ) ) 
+{
+    m1_block *block;
+    block = (m1_block *)m1_malloc(sizeof(m1_block)); 
+    
+    init_symtab(&block->locals);
+    return block;   
+}
 
 /*
 
@@ -638,15 +638,15 @@ declared in this scope. Set comp's currentsymtab to this scope's
 symbol table.
 
 */
-m1_expression *
+m1_block *
 open_scope(M1_compiler *comp) {    
-    m1_expression *exp = block(comp);
+    m1_block *bl = block(comp);
     
     /* link to current symbol table, which is the parent scope. */    
-    exp->expr.blck->locals.parentscope = comp->currentsymtab;
-    comp->currentsymtab = &exp->expr.blck->locals;
+    bl->locals.parentscope = comp->currentsymtab;
+    comp->currentsymtab = &bl->locals;
 
-    return exp;
+    return bl;
 }
 
 /*
