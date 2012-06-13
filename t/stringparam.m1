@@ -1,0 +1,17 @@
+int main() {
+    print("1..2\n");
+    string s = "ok 1\n";
+    foo(s);
+}
+
+int foo(string s) {
+
+    print(s);
+    string t;
+    t = "ok 2\n";
+    bar(t);
+}
+
+int bar(string s) {
+    print(s);
+}

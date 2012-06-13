@@ -409,6 +409,7 @@ OBJECT_LINK-----> L1
         {   
             m1_reg reg;              
 
+            fprintf(stderr, "[object_main] handling '%s'\n", obj->obj.name); 
         	assert(obj->obj.field != NULL);
         	assert(obj->sym != NULL);
         	assert(obj->sym->typedecl != NULL);

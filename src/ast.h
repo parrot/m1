@@ -323,7 +323,7 @@ typedef struct m1_expression {
 extern int yyget_lineno(yyscan_t yyscanner);
 
 //extern m1_chunk *chunk(M1_compiler *comp, char *rettype, char *name);
-extern m1_chunk *chunk(ARGIN_NOTNULL(M1_compiler *comp), ARGIN(char *rettype), ARGIN_NOTNULL(char *name));
+extern m1_chunk *chunk(ARGIN_NOTNULL(M1_compiler * const comp), ARGIN(char *rettype), ARGIN_NOTNULL(char *name));
 
 //extern m1_expression *block(M1_compiler *comp);
 extern m1_expression *block(ARGIN_NOTNULL(M1_compiler *comp));

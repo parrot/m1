@@ -145,8 +145,11 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line) {
                 type_error_extra(comp, line, "Undeclared variable '%s'\n", obj->obj.name);
             }
             else { /* found symbol, now link it to the object node. */
+                fprintf(stderr, "[semcheck] found var '%s'\n", obj->obj.name);
+                assert(sym != NULL);
                 obj->sym = sym;   
                 t = sym->typedecl;
+                assert(t != NULL);
             }                           
             break;
         }
@@ -383,6 +386,8 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
     assert(comp != NULL);
     assert(f != NULL);    
     assert(line != 0);
+    /* check arguments of the function call; this is a list of m1_expressions. */
+    check_exprlist(comp, f->arguments);
     
     /* find declaration of function, check arguments against function signature. */
     /* TODO */
