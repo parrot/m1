@@ -1,0 +1,13 @@
+int main() {
+    print("1..1\n");
+    string s;
+    s = getok();
+    print(s);   
+    print(1);
+    print("\n");
+}
+
+string getok() {
+    
+    return "ok ";
+}

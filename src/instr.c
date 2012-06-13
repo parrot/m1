@@ -380,7 +380,7 @@ instr(char op, unsigned char arg1, unsigned char type1,
     
     return i;    
 }
-
+/*
 void
 ins_label(M1_compiler *comp, unsigned labelno) {
     
@@ -405,4 +405,5 @@ void
 ins_deref(M1_compiler *comp, m1_reg *target, M0_alias obj, m1_reg *index) {
     
 }
+*/
 
