@@ -6,6 +6,8 @@
 #include "instr.h"
 #include "compiler.h"
 
+#include "ann.h"
+
 
 typedef struct m1_block {
     struct m1_expression *stats;
@@ -320,7 +322,11 @@ typedef struct m1_expression {
 
 extern int yyget_lineno(yyscan_t yyscanner);
 
-extern m1_chunk *chunk(M1_compiler *comp, char *rettype, char *name);
+//extern m1_chunk *chunk(M1_compiler *comp, char *rettype, char *name);
+extern m1_chunk *chunk(ARGIN_NOTNULL(M1_compiler *comp), ARGIN(char *rettype), ARGIN_NOTNULL(char *name));
+
+//extern m1_expression *block(M1_compiler *comp);
+extern m1_expression *block(ARGIN_NOTNULL(M1_compiler *comp));
 
 extern m1_expression *expression(M1_compiler *comp, m1_expr_type type);       
 extern m1_expression *funcall(M1_compiler *comp, m1_object *fun, m1_expression *args);
@@ -379,7 +385,7 @@ extern m1_enum *newenum(M1_compiler *comp, char *name, m1_enumconst *enumconstan
 
 extern m1_var *parameter(M1_compiler *comp, char *type, char *name);
 
-extern m1_expression *block(M1_compiler *comp);
+
 extern void block_set_stat(m1_expression *block, m1_expression *stat);
 
 extern struct m1_expression *open_scope(M1_compiler *comp);

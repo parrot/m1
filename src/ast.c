@@ -33,9 +33,9 @@ m1_malloc(size_t size) {
 }
 
 
-/*@modiefies nothing @*/ 
+ 
 m1_chunk *
-chunk(M1_compiler *comp, char *rettype, NOTNULL(char *name)) {
+chunk(ARGIN_NOTNULL(M1_compiler *comp), ARGIN(char *rettype), ARGIN_NOTNULL(char *name)) {
     m1_chunk *c = (m1_chunk *)m1_malloc(sizeof(m1_chunk));
     c->rettype  = rettype;
     c->name     = name;
@@ -53,7 +53,7 @@ chunk(M1_compiler *comp, char *rettype, NOTNULL(char *name)) {
 }
 
 m1_expression *
-block(M1_compiler *comp) {
+block(ARGIN_NOTNULL(M1_compiler *comp)) {
     m1_expression *expr = expression(comp, EXPR_BLOCK);
     expr->expr.blck = (m1_block *)m1_malloc(sizeof(m1_block)); 
     init_symtab(&expr->expr.blck->locals);
@@ -61,7 +61,7 @@ block(M1_compiler *comp) {
 }
 
 void 
-block_set_stat(m1_expression *block, m1_expression *stat) {
+block_set_stat(ARGIN(m1_expression *block), m1_expression *stat) {
     block->expr.blck->stats = stat;   
 }    
 
