@@ -1,0 +1,22 @@
+int main() {
+    print("1..2\n");
+    foo(1.5);
+    
+}
+
+int foo(num n) {
+    int i = (int)n;
+    print("ok ");
+    print(i);   
+    print("\n");
+    
+    n = 2.3;
+    bar(n);   
+}
+
+int bar(num m) {
+    int j = (int)m;
+    print("ok ");
+    print(j);
+    print("\n");
+}
