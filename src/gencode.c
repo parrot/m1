@@ -769,7 +769,7 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
         m1_reg retvalreg = popreg(comp->regstack);
         m1_reg indexreg  = use_reg(comp, VAL_INT);
         
-        /* load the number of register I0 */
+        /* load the number of register R0 */
         fprintf(OUT, "\tset_imm\tI%d, 0, %c0\n", indexreg.no, reg_chars[(int)retvalreg.type]);
         /* index the current callframe, and set in its R0 register the value from the return expression. */
         fprintf(OUT, "\tset_ref\tCF, I%d, %c%d\n", indexreg.no, reg_chars[(int)retvalreg.type], retvalreg.no);
