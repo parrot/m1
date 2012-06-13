@@ -60,12 +60,23 @@ link_sym(m1_symboltable *table, m1_symbol *sym) {
 
 }
 
+static m1_symbol *
+mk_sym(void) {
+    m1_symbol *sym = (m1_symbol *)calloc(1, sizeof(m1_symbol));
+   	
+    if (sym == NULL) {
+        fprintf(stderr, "cant alloc mem for sym");
+        exit(EXIT_FAILURE);
+    }      
+    return sym;
+}
+
 m1_symbol *
 sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *type, unsigned num_elems) {
     m1_symbol *sym = NULL;
     
     assert(varname != NULL);
-    //assert(type != NULL);
+    assert(type != NULL);
     assert(table != NULL);
     
     /* check whether symbol exists already. */
@@ -78,18 +89,13 @@ sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *ty
         return sym;  
     }
     /* if it existed, the function would have returned by now. */
-    sym = (m1_symbol *)calloc(1, sizeof(m1_symbol));
+    sym = mk_sym();
     
-    if (sym == NULL) {
-        fprintf(stderr, "cant alloc mem for new sym %s", varname);
-        exit(EXIT_FAILURE);   
-    }
-    
-    sym->num_elems = num_elems;
-    sym->name      = varname; /* name of this symbol */
+    sym->num_elems = num_elems;  /* for arrays. */
+    sym->name      = varname;    /* name of this symbol */
     sym->regno     = NO_REG_ALLOCATED_YET; /* need to allocate a register later. */  
     sym->next      = NULL;    /* symbols are stored in a list */
-    sym->type_name = type;
+    sym->type_name = type;    /* store the name of the type, as it may not have been defined yet. */
 
     link_sym(table, sym);
     
@@ -151,12 +157,7 @@ sym_enter_str(M1_compiler *comp, m1_symboltable *table, char *str) {
     	return sym;
     }
     	
-   	sym = (m1_symbol *)calloc(1, sizeof(m1_symbol));
-   	
-    if (sym == NULL) {
-        fprintf(stderr, "cant alloc mem for sym");
-        exit(EXIT_FAILURE);
-    }        
+   	sym = mk_sym();   
     
     sym->value.sval = str;
     sym->valtype    = VAL_STRING;
@@ -170,8 +171,8 @@ m1_symbol *
 sym_enter_chunk(M1_compiler *comp, m1_symboltable *table, char *name) {
     m1_symbol *sym;
     /* a chunk is just stored as a name, but override the type. */
-    sym = sym_enter_str(comp, table, name);        
-    sym->valtype    = VAL_CHUNK;
+    sym          = sym_enter_str(comp, table, name);        
+    sym->valtype = VAL_CHUNK;
     return sym;       
 }
 
@@ -188,11 +189,7 @@ sym_enter_num(M1_compiler *comp, m1_symboltable *table, double val) {
     if (sym)
     	return sym;
     	
-    sym = (m1_symbol *)calloc(1, sizeof(m1_symbol));
-    if (sym == NULL) {
-        fprintf(stderr, "cant alloc mem for sym");
-        exit(EXIT_FAILURE);
-    }
+    sym = mk_sym();
     
     sym->value.fval = val;
     sym->valtype    = VAL_FLOAT;
@@ -212,11 +209,7 @@ sym_enter_int(M1_compiler *comp, m1_symboltable *table, int val) {
     	return sym;
     }
         	
-    sym = (m1_symbol *)calloc(1, sizeof(m1_symbol));
-    if (sym == NULL) {
-        fprintf(stderr, "cant alloc mem for sym");
-        exit(EXIT_FAILURE);
-    }
+    sym = mk_sym();
     
     sym->value.ival = val;
     sym->valtype    = VAL_INT;    
