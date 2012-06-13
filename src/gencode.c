@@ -1447,6 +1447,10 @@ gencode_break(M1_compiler *comp) {
     fprintf(OUT, "\tgoto\tL%d\n", breaklabel);
 }
 
+/* Generate sequence for a function call, including setting arguments
+ * and retrieving return value.
+ * XXX this function needs a bit of refactoring, cleaning up and comments.
+ */
 static void
 gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     m1_symbol *fun;
@@ -1484,6 +1488,12 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
                           M0_REG_S0, 
                           M0_REG_P0};
     
+    /* For each argument:
+    
+    set_imm IX, 0, <new register> # get value of argument type's register.
+    set_ref PY, IX, RZ # index the CF to call with that index and copy the argument into it.
+    
+    */
     while (argiter != NULL) {
         m1_reg argreg;
         m1_reg indexreg = use_reg(comp, VAL_INT);
@@ -1562,10 +1572,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     fprintf(OUT, "\tset       CF, P%d, x\n", cf_reg.no);
      
      
-    /* XXX TODO: generate these instructions as well: 
-    post_set:
-    */
-/*    
+    /* post_set:   
     # put the name of the target chunk into S0
     set_imm P0, 0, 3
     deref   P0, CONSTS, P0
