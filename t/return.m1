@@ -3,7 +3,7 @@ int main() {
     int i = 1; // this doesn't work yet.
     string ok = getok();
     print(ok);
-    i = 1; // need this; reg of i gets overwritten.
+//    i = 1; // need this; reg of i gets overwritten.
     print(i);    
     print("\n");
     

@@ -1660,18 +1660,19 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     
     */
     /* retrieve the return value. */
-    m1_reg idxreg = use_reg(comp, f->typedecl->valtype);
+    m1_reg idxreg           = use_reg(comp, VAL_INT);
+    m1_reg retvaltarget_reg = use_reg(comp, f->typedecl->valtype);
     /* load the number of register I0. */
-    fprintf(OUT, "\tset_imm\tI%d, 0, %c0\n", idxreg.no, reg_chars[(int)idxreg.type]);   
+    fprintf(OUT, "\tset_imm\tI%d, 0, %c0\n", idxreg.no, reg_chars[(int)retvaltarget_reg.type]);   
     
     /* index the callee's frame (Px) with the index _of_ register X0. 
        That's where the callee left any return value. 
      */
-    fprintf(OUT, "\tderef\t%c%d, P%d, I%d\n", reg_chars[(int)idxreg.type], idxreg.no, 
+    fprintf(OUT, "\tderef\t%c%d, P%d, I%d\n", reg_chars[(int)retvaltarget_reg.type], retvaltarget_reg.no, 
                                               cf_reg.no, idxreg.no);
                                                
     /* make it available for use by another statement. */
-    pushreg(comp->regstack, idxreg);
+    pushreg(comp->regstack, retvaltarget_reg);
     
     /* we're accessing the callee's CF, so only free its register now.*/
     unuse_reg(comp, cf_reg);
