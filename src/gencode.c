@@ -1709,16 +1709,16 @@ gencode_print(M1_compiler *comp, m1_expression *expr) {
 
 static void
 gencode_new(M1_compiler *comp, m1_newexpr *expr) {
-	m1_reg reg        = use_reg(comp, VAL_INT); /* reg holding the pointer to new memory */
+	m1_reg pointerreg = use_reg(comp, VAL_INT); /* reg holding the pointer to new memory */
 	m1_reg sizereg    = use_reg(comp, VAL_INT); /* reg holding the num. of bytes to alloc. */
 
 	unsigned size     = type_get_size(expr->typedecl);
 		
 	fprintf(OUT, "\tset_imm I%d, 0, %d\n", sizereg.no, size);
-	fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", reg.no, sizereg.no);
+	fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", pointerreg.no, sizereg.no);
 	
 	unuse_reg(comp, sizereg);
-	pushreg(comp->regstack, reg);
+	pushreg(comp->regstack, pointerreg);
 }
 
 static void

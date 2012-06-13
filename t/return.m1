@@ -1,12 +1,15 @@
 int main() {
+    int i = 1; 
     print("1..2\n");
-    int i = 1; // this doesn't work yet.
+
+    // get "ok " from a function and print it
     string ok = getok();
     print(ok);
-//    i = 1; // need this; reg of i gets overwritten.
+    // print i
     print(i);    
     print("\n");
     
+    // get the value 3.14, cast it to an int, and subtract 1. then print.
     print("ok ");
     print((int)getnum() - 1);
     print("\n");
