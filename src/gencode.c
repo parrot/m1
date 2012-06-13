@@ -90,7 +90,7 @@ use_reg(M1_compiler *comp, m1_valuetype type) {
     }
     
     
-    /* set the register to "used". */
+    /* set the newly allocated register to "used". */
     comp->registers[type][i] = REG_USED;
     
     /* return the register. */
@@ -99,6 +99,16 @@ use_reg(M1_compiler *comp, m1_valuetype type) {
     return r;
 }
 
+/*
+
+Throughout the code, we call unuse_reg() on registers that we think we 
+no longer need. Sometimes, these registers have been assigned to a symbol. 
+Symbols get to keep what they get. In order to prevent very difficult code, 
+just note that the register is used by a symbol by "freezing" it. 
+When unuse_reg() is called on it (after it's frozen), it won't be freed by 
+unuse_reg().
+
+*/
 static void
 freeze_reg(M1_compiler *comp, m1_reg r) {
     assert(comp != NULL);
@@ -120,6 +130,7 @@ unuse_reg(M1_compiler *comp, m1_reg r) {
     int i;
 //    goto JUSTPRINT;
     
+    /* if it's not frozen, it may be freed. */
     if (comp->registers[r.type][r.no] != REG_SYMBOL) {
 //        fprintf(stderr, "Unusing %d for good\n", r.no);        
         comp->registers[r.type][r.no] = REG_UNUSED;
@@ -150,7 +161,11 @@ gen_label(M1_compiler *comp) {
 	return comp->label++;	
 }
 
+/*
 
+List of expressions or statements.
+
+*/
 static void
 gencode_exprlist(M1_compiler *comp, m1_expression *expr) {
     m1_expression *iter = expr;
@@ -241,7 +256,7 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
         fprintf(OUT, "\tset_imm\tI%d, %d, %d\n", reg.no, num256, remainder);
     } 
     else { /* too big enough for set_imm, so load it from constants segment. */
-        
+        /* XXX this will fail if constindex > 255. */
         fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", reg.no, lit->sym->constindex);
         fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", reg.no, reg.no);
 
@@ -253,6 +268,10 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
 
 static void
 gencode_bool(M1_compiler *comp, int boolval) {
+    /* Generate one of these:
+       set_imm Ix, 0, 1 # for true
+       set_imm Ix, 0, 0 # for false
+    */
     m1_reg reg = use_reg(comp, VAL_INT);
     fprintf(OUT, "\tset_imm\t%d, 0, %d\n", reg.no, boolval);
     pushreg(comp->regstack, reg);   
@@ -260,7 +279,7 @@ gencode_bool(M1_compiler *comp, int boolval) {
 
 static void
 gencode_string(M1_compiler *comp, m1_literal *lit) {
-    m1_reg reg,
+    m1_reg stringreg,         
            constidxreg;
     
     assert(comp != NULL);
@@ -268,15 +287,15 @@ gencode_string(M1_compiler *comp, m1_literal *lit) {
     assert(lit->sym != NULL);
     assert(lit->type == VAL_STRING);
     
-    reg         = use_reg(comp, VAL_STRING);
+    stringreg   = use_reg(comp, VAL_STRING);
     constidxreg = use_reg(comp, VAL_INT);
       
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constidxreg.no, lit->sym->constindex);
-    fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", reg.no, constidxreg.no);
-    
+    fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", stringreg.no, constidxreg.no);
+       
     unuse_reg(comp, constidxreg);
     
-    pushreg(comp->regstack, reg);
+    pushreg(comp->regstack, stringreg);
 }
 
 
@@ -300,7 +319,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
     */
     assert (obj_reg_count == 1 || obj_reg_count == 2);
 
-    if (obj_reg_count == 1) {
+    if (obj_reg_count == 1) { /* just a simple lvalue. */
         /* unuse the old rhs reg */
         unuse_reg(comp, rhs);      
 
@@ -310,7 +329,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
                                                 reg_chars[(int)rhs.type], rhs.no);
         
     }
-    else if (obj_reg_count == 2) {
+    else if (obj_reg_count == 2) { /* complex lvalue, like x.y, or x[10]. */
         m1_reg index  = popreg(comp->regstack);
         m1_reg parent = popreg(comp->regstack);
         
@@ -665,7 +684,7 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
         blocklabel = gen_label(comp); /* label where the block starts */
         
     push(comp->breakstack, endlabel);
-    push(comp->continuestack, steplabel);
+    push(comp->continuestack, steplabel); /* XXX check if this is the right label. */
     
     if (i->init)
         gencode_expr(comp, i->init);
@@ -993,6 +1012,8 @@ The parse tree for:
              /  \
             c    42
 
+(Note that the "=" operator is right associative; 42 needs to be
+evaluated first, before it can be assigned to any variable.)
             
 Assign 42 to c, then either of them to b, and then either of them 
 (b or (c or 42)) to a. Doesn't matter which one.
@@ -2058,9 +2079,11 @@ gencode_metadata(m1_chunk *c) {
 static void
 gencode_block(M1_compiler *comp, m1_block *block) {
     assert(&block->locals != NULL);
+    /* set current symtab to this block's symtab. */
     comp->currentsymtab = &block->locals;
     
     gencode_exprlist(comp, block->stats);
+    /* restore parent scope. */
     comp->currentsymtab = block->locals.parentscope;
 }
 
@@ -2082,7 +2105,7 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *chunk) {
     
     /* XXX only generate in non-main functions. */
     
-    
+    /* XXX only generate if not already generated for an explicit return statement. */ 
     if (strcmp(chunk->name, "main") != 0) {        
         m1_reg chunk_index;
         m1_reg retpc_reg   = use_reg(comp, VAL_INT);
@@ -2114,11 +2137,12 @@ gencode_parameters(M1_compiler *comp, m1_chunk *chunk) {
     
             
     while (paramiter != NULL) {
+        /* get a new reg for this parameter. */
         m1_reg r = use_reg(comp, paramiter->sym->valtype); 
-//        fprintf(stderr, "Assigning register %d to parameter %s\n", r.no, paramiter->name);
         paramiter->sym->regno = r.no;
-        freeze_reg(comp, r);
-        fprintf(stderr, "Frozen reg %d for parameter %s\n", r.no, paramiter->name);
+        freeze_reg(comp, r); /* parameters are like local variables; they keep their register. */
+
+//        fprintf(stderr, "Frozen reg %d for parameter %s\n", r.no, paramiter->name);
         
         paramiter = paramiter->next;   
     }
@@ -2206,6 +2230,7 @@ gencode_pmc_vtable(M1_compiler *comp, m1_pmc *pmc) {
     
     while (methoditer != NULL) {
         /* generate code to copy the pointer to the chunk into the vtable. */
+        /* XXX can we do with a memcopy? */
         fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", indexreg.no, i++);
         fprintf(OUT, "\tderef\tP%d, CONSTS, I%d\n", methodreg.no, indexreg.no);
         fprintf(OUT, "\tset_ref\tP%d, I%d, P%d\n", vtablereg.no, indexreg.no, methodreg.no);
