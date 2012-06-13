@@ -740,14 +740,7 @@ gencode_address(M1_compiler *comp, m1_object *o) {
 
 static void
 gencode_return(M1_compiler *comp, m1_expression *e) {
-    if (e != NULL) {
-        gencode_expr(comp, e);
-        m1_reg r = popreg(comp->regstack);
-
-        fprintf(OUT, "\tset_ref\tPCF, I60, I%d\n", r.no);
-//        fprintf(OUT, "\tset \tI0, %c%d, x\n", reg_chars[(int)r.type], r.no);
-    }
-    
+        
     m1_reg chunk_index;
     m1_reg retpc_reg   = use_reg(comp, VAL_INT);
     m1_reg retpc_index = use_reg(comp, VAL_INT);
@@ -756,6 +749,19 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
     fprintf(OUT, "\tderef      I%d, PCF, I%d\n", retpc_reg.no, retpc_index.no);
 
     unuse_reg(comp, retpc_index);
+    
+    if (e != NULL) {
+        gencode_expr(comp, e);
+        m1_reg r = popreg(comp->regstack);
+        m1_reg indexreg = use_reg(comp, VAL_INT);
+        /* load the number of register I0 */
+        fprintf(OUT, "\tset_imm\tI%d, 0, I0\n", indexreg.no);
+        /* index the current callframe, and set in its I0 register the value from the return expression. */
+        fprintf(OUT, "\tset_ref\tCF, I%d, I%d\n", indexreg.no, r.no);
+        pushreg(comp->regstack, r);
+
+    }
+
     chunk_index = use_reg(comp, VAL_INT);
 
     fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
@@ -1558,13 +1564,18 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
 
 
     /* XXX: This just makes comp->regstack->sp won't be 0, which makes m1 happy */
-    return_reg = use_reg(comp, VAL_INT);
+ 
+/*
+    return_reg.no = 60;
+    return_reg.type = VAL_INT;
+    
     m1_reg idxreg = use_reg(comp, VAL_INT);
-    fprintf(OUT, "\tset\tI%d, I60, x\n", idxreg.no);
-    pushreg(comp->regstack, return_reg);
-
+//    fprintf(OUT, "\tset\tI%d, I60, x\n", idxreg.no);   
+    fprintf(OUT, "\tderef\tI%d, CF, 72\n", idxreg.no);
+    pushreg(comp->regstack, idxreg);
+*/
     unuse_reg(comp, I0);
-    unuse_reg(comp, cf_reg);
+
 
     /*
     # We're back, so fix the parent call frame's PC and activate it.
@@ -1634,7 +1645,22 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     */
     fprintf(OUT, "\tset       CF, PCF, x\n");
     
+    return_reg.no = 60;
+    return_reg.type = VAL_INT;
     
+    /* retrieve the return value. */
+    m1_reg idxreg = use_reg(comp, VAL_INT);
+    /* load the number of register I0. */
+    fprintf(OUT, "\tset_imm\tI%d, 0, I0\n", idxreg.no);   
+    /* index the callee's frame (Px) with the index _of_ register I0. That's where the callee
+       left any return value. 
+     */
+    fprintf(OUT, "\tderef\tI%d, P%d, I%d\n", idxreg.no, cf_reg.no, idxreg.no);
+    /* make it available for use by another statement. */
+    pushreg(comp->regstack, idxreg);
+    
+    /* we're accessing the callee's CF, so only free its register now.*/
+    unuse_reg(comp, cf_reg);
           
 }
 

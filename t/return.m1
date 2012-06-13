@@ -1,16 +1,13 @@
 int main() {
     print("1..1\n");
-    int i = foo();
+    int i = 2;
+    i = foo(i);
     
-    if (i == 1) {
-        print("ok ");
-        print(i);
-        print(" - # TODO - return values not implemented yet\n");
-    }
-    else 
-        print("not ok - # TODO - return values not implemented yet\n"); 
+    print("ok ");
+    print(i);    
+    print("\n");
 }
 
-int foo() {
-    return 1;
+int foo(int j) {    
+    return j - 1;
 }

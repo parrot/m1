@@ -41,11 +41,11 @@ What's working?
 * PMC definitions (incl methods)
 * tests run using "prove" (make test).
 * register allocation.
-* integer (only) parameters and arguments.
+* int, num and string parameters and arguments.
+* basic returning values. (still buggy).
 
 What's not working?
 -------------------
-* parameters/arguments/return values.
 * namespaces
 * self, super
 * import statement.
