@@ -2,12 +2,17 @@ int main() {
     print("1..1\n");
     int i = 2;
     i = foo(i);
-    
-    print("ok ");
+    string ok = getok();
+    print(ok);
     print(i);    
     print("\n");
 }
 
+
 int foo(int j) {    
     return j - 1;
+}
+
+string getok() {
+    return "ok ";
 }
