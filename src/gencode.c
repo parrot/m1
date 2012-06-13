@@ -83,8 +83,12 @@ use_reg(M1_compiler *comp, m1_valuetype type) {
         i++;
     }
     
-    //if (i >= REG_NUM) fprintf(stderr, "Out of registers!\n");
-    //else fprintf(stderr, "Allocating register %d\n", i);
+    /* XXX Need to properly handle spilling when out of registers. */
+    if (i >= REG_NUM) {
+        fprintf(stderr, "Out of registers!! Resetting it, hoping for the best!\n");
+        memset(comp->registers[type], 0, sizeof(char) * REG_NUM);
+    }
+    
     
     /* set the register to "used". */
     comp->registers[type][i] = REG_USED;
@@ -113,24 +117,26 @@ In that case, the register is left alone.
 */
 static void
 unuse_reg(M1_compiler *comp, m1_reg r) {
-    //return;
+    int i;
+//    goto JUSTPRINT;
     
     if (comp->registers[r.type][r.no] != REG_SYMBOL) {
-        fprintf(stderr, "Unusing %d for good\n", r.no);        
+//        fprintf(stderr, "Unusing %d for good\n", r.no);        
         comp->registers[r.type][r.no] = REG_UNUSED;
     }
     /* XXX this is for debugging. */
-   /*
-    int i;
-    for (i = 0; i < 40; i++)
-        fprintf(stderr, "%2d ", i);
+JUSTPRINT:
+    return;
+
+    for (i = 0; i < REG_NUM; i++)
+        fprintf(stderr, "%d", i % 10);
     
     fprintf(stderr, "\n");    
-    for (i = 0; i < 40; i++) {
-        fprintf(stderr, "%2d ", registers[r.type][i]);   
+    for (i = 0; i < REG_NUM; i++) {
+        fprintf(stderr, "%d", comp->registers[r.type][i]);   
     }
     fprintf(stderr, "\n\n");
-   */
+   
 }
 
 /*
@@ -414,7 +420,7 @@ OBJECT_LINK-----> L1
         {   
             m1_reg reg;              
 
-            fprintf(stderr, "[object_main] handling '%s'\n", obj->obj.name); 
+//            fprintf(stderr, "[object_main] handling '%s'\n", obj->obj.name); 
         	assert(obj->obj.field != NULL);
         	assert(obj->sym != NULL);
         	assert(obj->sym->typedecl != NULL);

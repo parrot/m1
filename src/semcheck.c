@@ -145,7 +145,7 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line) {
                 type_error_extra(comp, line, "Undeclared variable '%s'\n", obj->obj.name);
             }
             else { /* found symbol, now link it to the object node. */
-                fprintf(stderr, "[semcheck] found var '%s'\n", obj->obj.name);
+//                fprintf(stderr, "[semcheck] found var '%s'\n", obj->obj.name);
                 assert(sym != NULL);
                 obj->sym = sym;   
                 t = sym->typedecl;

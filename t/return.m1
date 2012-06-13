@@ -1,10 +1,14 @@
 int main() {
-    print("1..1\n");
+    print("1..2\n");
     int i = 1; // this doesn't work yet.
     string ok = getok();
     print(ok);
     i = 1; // need this; reg of i gets overwritten.
     print(i);    
+    print("\n");
+    
+    print("ok ");
+    print((int)getnum() - 1);
     print("\n");
 }
 
@@ -12,4 +16,8 @@ int main() {
 string getok() {
     string s = "ok ";
     return s;
+}
+
+num getnum() {
+    return 3.14;
 }

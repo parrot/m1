@@ -70,16 +70,16 @@ block_set_stat(ARGIN(m1_expression *block), m1_expression *stat) {
 
 m1_expression *
 expression(M1_compiler *comp, m1_expr_type type) {
-    m1_expression *e;
+    m1_expression *expr;
     
     assert(comp != NULL);
     assert(comp->yyscanner != NULL);
     
-    e        = (m1_expression *)m1_malloc(sizeof(m1_expression));
-    e->type  = type;
+    expr        = (m1_expression *)m1_malloc(sizeof(m1_expression));
+    expr->type  = type;
     /* set the current line number for error reporting. */
-    e->line  = yyget_lineno(comp->yyscanner);
-    return e;   
+    expr->line  = yyget_lineno(comp->yyscanner);
+    return expr;   
 }
 
 
@@ -479,7 +479,10 @@ parameter(M1_compiler *comp, char *paramtype, char *paramname) {
     m1_var *p = (m1_var *)m1_malloc(sizeof(m1_var));
     p->type   = paramtype;   	                        
     p->name   = paramname;
-    /* cannot enter into a symbol table, as there is not yet an active symbol table. */
+    /* cannot enter into a symbol table, as there is not yet an active symbol table. 
+       Therefore, symbols are entered a bit later, in the parser.
+     */
+    assert(comp != NULL); /* prevent warning of unused comp. */
     return p;
 }
 

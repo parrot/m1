@@ -479,6 +479,7 @@ opt_vtable      : /* empty */
 function_definition : function_init '(' parameters ')' open_block statements '}' 
                         {  
                           M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);  
+                          /* we only want the m1_block object, so remove its m1_expression wrapper. */
                           $1->block = $5->expr.blck; 
                           /* store the list of statements ($6) in the block ($5). */
                           block_set_stat($5, $6);    
@@ -511,7 +512,8 @@ function_init   : return_type TK_IDENT
                           $$ = chunk(comp, $1, $2); 
                           comp->currentchunk = $$;
 
-                          /* enter name of function declaration in table */
+                          /* enter name of function declaration in table 
+                          XXX is this still needed? */
                           sym_enter_chunk(comp, &comp->currentchunk->constants, $2);
                           
                           /* enter name of function in global symbol table. */
