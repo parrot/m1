@@ -290,6 +290,9 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
     assert (obj_reg_count == 1 || obj_reg_count == 2);
 
     if (obj_reg_count == 1) {
+        /* unuse the old rhs reg */
+        unuse_reg(comp, rhs);      
+
         lhs = popreg(comp->regstack);    
         
         fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
@@ -312,7 +315,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
 
 static void
 gencode_null(M1_compiler *comp) {
-	m1_reg reg;
+    m1_reg reg;
     reg = use_reg(comp, VAL_INT);
 	/* "null" is just 0, but then in a "pointer" context. */
     fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", reg.no);
@@ -325,7 +328,7 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target
 
     unsigned numregs_pushed = 0;
 
-	assert(comp != NULL);
+    assert(comp != NULL);
     assert(comp->currentchunk != NULL);
     assert(comp->currentsymtab != NULL);
 	   
@@ -697,12 +700,13 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
 	L2:
 	
 	*/
-	m1_reg condreg;
-	int endlabel = gen_label(comp),
-		iflabel  = gen_label(comp);
+    m1_reg condreg;
+    int endlabel = gen_label(comp),
+        iflabel  = gen_label(comp);
 
 	
     gencode_expr(comp, i->cond);
+
     condreg = popreg(comp->regstack);
 
     fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", iflabel, reg_chars[(int)condreg.type], condreg.no);
