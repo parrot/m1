@@ -741,8 +741,28 @@ static void
 gencode_return(M1_compiler *comp, m1_expression *e) {
     if (e != NULL) {
         gencode_expr(comp, e);
+        m1_reg r = popreg(comp->regstack);
+
+        fprintf(OUT, "\tset_ref\tPCF, I60, I%d\n", r.no);
+//        fprintf(OUT, "\tset \tI0, %c%d, x\n", reg_chars[(int)r.type], r.no);
     }
     
+    m1_reg chunk_index;
+    m1_reg retpc_reg   = use_reg(comp, VAL_INT);
+    m1_reg retpc_index = use_reg(comp, VAL_INT);
+
+    fprintf(OUT, "\tset_imm    I%d, 0, RETPC\n", retpc_index.no);
+    fprintf(OUT, "\tderef      I%d, PCF, I%d\n", retpc_reg.no, retpc_index.no);
+
+    unuse_reg(comp, retpc_index);
+    chunk_index = use_reg(comp, VAL_INT);
+
+    fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
+    fprintf(OUT, "\tderef      I%d, PCF, I%d\n", chunk_index.no, chunk_index.no);
+    fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", chunk_index.no, retpc_reg.no);        
+
+    unuse_reg(comp, retpc_reg);
+    unuse_reg(comp, chunk_index);    
     
 }
 
@@ -1535,12 +1555,15 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     fprintf(OUT, "\tset_imm    I%d, 0, 0\n", I0.no);
     fprintf(OUT, "\tgoto_chunk P%d, I%d, x\n", cf_reg.no, I0.no);
 
-    unuse_reg(comp, I0);
-    unuse_reg(comp, cf_reg);
 
     /* XXX: This just makes comp->regstack->sp won't be 0, which makes m1 happy */
     return_reg = use_reg(comp, VAL_INT);
+    m1_reg idxreg = use_reg(comp, VAL_INT);
+    fprintf(OUT, "\tset\tI%d, I60, x\n", idxreg.no);
     pushreg(comp->regstack, return_reg);
+
+    unuse_reg(comp, I0);
+    unuse_reg(comp, cf_reg);
 
     /*
     # We're back, so fix the parent call frame's PC and activate it.
@@ -2009,6 +2032,7 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *chunk) {
     */   
     
     /* XXX only generate in non-main functions. */
+    
     
     if (strcmp(chunk->name, "main") != 0) {        
         m1_reg chunk_index;
