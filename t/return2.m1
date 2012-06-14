@@ -14,7 +14,7 @@ int main() {
    if(j == 1) {
        print("ok 2\n");
    } else {
-       print("nok 2\n");
+       print("not ok 2\n");
    }
 
 }
