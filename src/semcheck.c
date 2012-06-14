@@ -382,7 +382,6 @@ check_continue(M1_compiler *comp, unsigned line) {
 
 static m1_decl *
 check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
-    m1_decl *rettype = VOIDTYPE;
     
     assert(comp != NULL);
     assert(f != NULL);    
@@ -405,9 +404,10 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
         f->typedecl = funsym->typedecl;
     }
 
-    /* find declaration of function, check arguments against function signature. */
+    /* XXX find declaration of function, check arguments against function signature. */
     /* TODO */
-    return rettype;
+    
+    return f->typedecl;
 }
 
 static void
