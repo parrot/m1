@@ -796,7 +796,6 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
         fprintf(OUT, "\tset_ref\tCF, I%d, %c%d\n", indexreg.no, reg_chars[(int)retvalreg.type], retvalreg.no);
 
         /*  make register available. XXX is this needed? */
-       // pushreg(comp->regstack, r);
 
     }
     /* instructions to return:
