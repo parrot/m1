@@ -291,9 +291,8 @@ gencode_string(M1_compiler *comp, m1_literal *lit) {
 
 static void
 gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
-    m1_reg     lhs,    /* register holding result of left hand side  */
-               rhs;    /* register holding result of right hand side */
-    m1_object *parent;    /* pointer storage needed for code generation of LHS. */
+    m1_reg     rhs;           /* register holding result of right hand side */
+    m1_object *parent;        /* pointer storage needed for code generation of LHS. */
     unsigned   obj_reg_count; /* number of regs holding result of LHS (can be aggregate/indexed) */
 		
     assert(a != NULL);
@@ -311,11 +310,11 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
 
     if (obj_reg_count == 1) { /* just a simple lvalue. */
 
-        lhs = popreg(comp->regstack);    
+        m1_reg lhs = popreg(comp->regstack);    
         
         fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
                                                 reg_chars[(int)rhs.type], rhs.no);
-        
+        unuse_reg(comp, lhs);
     }
     else if (obj_reg_count == 2) { /* complex lvalue, like x.y, or x[10]. */
         m1_reg index  = popreg(comp->regstack);
