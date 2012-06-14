@@ -49,6 +49,8 @@ typedef struct M1_compiler {
 	
 	char                   registers[REG_TYPE_NUM][REG_NUM];
 	
+	int                    no_reg_opt;
+	
 } M1_compiler;
 
 #endif

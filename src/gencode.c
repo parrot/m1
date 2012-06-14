@@ -128,16 +128,20 @@ In that case, the register is left alone.
 static void
 unuse_reg(M1_compiler *comp, m1_reg r) {
     int i;
-//    goto JUSTPRINT;
+    /* if m1 was invoked with -r, then switch off unuse_reg(). */
+    if (comp->no_reg_opt)
+        return;
     
     /* if it's not frozen, it may be freed. */
     if (comp->registers[r.type][r.no] != REG_SYMBOL) {
 //        fprintf(stderr, "Unusing %d for good\n", r.no);        
         comp->registers[r.type][r.no] = REG_UNUSED;
     }
+    return;
+    
     /* XXX this is for debugging. */
 JUSTPRINT:
-    return;
+    
 
     for (i = 0; i < REG_NUM; i++)
         fprintf(stderr, "%d", i % 10);

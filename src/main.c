@@ -47,10 +47,17 @@ main(int argc, char *argv[]) {
     FILE        *fp;
     yyscan_t     yyscanner;
     M1_compiler  comp;
+    int          turnoff_reg_opt = 0;
     
     if (argc <= 1) {
         fprintf(stderr, "Usage: m1 <file>\n");
         exit(EXIT_FAILURE);    
+    }
+    
+    if (strcmp(argv[1], "-r") == 0) {
+        /* turn of register optimization. */
+        turnoff_reg_opt = 1;   
+        argv++; /* go to next arg. */
     }
     
     fp = fopen(argv[1], "r");
@@ -61,6 +68,7 @@ main(int argc, char *argv[]) {
    
     /* set up compiler */
     init_compiler(&comp);
+    comp.no_reg_opt = turnoff_reg_opt;
                                        
     /* set up lexer and parser */   	
     yylex_init(&yyscanner);    
