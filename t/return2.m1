@@ -6,7 +6,7 @@ int main() {
    if(i == 1) {
        print("ok 1\n");
    } else {
-       print("nok 1\n");
+       print("not ok 1 # TODO - this is buggy!\n");
    }
 
    int j = bar(3);
