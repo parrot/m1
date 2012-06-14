@@ -772,6 +772,7 @@ gencode_address(M1_compiler *comp, m1_object *o) {
 static void
 gencode_return(M1_compiler *comp, m1_expression *e) {
         
+
     m1_reg chunk_index = use_reg(comp, VAL_INT);
     m1_reg retpc_reg   = use_reg(comp, VAL_INT);
     m1_reg retpc_index = use_reg(comp, VAL_INT);
@@ -785,6 +786,7 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
            set_ref CF, IX, RY  # store value in RY in CF[IX].
         */
         gencode_expr(comp, e);
+
         m1_reg retvalreg = popreg(comp->regstack);
         m1_reg indexreg  = use_reg(comp, VAL_INT);
         
@@ -810,11 +812,9 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
     fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
     fprintf(OUT, "\tderef      I%d, PCF, I%d\n", chunk_index.no, chunk_index.no);
     fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", chunk_index.no, retpc_reg.no);        
-
-    unuse_reg(comp, retpc_index);
-    unuse_reg(comp, retpc_reg);
     unuse_reg(comp, chunk_index);    
-    
+    unuse_reg(comp, retpc_reg);
+
 }
 
 static void
@@ -1476,8 +1476,8 @@ static void
 gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     m1_symbol *fun;
     fun = sym_find_chunk(&comp->currentchunk->constants, f->name);
-    m1_reg pc_reg,     
-           cont_offset;
+    m1_reg pc_reg, cont_offset;
+
     
     if (fun == NULL) { // XXX need to check in semcheck 
         fprintf(stderr, "Cant find function '%s'\n", f->name);
@@ -1491,7 +1491,8 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     
     /* create a new call frame */
     /* alloc_cf: */
-    fprintf(OUT, "\tset_imm   I%d, 8, 0\n", sizereg.no); /* XXX: why $2 = 8 ? */
+    fprintf(OUT, "\tset_imm   I%d, 0, 198\n", sizereg.no);
+    /* fprintf(OUT, "\tset_imm   I%d, 8, 0\n", sizereg.no); / * XXX: why $2 = 8 ? */
     fprintf(OUT, "\tset_imm   I%d, 0, 0\n", flagsreg.no);
     fprintf(OUT, "\tgc_alloc  P%d, I%d, I%d\n", cf_reg.no, sizereg.no, flagsreg.no);
     unuse_reg(comp, sizereg);
@@ -1680,6 +1681,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     */
     fprintf(OUT, "\tset       CF, PCF, x\n");
     
+
     
     /* generate code to get the return value. */
     /*
