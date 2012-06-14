@@ -1247,7 +1247,8 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
             postfix = 0; 
             break;
         case UNOP_NOT:
-            return gencode_not(comp, u);
+            gencode_not(comp, u);
+            return;
         default:
             op = "unknown op";
             break;   
@@ -1271,11 +1272,12 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     fprintf(OUT, "\t%s\tI%d, I%d, I%d\n", op, reg.no, reg.no, one.no);    
     
     if (postfix == 1) { /* postfix; give back the register containing the OLD value. */
-    	pushreg(comp->regstack, oldval);
+    	pushreg(comp->regstack, oldval);    	
         unuse_reg(comp, reg);
     }
     else { /* prefix; give back the register containing the NEW value. */
         pushreg(comp->regstack, reg);
+        unuse_reg(comp, oldval);
     }
 
     /* release the register that was holding the constant "1". */
