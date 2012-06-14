@@ -1,0 +1,12 @@
+int main() {
+    int i = fib(28);
+    print(i);
+}
+
+int fib(int n) {
+    if (n < 2)
+        return n;
+    else {
+        return fib(n - 1) + fib(n - 2);
+    }
+}
