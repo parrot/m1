@@ -741,14 +741,14 @@ gencode_address(M1_compiler *comp, m1_object *o) {
 static void
 gencode_return(M1_compiler *comp, m1_expression *e) {
         
-    m1_reg chunk_index;
+    /*
     m1_reg retpc_reg   = use_reg(comp, VAL_INT);
     m1_reg retpc_index = use_reg(comp, VAL_INT);
-
     fprintf(OUT, "\tset_imm    I%d, 0, RETPC\n", retpc_index.no);
     fprintf(OUT, "\tderef      I%d, PCF, I%d\n", retpc_reg.no, retpc_index.no);
-
     unuse_reg(comp, retpc_index);
+    */
+
     
     if (e != NULL) {
         gencode_expr(comp, e);
@@ -758,19 +758,20 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
         fprintf(OUT, "\tset_imm\tI%d, 0, I0\n", indexreg.no);
         /* index the current callframe, and set in its I0 register the value from the return expression. */
         fprintf(OUT, "\tset_ref\tCF, I%d, I%d\n", indexreg.no, r.no);
-        pushreg(comp->regstack, r);
 
+        unuse_reg(comp, indexreg);
+        pushreg(comp->regstack, r);
     }
 
+    /*
     chunk_index = use_reg(comp, VAL_INT);
 
     fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
     fprintf(OUT, "\tderef      I%d, PCF, I%d\n", chunk_index.no, chunk_index.no);
     fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", chunk_index.no, retpc_reg.no);        
-
-    unuse_reg(comp, retpc_reg);
     unuse_reg(comp, chunk_index);    
-    
+    unuse_reg(comp, retpc_reg);
+    */
 }
 
 static void
@@ -1426,7 +1427,7 @@ static void
 gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     m1_symbol *fun;
     fun = sym_find_chunk(&comp->currentchunk->constants, f->name);
-    m1_reg pc_reg, cont_offset, return_reg;
+    m1_reg pc_reg, cont_offset;
     
     if (fun == NULL) { // XXX need to check in semcheck 
         fprintf(stderr, "Cant find function '%s'\n", f->name);
@@ -1564,17 +1565,15 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     fprintf(OUT, "\tgoto_chunk P%d, I%d, x\n", cf_reg.no, I0.no);
 
 
-    /* XXX: This just makes comp->regstack->sp won't be 0, which makes m1 happy */
- 
-/*
+   /*
     return_reg.no = 60;
     return_reg.type = VAL_INT;
     
     m1_reg idxreg = use_reg(comp, VAL_INT);
-//    fprintf(OUT, "\tset\tI%d, I60, x\n", idxreg.no);   
+    //fprintf(OUT, "\tset\tI%d, I60, x\n", idxreg.no);   
     fprintf(OUT, "\tderef\tI%d, CF, 72\n", idxreg.no);
     pushreg(comp->regstack, idxreg);
-*/
+    */
     unuse_reg(comp, I0);
 
 
@@ -1645,9 +1644,6 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     set     CF, PCF, x
     */
     fprintf(OUT, "\tset       CF, PCF, x\n");
-    
-    return_reg.no = 60;
-    return_reg.type = VAL_INT;
     
     /* retrieve the return value. */
     m1_reg idxreg = use_reg(comp, VAL_INT);
