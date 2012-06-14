@@ -583,7 +583,10 @@ OBJECT_LINK------>     L3
             }
             
             /* set parent OUT parameter to current node. */
-            *parent = obj;            
+//            *parent = obj; 
+            /* setting the parent is not needed when handling an index;
+               in x[3][4], when handling [4], you still want the pointer to refer to x, not [3].
+             */
                     
             ++numregs_pushed;
 
