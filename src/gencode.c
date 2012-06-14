@@ -404,6 +404,26 @@ OBJECT_LINK-----> L1
   	              ^
   	              |
   	             ROOT   
+  	             
+    As an example of multi-dimensional arrays:
+    
+    x[3][4][5] looks like this:
+    
+        OBJECT_MAIN
+                | OBJECT_INDEX (3x)
+                |    |   |   |
+                V    V   V   V
+                 x   3   4   5
+                  \ /   /   /
+OBJECT_LINK------> L1  /   /
+                    \ /   /
+OBJECT_LINK------>   L2  /
+                      \ / 
+OBJECT_LINK------>     L3
+                       ^
+                       |
+                      ROOT   
+                        
     */
 
     switch (obj->type) {
@@ -546,10 +566,15 @@ OBJECT_LINK-----> L1
                 offsetreg = popreg(comp->regstack); /* containing the index. */
                 parentreg = popreg(comp->regstack); /* containing the struct or array */
                 result    = use_reg(comp, (*parent)->sym->typedecl->valtype); /* target reg to store result. */
-                    
+                
+                /* deref R<target>, R<array>, R.<index> 
+                
+                */                        
                 fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)result.type], result.no,
                                                             reg_chars[(int)parentreg.type], parentreg.no,
                                                             reg_chars[(int)offsetreg.type], offsetreg.no);   
+                
+                /* XXX is the offset not always an integer? */
                 unuse_reg(comp, parentreg);
                 unuse_reg(comp, offsetreg);
                 
