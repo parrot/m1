@@ -1,10 +1,11 @@
 int main() {
     print("1..1\n");
 
-    int i = fib(28);
-    if(i == 317811) {
+    int i = fib(22);
+    if(i == 17711) {
         print("ok 1");
     } else {
+        print(i);
         print("nok 1");
     }
 }
@@ -16,7 +17,6 @@ int fib(int n) {
         return fib(n - 1) + fib(n - 2);
         //int x = fib(n - 1);
         //int y = fib(n - 2);
-        //int z = x + y;
-        //return z;
+        //return x + y;
     }
 }
