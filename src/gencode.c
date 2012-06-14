@@ -161,20 +161,6 @@ gen_label(M1_compiler *comp) {
 	return comp->label++;	
 }
 
-/*
-
-List of expressions or statements.
-
-*/
-static void
-gencode_exprlist(M1_compiler *comp, m1_expression *expr) {
-    m1_expression *iter = expr;
-    
-    while (iter != NULL) {
-        gencode_expr(comp, iter);
-        iter = iter->next;
-    }  
-}
 
 
 static void
@@ -612,7 +598,7 @@ gencode_while(M1_compiler *comp, m1_whileexpr *w) {
 	fprintf(OUT, "\tgoto L%d\n", endlabel);
 	
 	fprintf(OUT, "L%d:\n", startlabel);
-	gencode_exprlist(comp, w->block);
+	gencode_expr(comp, w->block);
 	
 	fprintf(OUT, "L%d:\n", endlabel);
 	
@@ -647,7 +633,7 @@ gencode_dowhile(M1_compiler *comp, m1_whileexpr *w) {
     push(comp->continuestack, startlabel);
      
     fprintf(OUT, "L%d:\n", startlabel);
-    gencode_exprlist(comp, w->block);
+    gencode_expr(comp, w->block);
     
     gencode_expr(comp, w->cond);
     reg = popreg(comp->regstack);
@@ -705,7 +691,7 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
     fprintf(OUT, "L%d:\n", blocklabel);
     
     if (i->block) 
-        gencode_exprlist(comp, i->block);
+        gencode_expr(comp, i->block);
         
     fprintf(OUT, "L%d:\n", steplabel);
     if (i->step)
@@ -747,13 +733,13 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
     
     /* else block */
     if (i->elseblock) {            	
-        gencode_exprlist(comp, i->elseblock);     
+        gencode_expr(comp, i->elseblock);     
     }
     fprintf(OUT, "\tgoto L%d\n", endlabel);
     
     /* if block */
     fprintf(OUT, "L%d:\n", iflabel);
-    gencode_exprlist(comp, i->ifblock);
+    gencode_expr(comp, i->ifblock);
 			
     fprintf(OUT, "L%d:\n", endlabel);
          
@@ -1811,7 +1797,7 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
         testlabel = gen_label(comp);
         fprintf(OUT, "\tgoto_if L%d, I%d\n", testlabel, test.no);
         /* generate code for this case's block. */
-        gencode_exprlist(comp, caseiter->block);
+        gencode_expr(comp, caseiter->block);
         /* next test label. */
         fprintf(OUT, "L%d:\n", testlabel);
         
@@ -2087,13 +2073,22 @@ gencode_metadata(m1_chunk *c) {
 }
 
 
+
+
 static void
 gencode_block(M1_compiler *comp, m1_block *block) {
+    m1_expression *iter = block->stats;
+    
     assert(&block->locals != NULL);
     /* set current symtab to this block's symtab. */
     comp->currentsymtab = &block->locals;
     
-    gencode_exprlist(comp, block->stats);
+    /* iterate over block's statements and generate code for each. */
+    while (iter != NULL) {
+        gencode_expr(comp, iter);
+        iter = iter->next;
+    }  
+    
     /* restore parent scope. */
     comp->currentsymtab = block->locals.parentscope;
 }
