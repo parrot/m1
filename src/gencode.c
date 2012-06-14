@@ -1059,9 +1059,32 @@ gencode_binary_or(M1_compiler *comp, m1_binexpr *b) {
     gencode_binary_bitwise(comp, b, "or");
 }
 
+static void
+gencode_binary_math(M1_compiler *comp, m1_binexpr *b, char const * const op) {
+    m1_reg left, 
+           right, 
+           target;
+    
+    gencode_expr(comp, b->left);
+    left = popreg(comp->regstack);
+    
+    gencode_expr(comp, b->right);  
+    right  = popreg(comp->regstack);
+    
+    target = use_reg(comp, (m1_valuetype)left.type);    
+    fprintf(OUT, "\t%s_%c\t%c%d, %c%d, %c%d\n", op, type_chars[(int)left.type],
+                                                reg_chars[(int)target.type], target.no, 
+                                                reg_chars[(int)left.type], left.no, 
+                                                reg_chars[(int)right.type], right.no);
+    unuse_reg(comp, left);
+    unuse_reg(comp, right);
+    pushreg(comp->regstack, target);               
+}
 
 static void
 gencode_binary_plus(M1_compiler *comp, m1_binexpr *b) {
+    gencode_binary_math(comp, b, "add");
+/*
     char *op;
     m1_reg left, right, target;
     
@@ -1072,7 +1095,7 @@ gencode_binary_plus(M1_compiler *comp, m1_binexpr *b) {
         op = "add_i";
     else if (left.type == VAL_FLOAT)
         op = "add_n";
-    else { /* should not happen */
+    else { // should not happen 
         fprintf(stderr, "wrong type for add");
         exit(EXIT_FAILURE);
     }
@@ -1087,11 +1110,13 @@ gencode_binary_plus(M1_compiler *comp, m1_binexpr *b) {
     unuse_reg(comp, left);
     unuse_reg(comp, right);
     pushreg(comp->regstack, target);           
-    
+*/    
 }
 
 static void
 gencode_binary_minus(M1_compiler *comp, m1_binexpr *b) {
+    gencode_binary_math(comp, b, "sub");
+    /*
     char *op;
     m1_reg left, right, target;
     
@@ -1102,7 +1127,7 @@ gencode_binary_minus(M1_compiler *comp, m1_binexpr *b) {
         op = "sub_i";
     else if (left.type == VAL_FLOAT)
         op = "sub_n";
-    else { /* should not happen */
+    else { // should not happen 
         fprintf(stderr, "wrong type for sub");
         exit(EXIT_FAILURE);
     }
@@ -1117,11 +1142,13 @@ gencode_binary_minus(M1_compiler *comp, m1_binexpr *b) {
     unuse_reg(comp, left);
     unuse_reg(comp, right);
     pushreg(comp->regstack, target);           
-    
+*/    
 }
 
 static void
 gencode_binary_mult(M1_compiler *comp, m1_binexpr *b) {
+    gencode_binary_math(comp, b, "mult");
+    /*
     char *op;
     m1_reg left, right, target;
     
@@ -1132,7 +1159,7 @@ gencode_binary_mult(M1_compiler *comp, m1_binexpr *b) {
         op = "mult_i";
     else if (left.type == VAL_FLOAT)
         op = "mult_n";
-    else { /* should not happen */
+    else { // should not happen 
         fprintf(stderr, "wrong type for mult");
         exit(EXIT_FAILURE);
     }
@@ -1147,11 +1174,13 @@ gencode_binary_mult(M1_compiler *comp, m1_binexpr *b) {
     unuse_reg(comp, left);
     unuse_reg(comp, right);
     pushreg(comp->regstack, target);           
-    
+    */
 }
 
 static void
 gencode_binary_mod(M1_compiler *comp, m1_binexpr *b) {
+    gencode_binary_math(comp, b, "mod");
+    /*
     char *op;
     m1_reg left, right, target;
     
@@ -1162,7 +1191,7 @@ gencode_binary_mod(M1_compiler *comp, m1_binexpr *b) {
         op = "mod_i";
     else if (left.type == VAL_FLOAT)
         op = "mod_n";
-    else { /* should not happen */
+    else { // should not happen 
         fprintf(stderr, "wrong type for mult");
         exit(EXIT_FAILURE);
     }
@@ -1177,11 +1206,13 @@ gencode_binary_mod(M1_compiler *comp, m1_binexpr *b) {
     unuse_reg(comp, left);
     unuse_reg(comp, right);
     pushreg(comp->regstack, target);           
-    
+    */
 }
 
 static void
 gencode_binary_div(M1_compiler *comp, m1_binexpr *b) {
+    gencode_binary_math(comp, b, "div");
+    /*
     char *op;
     m1_reg left, right, target;
     
@@ -1192,7 +1223,7 @@ gencode_binary_div(M1_compiler *comp, m1_binexpr *b) {
         op = "div_i";
     else if (left.type == VAL_FLOAT)
         op = "div_n";
-    else { /* should not happen */
+    else { // should not happen 
         fprintf(stderr, "wrong type for mult");
         exit(EXIT_FAILURE);
     }
@@ -1207,12 +1238,14 @@ gencode_binary_div(M1_compiler *comp, m1_binexpr *b) {
     unuse_reg(comp, left);
     unuse_reg(comp, right);
     pushreg(comp->regstack, target);           
-    
+    */
 }
 
 
 static void
 gencode_binary_isgt(M1_compiler *comp, m1_binexpr *b) {
+    gencode_binary_math(comp, b, "isgt");
+    /*
     char *op;
     m1_reg left, right, target;
     
@@ -1223,7 +1256,7 @@ gencode_binary_isgt(M1_compiler *comp, m1_binexpr *b) {
         op = "isgt_i";
     else if (left.type == VAL_FLOAT)
         op = "isgt_n";
-    else { /* should not happen */
+    else { // should not happen 
         fprintf(stderr, "wrong type for mult");
         exit(EXIT_FAILURE);
     }
@@ -1238,11 +1271,13 @@ gencode_binary_isgt(M1_compiler *comp, m1_binexpr *b) {
     unuse_reg(comp, left);
     unuse_reg(comp, right);
     pushreg(comp->regstack, target);           
-    
+    */
 }
 
 static void
 gencode_binary_isge(M1_compiler *comp, m1_binexpr *b) {
+    gencode_binary_math(comp, b, "isge");
+    /*
     char *op;
     m1_reg left, right, target;
     
@@ -1253,7 +1288,7 @@ gencode_binary_isge(M1_compiler *comp, m1_binexpr *b) {
         op = "isge_i";
     else if (left.type == VAL_FLOAT)
         op = "isge_n";
-    else { /* should not happen */
+    else { // should not happen
         fprintf(stderr, "wrong type for mult");
         exit(EXIT_FAILURE);
     }
@@ -1268,7 +1303,7 @@ gencode_binary_isge(M1_compiler *comp, m1_binexpr *b) {
     unuse_reg(comp, left);
     unuse_reg(comp, right);
     pushreg(comp->regstack, target);           
-    
+    */
 }
 
 
