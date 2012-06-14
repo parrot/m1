@@ -386,9 +386,7 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
     assert(comp != NULL);
     assert(f != NULL);    
     assert(line != 0);
-    /* check arguments of the function call; this is a list of m1_expressions. */
-    check_expr(comp, f->arguments);
-    
+        
     m1_symbol *funsym = sym_lookup_symbol(comp->globalsymtab, f->name);
     if (funsym == NULL) {
         type_error_extra(comp, line, "function '%s' not defined\n", f->name);
@@ -403,6 +401,11 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
         assert(funsym->typedecl != NULL);
         f->typedecl = funsym->typedecl;
     }
+    
+    /* check arguments of the function call; this is a list of m1_expressions. */
+    if (f->arguments != NULL)
+        check_expr(comp, f->arguments);
+    
 
     /* XXX find declaration of function, check arguments against function signature. */
     /* TODO */
@@ -494,10 +497,7 @@ check_cast(M1_compiler *comp, m1_castexpr *expr, unsigned line) {
 static m1_decl *
 check_expr(M1_compiler *comp, m1_expression *e) {
     m1_decl *t = VOIDTYPE;
-    
-    if (e == NULL) 
-        return t;
-        
+            
     switch (e->type) {
         case EXPR_ADDRESS:
             return check_address(comp, e->expr.t, e->line);        
@@ -539,7 +539,7 @@ check_expr(M1_compiler *comp, m1_expression *e) {
             return NUMTYPE;
         case EXPR_NEW:
             return check_newexpr(comp, e->expr.n, e->line);
-        case EXPR_NULL:            
+        case EXPR_NULL:   
             break;
         case EXPR_OBJECT:
             return check_obj(comp, e->expr.t, e->line);
