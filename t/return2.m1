@@ -1,0 +1,38 @@
+int main() {
+   print("1..2\n");
+
+   int i = foo();
+
+   if(i == 1) {
+       print("ok 1\n");
+   } else {
+       print("nok 1\n");
+   }
+
+   int j = bar(3);
+
+   if(j == 1) {
+       print("ok 2\n");
+   } else {
+       print("nok 2\n");
+   }
+
+}
+
+int foo() {
+   int i = 1;
+
+   return i;
+
+   int j = 2;
+   return j;
+}
+
+int bar(int k) {
+   int i = 1;
+
+   return i;
+
+   int j = 2;
+   return j;
+}
