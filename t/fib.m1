@@ -5,7 +5,6 @@ int main() {
     if(i == 17711) {
         print("ok 1");
     } else {
-        print(i);
         print("nok 1");
     }
 }
