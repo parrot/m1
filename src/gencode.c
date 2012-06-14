@@ -952,8 +952,7 @@ gencode_eq(M1_compiler *comp, m1_binexpr *b) {
 }
 
 static void
-gencode_lt(M1_compiler *comp, m1_binexpr *b) {
-    /* for LT (<) operator, use the ISGT opcode, but swap its arguments. */
+lt_le_common(M1_compiler *comp, m1_binexpr *b, char const * const op) {
     m1_reg result = use_reg(comp, VAL_INT);
     m1_reg left, right;
     
@@ -963,34 +962,26 @@ gencode_lt(M1_compiler *comp, m1_binexpr *b) {
     gencode_expr(comp, b->right);
     right = popreg(comp->regstack);
     
-    fprintf(OUT, "\tisgt_%c I%d, %c%d, %c%d\n", type_chars[(int)left.type], result.no, 
-                                                reg_chars[(int)right.type], right.no,
-                                                reg_chars[(int)left.type], left.no);
+    /* using isgt or isge ops, but swap arguments; hence, right first, then left. */
+    fprintf(OUT, "\t%s_%c I%d, %c%d, %c%d\n", op, type_chars[(int)left.type], result.no, 
+                                                  reg_chars[(int)right.type], right.no,
+                                                  reg_chars[(int)left.type], left.no);
 
     unuse_reg(comp, left);
     unuse_reg(comp, right);
-    pushreg(comp->regstack, result);
+    pushreg(comp->regstack, result);    
+}
+
+static void
+gencode_lt(M1_compiler *comp, m1_binexpr *b) {
+    /* for LT (<) operator, use the ISGT opcode, but swap its arguments. */
+    lt_le_common(comp, b, "isgt");
 }
 
 static void
 gencode_le(M1_compiler *comp, m1_binexpr *b) {
     /* for LE (<=) operator, use the ISGE opcode, but swap its arguments. */
-    m1_reg result = use_reg(comp, VAL_INT);
-    m1_reg left, right;
-    
-    gencode_expr(comp, b->left);
-    left = popreg(comp->regstack);
-    
-    gencode_expr(comp, b->right);
-    right = popreg(comp->regstack);
-    
-    fprintf(OUT, "\tisge_%c I%d, %c%d, %c%d\n", type_chars[(int)left.type], result.no, 
-                                                reg_chars[(int)right.type], right.no,
-                                                reg_chars[(int)left.type], left.no);
-
-    unuse_reg(comp, left);
-    unuse_reg(comp, right);
-    pushreg(comp->regstack, result);
+    lt_le_common(comp, b, "isge");
 }
 
 /*
