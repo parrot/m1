@@ -1442,7 +1442,8 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     
     /* create a new call frame */
     /* alloc_cf: */
-    fprintf(OUT, "\tset_imm   I%d, 8, 0\n", sizereg.no); /* XXX: why $2 = 8 ? */
+    fprintf(OUT, "\tset_imm   I%d, 0, 198\n", sizereg.no);
+    /* fprintf(OUT, "\tset_imm   I%d, 8, 0\n", sizereg.no); / * XXX: why $2 = 8 ? */
     fprintf(OUT, "\tset_imm   I%d, 0, 0\n", flagsreg.no);
     fprintf(OUT, "\tgc_alloc  P%d, I%d, I%d\n", cf_reg.no, sizereg.no, flagsreg.no);
     unuse_reg(comp, sizereg);
