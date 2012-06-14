@@ -1,0 +1,10 @@
+void main() {
+    print("1..1\n");
+    foo();   
+}
+
+void foo() {
+    print("ok 1\n");    
+    return;
+    print("not ok 1\n");
+}

@@ -22,6 +22,7 @@ static m1_decl *BOOLTYPE;
 static m1_decl *INTTYPE;
 static m1_decl *NUMTYPE;
 static m1_decl *STRINGTYPE;
+static m1_decl *VOIDTYPE;
 
 static void
 init_typechecker(M1_compiler *comp) {
@@ -29,6 +30,7 @@ init_typechecker(M1_compiler *comp) {
     INTTYPE    = type_find_def(comp, "int");
     NUMTYPE    = type_find_def(comp, "num");
     STRINGTYPE = type_find_def(comp, "string");  
+    VOIDTYPE   = type_find_def(comp, "void");
 }
 
 
@@ -254,12 +256,18 @@ check_address(M1_compiler *comp, m1_object *o, unsigned line) {
 
 static m1_decl *
 check_return(M1_compiler *comp, m1_expression *e, unsigned line) {
-    m1_decl *funtype;
-    m1_decl *rettype = check_expr(comp, e);
+    /* find type of current chunk */
+    m1_decl *funtype = type_find_def(comp, comp->currentchunk->rettype);    
+    m1_decl *rettype = VOIDTYPE;
+    
+    if (e != NULL) {
+        rettype = check_expr(comp, e);
+    }
+    
     if (funtype != rettype) {
         type_error(comp, line, "type of return expression does not match function's return type");   
     }
-    return funtype;
+    return rettype; /* return type of the expression */
 }
 
 static m1_decl *
@@ -327,7 +335,7 @@ check_binary(M1_compiler *comp, m1_binexpr *b, unsigned line) {
 
 static m1_decl *
 check_unary(M1_compiler *comp, m1_unexpr *u, unsigned line) {
-    m1_decl *t = NULL;
+    m1_decl *t = VOIDTYPE;
 
     t = check_expr(comp, u->expr);     
     switch (u->op) {
@@ -374,7 +382,7 @@ check_continue(M1_compiler *comp, unsigned line) {
 
 static m1_decl *
 check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
-    m1_decl *rettype;
+    m1_decl *rettype = VOIDTYPE;
     
     assert(comp != NULL);
     assert(f != NULL);    
@@ -485,93 +493,76 @@ check_cast(M1_compiler *comp, m1_castexpr *expr, unsigned line) {
 
 static m1_decl *
 check_expr(M1_compiler *comp, m1_expression *e) {
-    m1_decl *t = NULL;
+    m1_decl *t = VOIDTYPE;
     
     if (e == NULL) 
         return t;
         
     switch (e->type) {
-        case EXPR_BLOCK:
-            check_block(comp, e->expr.blck);
-            break;
-        case EXPR_CAST:
-            return check_cast(comp, e->expr.cast, e->line);
-
-        case EXPR_NUMBER:
-            return NUMTYPE;
-
-        case EXPR_INT:
-            return INTTYPE;
-
-        case EXPR_STRING:
-            return STRINGTYPE;
-            
-        case EXPR_TRUE:
-        case EXPR_FALSE:
-            return BOOLTYPE;
-            
+        case EXPR_ADDRESS:
+            return check_address(comp, e->expr.t, e->line);        
+        case EXPR_ASSIGN:
+            return check_assign(comp, e->expr.a, e->line);       
         case EXPR_BINARY:
             return check_binary(comp, e->expr.b, e->line);
-            
-        case EXPR_UNARY:
-            return check_unary(comp, e->expr.u, e->line);
-
-        case EXPR_FUNCALL:
-            return check_funcall(comp, e->expr.f, e->line);
-
-        case EXPR_ASSIGN:
-            return check_assign(comp, e->expr.a, e->line);
-            break;
-        case EXPR_IF:   
-            check_if(comp, e->expr.i, e->line);
-            break;
-        case EXPR_WHILE:
-            check_while(comp, e->expr.w, e->line);
-            break;
+        case EXPR_BLOCK:
+            check_block(comp, e->expr.blck);
+            break;            
+        case EXPR_BREAK:
+            check_break(comp, e->line);
+            break;                        
+        case EXPR_CONTINUE:
+            check_continue(comp, e->line);
+            break;               
+        case EXPR_CONSTDECL:
+            break;            
+        case EXPR_CAST:
+            return check_cast(comp, e->expr.cast, e->line);
+        case EXPR_DEREF:
+            return check_deref(comp, e->expr.t, e->line);        
         case EXPR_DOWHILE:
             check_dowhile(comp, e->expr.w, e->line);
             break;
+        case EXPR_FALSE:
+            return BOOLTYPE;            
         case EXPR_FOR:
             check_for(comp, e->expr.o, e->line);
             break;
-
-        case EXPR_RETURN:
-            return check_return(comp, e->expr.e, e->line);
-
-        case EXPR_NULL:
-            
+        case EXPR_FUNCALL:
+            return check_funcall(comp, e->expr.f, e->line);
+        case EXPR_IF:   
+            check_if(comp, e->expr.i, e->line);
+            break;        
+        case EXPR_INT:
+            return INTTYPE;            
+        case EXPR_NUMBER:
+            return NUMTYPE;
+        case EXPR_NEW:
+            return check_newexpr(comp, e->expr.n, e->line);
+        case EXPR_NULL:            
             break;
-        case EXPR_DEREF:
-            return check_deref(comp, e->expr.t, e->line);
-
-        case EXPR_ADDRESS:
-            return check_address(comp, e->expr.t, e->line);
-
         case EXPR_OBJECT:
             return check_obj(comp, e->expr.t, e->line);
-
-        case EXPR_BREAK:
-            check_break(comp, e->line);
+        case EXPR_PRINT:
+            check_expr(comp, e->expr.e);
             break;            
-        case EXPR_CONTINUE:
-            check_continue(comp, e->line);
-            break;   
-        case EXPR_CONSTDECL:
-            break;
-        case EXPR_VARDECL:
-            check_vardecl(comp, e->expr.v, e->line);
-            break;
+        case EXPR_RETURN:
+            return check_return(comp, e->expr.e, e->line);
+        case EXPR_STRING:
+            return STRINGTYPE;                        
         case EXPR_SWITCH:
             check_switch(comp, e->expr.s, e->line);
             break;
-            
-        case EXPR_NEW:
-            return check_newexpr(comp, e->expr.n, e->line);
+        case EXPR_TRUE:
+            return BOOLTYPE;                                    
+        case EXPR_UNARY:
+            return check_unary(comp, e->expr.u, e->line);            
+        case EXPR_VARDECL:
+            check_vardecl(comp, e->expr.v, e->line);
             break;
-        case EXPR_PRINT:
-            check_expr(comp, e->expr.e);
-            break;
-                
+        case EXPR_WHILE:
+            check_while(comp, e->expr.w, e->line);
+            break;                                       
         default:
             fprintf(stderr, "unknown expr type (%d)", e->type);   
             assert(0); /* shouldn't happen. */
