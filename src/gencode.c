@@ -773,9 +773,9 @@ static void
 gencode_return(M1_compiler *comp, m1_expression *e) {
         
 
-    m1_reg chunk_index = use_reg(comp, VAL_INT);
-    m1_reg retpc_reg   = use_reg(comp, VAL_INT);
-    m1_reg retpc_index = use_reg(comp, VAL_INT);
+    m1_reg chunk_index,
+           retpc_reg,
+           retpc_index;
     
     if (e != NULL) {
         /* returning a value:
@@ -795,9 +795,13 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
         /* index the current callframe, and set in its R0 register the value from the return expression. */
         fprintf(OUT, "\tset_ref\tCF, I%d, %c%d\n", indexreg.no, reg_chars[(int)retvalreg.type], retvalreg.no);
 
+        unuse_reg(comp, indexreg);
+        unuse_reg(comp, retvalreg);
+
         /*  make register available. XXX is this needed? */
 
     }
+
     /* instructions to return:
      
        set_imm    IX, 0, RETPC
@@ -806,6 +810,11 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
        deref      IZ, PCF, IZ
        goto_chunk IZ, IY
     */
+
+    chunk_index = use_reg(comp, VAL_INT);
+    retpc_reg   = use_reg(comp, VAL_INT);
+    retpc_index = use_reg(comp, VAL_INT);
+
     fprintf(OUT, "\tset_imm    I%d, 0, RETPC\n", retpc_index.no);
     fprintf(OUT, "\tderef      I%d, PCF, I%d\n", retpc_reg.no, retpc_index.no);
     fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
@@ -813,6 +822,7 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
     fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", chunk_index.no, retpc_reg.no);        
     unuse_reg(comp, chunk_index);    
     unuse_reg(comp, retpc_reg);
+    unuse_reg(comp, retpc_index);
 
 }
 
