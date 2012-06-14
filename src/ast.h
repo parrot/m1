@@ -63,7 +63,7 @@ typedef struct m1_pmc {
 typedef struct m1_assignment {
     struct m1_object     *lhs;
     struct m1_expression *rhs;
-    
+           
 } m1_assignment;
 
 /* To represent function call statements. */

@@ -327,7 +327,9 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
         unuse_reg(comp, parent);
     }    
 
-    unuse_reg(comp, rhs);      
+    // unuse_reg(comp, rhs);    
+    /* make result available for next in "chain" of assignments, if any (e.g, a = b = c = 42;). */  
+    pushreg(comp->regstack, rhs);
 }
 
 static void
@@ -983,45 +985,6 @@ gencode_le(M1_compiler *comp, m1_binexpr *b) {
     lt_le_common(comp, b, "isge");
 }
 
-/*
-
-The parse tree for:
-
-    a = b = c = 42;
-
-... looks like this:
-
-        =
-      /   \
-     a     =
-          /  \
-         b    =
-             /  \
-            c    42
-
-(Note that the "=" operator is right associative; 42 needs to be
-evaluated first, before it can be assigned to any variable.)
-            
-Assign 42 to c, then either of them to b, and then either of them 
-(b or (c or 42)) to a. Doesn't matter which one.
-            
-*/
-static void
-gencode_binary_assign(M1_compiler *comp, m1_binexpr *b) {
-    m1_reg left, right;
-    
-    gencode_expr(comp, b->left);
-    left = popreg(comp->regstack);
-
-    gencode_expr(comp, b->right);  
-    right  = popreg(comp->regstack);
-    
-    fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)left.type], left.no, 
-                                            reg_chars[(int)right.type], right.no);
-
-    unuse_reg(comp, left);
-    pushreg(comp->regstack, right);                    
-}
 
 static void
 gencode_binary_bitwise(M1_compiler *comp, m1_binexpr *b, char const * const op) {
@@ -1120,10 +1083,6 @@ static void
 gencode_binary(M1_compiler *comp, m1_binexpr *b) {
 
     switch(b->op) {
-    	case OP_ASSIGN:
-    		/* in case of a = b = c; then b = c part is a binary expression */
-    		gencode_binary_assign(comp, b);
-    		break;
         case OP_PLUS:
             gencode_binary_plus(comp, b);
             break;            
@@ -1326,7 +1285,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     /* create a new call frame */
     /* alloc_cf: */
     fprintf(OUT, "\tset_imm   I%d, 0, 198\n", sizereg.no);
-    /* fprintf(OUT, "\tset_imm   I%d, 8, 0\n", sizereg.no); / * XXX: why $2 = 8 ? */
+//    fprintf(OUT, "\tset_imm   I%d, 1, 0\n", sizereg.no); /* XXX: why $2 = 8 ? */
     fprintf(OUT, "\tset_imm   I%d, 0, 0\n", flagsreg.no);
     fprintf(OUT, "\tgc_alloc  P%d, I%d, I%d\n", cf_reg.no, sizereg.no, flagsreg.no);
     unuse_reg(comp, sizereg);

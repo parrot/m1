@@ -110,7 +110,7 @@ be exactly the same, but they need to be compatible.
 
 
 */
-static void
+static m1_decl *
 check_assign(M1_compiler *comp, m1_assignment *a, unsigned line) {
     m1_decl *ltype = check_obj(comp, a->lhs, line);
     m1_decl *rtype = check_expr(comp, a->rhs);
@@ -122,6 +122,7 @@ check_assign(M1_compiler *comp, m1_assignment *a, unsigned line) {
                    "type of left expression does not match type "
                    "of right expression in assignment\n");   
     }
+    return rtype;
 }
 
 
@@ -527,7 +528,7 @@ check_expr(M1_compiler *comp, m1_expression *e) {
             return check_funcall(comp, e->expr.f, e->line);
 
         case EXPR_ASSIGN:
-            check_assign(comp, e->expr.a, e->line);
+            return check_assign(comp, e->expr.a, e->line);
             break;
         case EXPR_IF:   
             check_if(comp, e->expr.i, e->line);
