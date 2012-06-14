@@ -306,8 +306,6 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
     assert (obj_reg_count == 1 || obj_reg_count == 2);
 
     if (obj_reg_count == 1) { /* just a simple lvalue. */
-        /* unuse the old rhs reg */
-        unuse_reg(comp, rhs);      
 
         lhs = popreg(comp->regstack);    
         
