@@ -434,6 +434,7 @@ make_var(M1_compiler *comp, char *varname, m1_expression *init, unsigned num_ele
     v->type      = comp->parsingtype;
     v->init      = init;
     v->num_elems = num_elems;
+    v->dims      = NULL;
     
     /* enter this var. declaration into the symbol table; 
        store a pointer to the symbol in this var. */
@@ -494,9 +495,22 @@ enter_param(M1_compiler *comp, m1_var *parameter) {
 }
 
 m1_var *
-array(M1_compiler *comp, char *varname, unsigned num_elems, m1_expression *init) {
-    m1_var *v = make_var(comp, varname, init, num_elems);
-	return v;
+array(M1_compiler *comp, char *varname, m1_dimension *dimension, m1_expression *init) {
+    unsigned num_elems = 1;
+    m1_dimension *iter = dimension;
+    m1_var *var;
+    
+    while (iter != NULL) {
+        /* for each dimension, the number of elements is multiplied 
+           with what we had already. int x[4][5] means 4*5 elements.
+         */
+        num_elems *= iter->intval;
+        iter       = iter->next;    
+    }   
+    
+    var       = make_var(comp, varname, init, num_elems);
+    var->dims = dimension;
+	return var;
 }
 
 m1_expression *
@@ -624,6 +638,7 @@ m1_block *
 block( ARGIN_NOTNULL( M1_compiler *comp ) ) 
 {
     m1_block *block;
+    assert(comp != NULL);
     block = (m1_block *)m1_malloc(sizeof(m1_block)); 
     
     init_symtab(&block->locals);
@@ -658,5 +673,13 @@ previous (parent) scope.
 void
 close_scope(M1_compiler *comp) {
     comp->currentsymtab = comp->currentsymtab->parentscope;
+}
+
+m1_dimension *
+array_dimension(int ival) {
+    m1_dimension *d = (m1_dimension *)m1_malloc(sizeof(m1_dimension));
+    d->intval       = ival;
+    d->next         = NULL;
+    return d;    
 }
 

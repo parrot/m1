@@ -59,6 +59,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
     struct m1_case			*cse;
     struct m1_enumconst     *ecnst;
     struct m1_block         *blck;
+    struct m1_dimension     *dim;
 }
 
 
@@ -157,7 +158,9 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              
 %type <ival> TK_INT
              m0_op
-             m0_arg                       
+             m0_arg    
+             
+%type <dim> dimension                   
              
 %type <ival> assignop
              opt_enum_val
@@ -667,10 +670,19 @@ var_list    : var
             
 var         : TK_IDENT opt_init
                 { $$ = var((M1_compiler *)yyget_extra(yyscanner), $1, $2); }
-            | TK_IDENT '[' TK_INT ']' opt_array_init
-                { $$ = array((M1_compiler *)yyget_extra(yyscanner), $1, $3, $5); }
+            | TK_IDENT dimension opt_array_init
+                { $$ = array((M1_compiler *)yyget_extra(yyscanner), $1, $2, $3); }
             ;           
             
+dimension   : '[' TK_INT ']'
+                { $$ = array_dimension($2); }
+            | dimension '[' TK_INT ']'
+                {  
+                  $1->next = array_dimension($3);
+                  $$ = $1;  
+                }
+            ;
+                        
 opt_array_init  : /* empty */
                     { $$ = NULL; }
                 | '=' arrayconstructor  

@@ -8,6 +8,11 @@
 
 #include "ann.h"
 
+typedef struct m1_dimension {
+    int                  intval;
+    struct m1_dimension *next;  
+      
+} m1_dimension;
 
 typedef struct m1_block {
     struct m1_expression *stats;
@@ -244,7 +249,7 @@ typedef struct m1_var {
     struct m1_expression *init;      /* to handle: int x = 42; */
     unsigned              num_elems; /* 1 for non-arrays, larger for arrays */
     struct m1_symbol     *sym;       /* pointer to symbol in symboltable */
-    
+    struct m1_dimension  *dims;      /* pointer to list of dimensions, for arrays. */
     struct m1_var        *next;      /* var nodes are stored as a list. */
 } m1_var;
 
@@ -367,7 +372,7 @@ extern m1_expression *constdecl(M1_compiler *comp, char *type, char *name, m1_ex
 extern m1_expression *vardecl(M1_compiler *comp, char *type, m1_var *v);
 
 extern m1_var *var(M1_compiler *comp, char *name, m1_expression *init);
-extern m1_var *array(M1_compiler *comp, char *name, unsigned size, m1_expression *init);
+extern m1_var *array(M1_compiler *comp, char *name, m1_dimension *dimension, m1_expression *init);
 
 extern unsigned field_size(struct m1_structfield *field);
 
@@ -393,6 +398,8 @@ extern struct m1_block *open_scope(M1_compiler *comp);
 extern void close_scope(M1_compiler *comp);
 
 extern void enter_param(M1_compiler *comp, m1_var *parameter);
+
+extern m1_dimension *array_dimension(int ival);
 
 #endif
 
