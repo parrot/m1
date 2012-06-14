@@ -233,6 +233,23 @@ will allocate 10 * sizeof(int) bytes on the heap.
 
 =head3 User-defined type definitions
 
+=head2 Subsystems
+
+This section describes a number of subsystems and how they work.
+
+=head3 Variables, Symbols and Registers
+
+
+=head3 Register allocation and de-allocation
+
+M1 has a nifty register allocation system. Three functions are the core of this
+system:
+
+ void use_reg(M1_compiler *c);
+ void unuse_reg(M1_compiler *c, m1_reg r);
+ void freeze_reg(M1_compiler *c, m1_reg r);
+ 
+
 
 
 =head2 M1 Language Specification
