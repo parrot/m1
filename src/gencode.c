@@ -407,13 +407,13 @@ OBJECT_LINK-----> L1
   	             
     As an example of multi-dimensional arrays:
     
-    x[3][4][5] looks like this:
+    x[1][2][3] looks like this:
     
         OBJECT_MAIN
                 | OBJECT_INDEX (3x)
                 |    |   |   |
                 V    V   V   V
-                 x   3   4   5
+                 x   1   2   3
                   \ /   /   /
 OBJECT_LINK------> L1  /   /
                     \ /   /
@@ -424,7 +424,54 @@ OBJECT_LINK------>     L3
                        |
                       ROOT
                       
-    This should result in code:                         
+    When traversing the tree starting at ROOT (L3), we go down towards OBJECT_MAIN
+    first by following the nodes' <parent> links. From L3->L2->L1->x. Then the OUT
+    parameter <parent> is set to x, and the register containing x (say, I0) is 
+    pushed onto the regstack. We go back to L1, as x's parent is NULL. Then 
+    L1's field will be visited, which is [3]. We load [1] into a register, and push 
+    it onto the regstack. Then we go back to L2. We visit its <field>, which is
+    [2]. We load [2] into a register and push that register onto the regstack. 
+    The regstack now looks like (growing bottom-up) this:
+    
+    |        |
+    | I2 (2) | <--SP (stack pointer)
+    | I1 (1) |
+    | I0 (x) |
+    ----------
+    
+    Since set_ref and deref ops only use 2 operands for the target or source, respectively,
+    we need to combine 2 registers into 1. We'll combine I0 and I1, by adding I1 to I0.
+    Access to an array element x[1][2] in an array defined as "int x[3][4]" is laid out 
+    as follows, marked with "XX" : (|--| is 1 integer)
+    
+           x[0][0]         x[1][2] 
+             |        x[1]    |
+             |         |      |
+             V         |      V
+                       V      XX 
+            |--|--|--| |--|--|--| |--|--|--| |--|--|--| 
+              0  1  2    0  1  2    0  1  2    0  1  2             [4]
+            __________ __________ __________ __________
+                 0          1          2          3                x[3]
+    
+    Therefore, x[1] represents the base address of "x" + "1 X 3" (since each "element"
+    in the first dimension has length 3). Therefore, generate the following instruction:
+    
+    set_imm  I4,  0,  3   # length of each "element" in first dimension.
+    mult_i   I1, I1, I4   # multiply [1] by 3
+    add_i    I0, I0, I1   # x = x + 3.
+    
+    For this, we can pop off the 3 register so far, and push back I0 and I2, resulting in:
+    
+    
+    |            |
+    | I2 (4)     |  <---SP
+    | I0 (x+[3]) |
+    --------------
+    
+    
+    
+    
                         
     */
 
