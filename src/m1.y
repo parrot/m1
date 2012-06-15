@@ -311,7 +311,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 %left TK_LE TK_GE TK_LT TK_GT TK_EQ TK_NE
 %left TK_LSH TK_RSH
 %left '+' '-' 
-%left '*' '/' '&' '|' '%'  '^'
+%left '*' '/' '&' '|' '%'  '^' '~'
 %left TK_INC TK_DEC 
 %left TK_NOT
 
@@ -949,6 +949,8 @@ unexpr  : '-' expression
                 { $$ = castexpr((M1_compiler *)yyget_extra(yyscanner), $2, $4); }
         | "!" expression 
                 { $$ = unaryexpr((M1_compiler *)yyget_extra(yyscanner), UNOP_NOT, $2); }                        
+        | '~' expression
+                { $$ = unaryexpr((M1_compiler *)yyget_extra(yyscanner), UNOP_BNOT, $2); }
         ;            
        
 tertexpr    : expression "?" expression ':' expression

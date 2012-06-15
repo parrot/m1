@@ -159,7 +159,8 @@ typedef enum m1_unop {
     UNOP_POSTDEC,  /* a-- */
     UNOP_PREINC,   /* ++a */
     UNOP_PREDEC,   /* --a */
-    UNOP_NOT       /* !a  */
+    UNOP_NOT,      /* !a  */
+    UNOP_BNOT      /* ~a  */
     /* There is no UNOP_NEG: unary minus is handled by multiplying by -1 */
 } m1_unop;
 

@@ -906,9 +906,11 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
 static void
 gencode_or(M1_compiler *comp, m1_binexpr *b) {
 	/*
-	  left = <evaluate left>
+	  a || b
+	  
+	  left = <evaluate a>
 	  goto_if LEND, left
-	  right = <evaluate right>
+	  right = <evaluate b>
 	  left = right 
 	LEND:
 	
@@ -942,11 +944,13 @@ gencode_or(M1_compiler *comp, m1_binexpr *b) {
 static void
 gencode_and(M1_compiler *comp, m1_binexpr *b) {
 	/*
-	  left = <evaluate left>
+	  a && b
+	  
+	  left = <evaluate a>
 	  goto_if LRIGHT, left, 
 	  goto LEND
 	LRIGHT:
-	  right = <evaluate right>
+	  right = <evaluate b>
 	  left = right
 	LEND:
 	*/
@@ -1267,6 +1271,10 @@ gencode_not(M1_compiler *comp, m1_unexpr *u) {
    
 }
 
+static void 
+gencode_bnot(M1_compiler *comp, m1_unexpr *u) {
+    fprintf(stderr, "TODO: bitwise not not implemented yet!\n");    
+}
 
 static void
 gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
@@ -1294,6 +1302,9 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
             break;
         case UNOP_NOT:
             gencode_not(comp, u);
+            return;
+        case UNOP_BNOT:
+            gencode_bnot(comp, u);
             return;
         default:
             op = "unknown op";

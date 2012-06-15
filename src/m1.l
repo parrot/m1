@@ -98,7 +98,7 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "&="                    { return TK_BAND_ASSIGN; }
 
 [\[\]{}();=+-/*^,\.]    { return yytext[0]; }
-[%&:|]                  { return yytext[0]; }
+[%&:|~]                 { return yytext[0]; }
 
 "?"                     { return TK_ISTRUE; }
 "!"                     { return TK_NOT; }
