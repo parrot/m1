@@ -75,7 +75,7 @@ reset_reg(M1_compiler *comp) {
 #define REG_SYMBOL  2
 
 static m1_reg
-use_reg(M1_compiler *comp, m1_valuetype type) {
+alloc_reg(M1_compiler *comp, m1_valuetype type) {
     m1_reg r;
     int i = 0;
     /* look for first empty slot. */
@@ -101,12 +101,12 @@ use_reg(M1_compiler *comp, m1_valuetype type) {
 
 /*
 
-Throughout the code, we call unuse_reg() on registers that we think we 
+Throughout the code, we call free_reg() on registers that we think we 
 no longer need. Sometimes, these registers have been assigned to a symbol. 
 Symbols get to keep what they get. In order to prevent very difficult code, 
 just note that the register is used by a symbol by "freezing" it. 
-When unuse_reg() is called on it (after it's frozen), it won't be freed by 
-unuse_reg().
+When free_reg() is called on it (after it's frozen), it won't be freed by 
+free_reg().
 
 */
 static void
@@ -126,9 +126,9 @@ In that case, the register is left alone.
 
 */
 static void
-unuse_reg(M1_compiler *comp, m1_reg r) {
+free_reg(M1_compiler *comp, m1_reg r) {
     int i;
-    /* if m1 was invoked with -r, then switch off unuse_reg(). */
+    /* if m1 was invoked with -r, then switch off free_reg(). */
     if (comp->no_reg_opt)
         return;
     
@@ -179,8 +179,8 @@ gencode_number(M1_compiler *comp, m1_literal *lit) {
     assert(lit->type == VAL_FLOAT);
     assert(lit->sym != NULL);
        
-    reg        = use_reg(comp, VAL_FLOAT);
-    constindex = use_reg(comp, VAL_INT);
+    reg        = alloc_reg(comp, VAL_FLOAT);
+    constindex = alloc_reg(comp, VAL_INT);
         
     //ins_set_imm(comp, &constindex, 0, lit->sym->constindex);
     //ins_deref(comp, &reg, CONSTS, &constindex);
@@ -188,7 +188,7 @@ gencode_number(M1_compiler *comp, m1_literal *lit) {
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tN%d, CONSTS, I%d\n", reg.no, constindex.no);
 
-    unuse_reg(comp, constindex);
+    free_reg(comp, constindex);
     pushreg(comp->regstack, reg);
     
 } 
@@ -205,7 +205,7 @@ gencode_char(M1_compiler *comp, m1_literal *lit) {
     assert(lit->type == VAL_INT);
     assert(lit->sym != NULL);
        
-    reg = use_reg(comp, VAL_INT);
+    reg = alloc_reg(comp, VAL_INT);
         
     /* reuse the reg, first for the index, then for the result. */        
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", reg.no, lit->sym->constindex);
@@ -234,7 +234,7 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
     assert(lit->type == VAL_INT);
     assert(lit->sym != NULL);
 
-    reg = use_reg(comp, VAL_INT);
+    reg = alloc_reg(comp, VAL_INT);
       
     /* If the value is small enough, load it with set_imm; otherwise, take it from the constants table.
        set_imm X, Y, Z: set X to: 256 * Y + Z. All operands are 8 bit, so maximum value is 255. 
@@ -262,7 +262,7 @@ gencode_bool(M1_compiler *comp, int boolval) {
        set_imm Ix, 0, 1 # for true
        set_imm Ix, 0, 0 # for false
     */
-    m1_reg reg = use_reg(comp, VAL_INT);
+    m1_reg reg = alloc_reg(comp, VAL_INT);
     fprintf(OUT, "\tset_imm\t%d, 0, %d\n", reg.no, boolval);
     pushreg(comp->regstack, reg);   
 }
@@ -277,13 +277,13 @@ gencode_string(M1_compiler *comp, m1_literal *lit) {
     assert(lit->sym != NULL);
     assert(lit->type == VAL_STRING);
     
-    stringreg   = use_reg(comp, VAL_STRING);
-    constidxreg = use_reg(comp, VAL_INT);
+    stringreg   = alloc_reg(comp, VAL_STRING);
+    constidxreg = alloc_reg(comp, VAL_INT);
       
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constidxreg.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", stringreg.no, constidxreg.no);
        
-    unuse_reg(comp, constidxreg);
+    free_reg(comp, constidxreg);
     
     pushreg(comp->regstack, stringreg);
 }
@@ -314,7 +314,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
         
         fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
                                                 reg_chars[(int)rhs.type], rhs.no);
-        unuse_reg(comp, lhs);
+        free_reg(comp, lhs);
     }
     else if (obj_reg_count == 2) { /* complex lvalue, like x.y, or x[10]. */
         m1_reg index  = popreg(comp->regstack);
@@ -323,11 +323,11 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
         fprintf(OUT, "\tset_ref\t%c%d, %c%d, %c%d\n", reg_chars[(int)parent.type], parent.no, 
                                                       reg_chars[(int)index.type], index.no,
                                                       reg_chars[(int)rhs.type], rhs.no);
-        unuse_reg(comp, index);                                                      
-        unuse_reg(comp, parent);
+        free_reg(comp, index);                                                      
+        free_reg(comp, parent);
     }    
 
-    // unuse_reg(comp, rhs);    
+    // free_reg(comp, rhs);    
     /* make result available for next in "chain" of assignments, if any (e.g, a = b = c = 42;). */  
     pushreg(comp->regstack, rhs);
 }
@@ -335,7 +335,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
 static void
 gencode_null(M1_compiler *comp) {
     m1_reg reg;
-    reg = use_reg(comp, VAL_INT);
+    reg = alloc_reg(comp, VAL_INT);
 	/* "null" is just 0, but then in a "pointer" context. */
     fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", reg.no);
     
@@ -457,7 +457,7 @@ OBJECT_LINK------>     L3
         	/* if symbol has not register allocated yet, do it now. */
         	if (obj->sym->regno == NO_REG_ALLOCATED_YET) {
 
-                m1_reg r        = use_reg(comp, obj->sym->typedecl->valtype);
+                m1_reg r        = alloc_reg(comp, obj->sym->typedecl->valtype);
                 freeze_reg(comp, r);
                 obj->sym->regno = r.no;
         	}  
@@ -497,7 +497,7 @@ OBJECT_LINK------>     L3
             field    = struct_find_field(comp, (*parent)->sym->typedecl->d.s, obj->obj.name);
             assert(field != NULL); /* XXX need to check in semcheck. */
             offset   = field->offset;                        
-            fieldreg = use_reg(comp, VAL_INT);/* reg for storing offset of field. */
+            fieldreg = alloc_reg(comp, VAL_INT);/* reg for storing offset of field. */
 
             /* load the offset into a reg. and make it available through the regstack. */
             fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", fieldreg.no, offset);             
@@ -516,13 +516,13 @@ OBJECT_LINK------>     L3
                     
                     m1_reg offsetreg = popreg(comp->regstack);
                     m1_reg parentreg = popreg(comp->regstack); 
-                    m1_reg reg       = use_reg(comp, VAL_INT);
+                    m1_reg reg       = alloc_reg(comp, VAL_INT);
                                    
                     fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)reg.type], reg.no,
                                                             reg_chars[(int)parentreg.type], parentreg.no,
                                                             reg_chars[(int)offsetreg.type], offsetreg.no);   
-                    unuse_reg(comp, offsetreg);
-                    unuse_reg(comp, parentreg);
+                    free_reg(comp, offsetreg);
+                    free_reg(comp, parentreg);
                     pushreg(comp->regstack, reg);
                     ++numregs_pushed;                                                           
                 }
@@ -539,7 +539,7 @@ OBJECT_LINK------>     L3
             gencode_obj(comp, obj->obj.field, parent, is_target);
             reg = popreg(comp->regstack);
             fprintf(OUT, "\tadd_i <struct>, I%d\n", reg.no);
-            unuse_reg(comp, reg);
+            free_reg(comp, reg);
             break;
         }
         case OBJECT_INDEX: /* b in a[b] */        
@@ -565,7 +565,7 @@ OBJECT_LINK------>     L3
                 
                 offsetreg = popreg(comp->regstack); /* containing the index. */
                 parentreg = popreg(comp->regstack); /* containing the struct or array */
-                result    = use_reg(comp, (*parent)->sym->typedecl->valtype); /* target reg to store result. */
+                result    = alloc_reg(comp, (*parent)->sym->typedecl->valtype); /* target reg to store result. */
                 
                 /* deref R<target>, R<array>, R.<index> 
                 
@@ -575,8 +575,8 @@ OBJECT_LINK------>     L3
                                                             reg_chars[(int)offsetreg.type], offsetreg.no);   
                 
                 /* XXX is the offset not always an integer? */
-                unuse_reg(comp, parentreg);
-                unuse_reg(comp, offsetreg);
+                free_reg(comp, parentreg);
+                free_reg(comp, offsetreg);
                 
                 pushreg(comp->regstack, result);
                 ++numregs_pushed;                                                            
@@ -638,7 +638,7 @@ gencode_while(M1_compiler *comp, m1_whileexpr *w) {
 	
 	fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", startlabel, reg_chars[(int)reg.type], reg.no);
 	
-	unuse_reg(comp, reg);
+	free_reg(comp, reg);
 			
 	/* remove break and continue labels from stack. */
 	(void)pop(comp->breakstack);
@@ -673,7 +673,7 @@ gencode_dowhile(M1_compiler *comp, m1_whileexpr *w) {
 
     fprintf(OUT, "L%d:\n", endlabel);
     
-    unuse_reg(comp, reg);
+    free_reg(comp, reg);
     
     (void)pop(comp->breakstack);
     (void)pop(comp->continuestack);
@@ -714,7 +714,7 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
         reg = popreg(comp->regstack);
         fprintf(OUT, "\tgoto_if L%d, %c%d\n", blocklabel, reg_chars[(int)reg.type], reg.no);
 
-        unuse_reg(comp, reg);
+        free_reg(comp, reg);
     }   
 
     fprintf(OUT, "\tgoto L%d\n", endlabel);
@@ -760,7 +760,7 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
 
     fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", iflabel, reg_chars[(int)condreg.type], condreg.no);
 
-    unuse_reg(comp, condreg);
+    free_reg(comp, condreg);
     
     /* else block */
     if (i->elseblock) {            	
@@ -805,15 +805,15 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
         gencode_expr(comp, e);
 
         m1_reg retvalreg = popreg(comp->regstack);
-        m1_reg indexreg  = use_reg(comp, VAL_INT);
+        m1_reg indexreg  = alloc_reg(comp, VAL_INT);
         
         /* load the number of register R0 */
         fprintf(OUT, "\tset_imm\tI%d, 0, %c0\n", indexreg.no, reg_chars[(int)retvalreg.type]);
         /* index the current callframe, and set in its R0 register the value from the return expression. */
         fprintf(OUT, "\tset_ref\tCF, I%d, %c%d\n", indexreg.no, reg_chars[(int)retvalreg.type], retvalreg.no);
 
-        unuse_reg(comp, indexreg);
-        unuse_reg(comp, retvalreg);
+        free_reg(comp, indexreg);
+        free_reg(comp, retvalreg);
 
         /*  make register available. XXX is this needed? */
 
@@ -828,18 +828,18 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
        goto_chunk IZ, IY
     */
 
-    chunk_index = use_reg(comp, VAL_INT);
-    retpc_reg   = use_reg(comp, VAL_INT);
-    retpc_index = use_reg(comp, VAL_INT);
+    chunk_index = alloc_reg(comp, VAL_INT);
+    retpc_reg   = alloc_reg(comp, VAL_INT);
+    retpc_index = alloc_reg(comp, VAL_INT);
 
     fprintf(OUT, "\tset_imm    I%d, 0, RETPC\n", retpc_index.no);
     fprintf(OUT, "\tderef      I%d, PCF, I%d\n", retpc_reg.no, retpc_index.no);
     fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
     fprintf(OUT, "\tderef      I%d, PCF, I%d\n", chunk_index.no, chunk_index.no);
     fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", chunk_index.no, retpc_reg.no);        
-    unuse_reg(comp, chunk_index);    
-    unuse_reg(comp, retpc_reg);
-    unuse_reg(comp, retpc_index);
+    free_reg(comp, chunk_index);    
+    free_reg(comp, retpc_reg);
+    free_reg(comp, retpc_index);
 
 }
 
@@ -873,7 +873,7 @@ gencode_or(M1_compiler *comp, m1_binexpr *b) {
 	fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[(int)left.type], left.no, 
 	                                       reg_chars[(int)right.type], right.no);
 	pushreg(comp->regstack, left);
-	unuse_reg(comp, right);
+	free_reg(comp, right);
 	
 	fprintf(OUT, "L%d:\n", endlabel);
 		
@@ -909,7 +909,7 @@ gencode_and(M1_compiler *comp, m1_binexpr *b) {
 	fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[(int)left.type], left.no, reg_chars[(int)right.type], right.no);	
 	fprintf(OUT, "L%d:\n", endlabel);
 	
-	unuse_reg(comp, right);
+	free_reg(comp, right);
 	pushreg(comp->regstack, left);
 }
 
@@ -951,7 +951,7 @@ ne_eq_common(M1_compiler *comp, m1_binexpr *b, int is_eq_op) {
     endlabel    = gen_label(comp);
     eq_ne_label = gen_label(comp);
     
-    reg = use_reg(comp, VAL_INT);
+    reg = alloc_reg(comp, VAL_INT);
     
     fprintf(OUT, "\tsub_i\tI%d, %c%d, %c%d\n", reg.no, reg_chars[(int)left.type], left.no,
                                                       reg_chars[(int)right.type], right.no);
@@ -964,8 +964,8 @@ ne_eq_common(M1_compiler *comp, m1_binexpr *b, int is_eq_op) {
     fprintf(OUT, "\tset_imm\t%c%d, 0, %d\n", reg_chars[(int)reg.type], reg.no, !is_eq_op);
     fprintf(OUT, "L%d:\n", endlabel);
     
-    unuse_reg(comp, left);
-    unuse_reg(comp, right);
+    free_reg(comp, left);
+    free_reg(comp, right);
     
     pushreg(comp->regstack, reg);
 }
@@ -982,7 +982,7 @@ gencode_eq(M1_compiler *comp, m1_binexpr *b) {
 
 static void
 lt_le_common(M1_compiler *comp, m1_binexpr *b, char const * const op) {
-    m1_reg result = use_reg(comp, VAL_INT);
+    m1_reg result = alloc_reg(comp, VAL_INT);
     m1_reg left, right;
     
     gencode_expr(comp, b->left);
@@ -996,8 +996,8 @@ lt_le_common(M1_compiler *comp, m1_binexpr *b, char const * const op) {
                                                   reg_chars[(int)right.type], right.no,
                                                   reg_chars[(int)left.type], left.no);
 
-    unuse_reg(comp, left);
-    unuse_reg(comp, right);
+    free_reg(comp, left);
+    free_reg(comp, right);
     pushreg(comp->regstack, result);    
 }
 
@@ -1024,12 +1024,12 @@ gencode_binary_bitwise(M1_compiler *comp, m1_binexpr *b, char const * const op) 
     gencode_expr(comp, b->right);  
     right  = popreg(comp->regstack);
     
-    target = use_reg(comp, (m1_valuetype)left.type);    
+    target = alloc_reg(comp, (m1_valuetype)left.type);    
     fprintf(OUT, "\t%s \t%c%d, %c%d, %c%d\n", op, reg_chars[(int)target.type], target.no, 
                                                   reg_chars[(int)left.type], left.no, 
                                                   reg_chars[(int)right.type], right.no);
-    unuse_reg(comp, left);
-    unuse_reg(comp, right);
+    free_reg(comp, left);
+    free_reg(comp, right);
     pushreg(comp->regstack, target);                    
     
 }
@@ -1061,13 +1061,13 @@ gencode_binary_math(M1_compiler *comp, m1_binexpr *b, char const * const op) {
     gencode_expr(comp, b->right);  
     right  = popreg(comp->regstack);
     
-    target = use_reg(comp, (m1_valuetype)left.type);    
+    target = alloc_reg(comp, (m1_valuetype)left.type);    
     fprintf(OUT, "\t%s_%c\t%c%d, %c%d, %c%d\n", op, type_chars[(int)left.type],
                                                 reg_chars[(int)target.type], target.no, 
                                                 reg_chars[(int)left.type], left.no, 
                                                 reg_chars[(int)right.type], right.no);
-    unuse_reg(comp, left);
-    unuse_reg(comp, right);
+    free_reg(comp, left);
+    free_reg(comp, right);
     pushreg(comp->regstack, target);               
 }
 
@@ -1176,7 +1176,7 @@ gencode_not(M1_compiler *comp, m1_unexpr *u) {
     
     gencode_expr(comp, u->expr);
     reg  = popreg(comp->regstack);  
-    temp = use_reg(comp, VAL_INT);
+    temp = alloc_reg(comp, VAL_INT);
       
     /* If reg is zero, make it nonzero (false->true).
        If it's non-zero, make it zero. (true->false). 
@@ -1202,7 +1202,7 @@ gencode_not(M1_compiler *comp, m1_unexpr *u) {
     fprintf(OUT, "L%d:\n", label2);
     fprintf(OUT, "\tset\t%c%d, I%d, x\n", reg_chars[(int)reg.type], reg.no, temp.no);
     
-    unuse_reg(comp, reg);
+    free_reg(comp, reg);
     pushreg(comp->regstack, temp);
    
 }
@@ -1246,11 +1246,11 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     reg = popreg(comp->regstack);
     
     /* register to hold the value "1". */        
-    m1_reg one = use_reg(comp, VAL_INT);
+    m1_reg one = alloc_reg(comp, VAL_INT);
     
     /* if it's a postfix op, then need to save the old value. */
     if (postfix == 1) {
-        oldval = use_reg(comp, VAL_INT);
+        oldval = alloc_reg(comp, VAL_INT);
         fprintf(OUT, "\tset\tI%d, I%d, x\n", oldval.no, reg.no);
     }
     
@@ -1259,14 +1259,14 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     
     if (postfix == 1) { /* postfix; give back the register containing the OLD value. */
     	pushreg(comp->regstack, oldval);    	
-        unuse_reg(comp, reg);
+        free_reg(comp, reg);
     }
     else { /* prefix; give back the register containing the NEW value. */
         pushreg(comp->regstack, reg);
     }
 
     /* release the register that was holding the constant "1". */
-    unuse_reg(comp, one);       
+    free_reg(comp, one);       
             
 }
 
@@ -1305,9 +1305,9 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
         return;
     }
     
-    m1_reg cf_reg   = use_reg(comp, VAL_CHUNK);
-    m1_reg sizereg  = use_reg(comp, VAL_INT);
-    m1_reg flagsreg = use_reg(comp, VAL_INT);
+    m1_reg cf_reg   = alloc_reg(comp, VAL_CHUNK);
+    m1_reg sizereg  = alloc_reg(comp, VAL_INT);
+    m1_reg flagsreg = alloc_reg(comp, VAL_INT);
     
     /* create a new call frame */
     /* alloc_cf: */
@@ -1315,8 +1315,8 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
 //    fprintf(OUT, "\tset_imm   I%d, 1, 0\n", sizereg.no); /* XXX: why $2 = 8 ? */
     fprintf(OUT, "\tset_imm   I%d, 0, 0\n", flagsreg.no);
     fprintf(OUT, "\tgc_alloc  P%d, I%d, I%d\n", cf_reg.no, sizereg.no, flagsreg.no);
-    unuse_reg(comp, sizereg);
-    unuse_reg(comp, flagsreg);
+    free_reg(comp, sizereg);
+    free_reg(comp, flagsreg);
 
     
     /* store arguments in registers of new callframe.
@@ -1338,7 +1338,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     */
     while (argiter != NULL) {
         m1_reg argreg;
-        m1_reg indexreg = use_reg(comp, VAL_INT);
+        m1_reg indexreg = alloc_reg(comp, VAL_INT);
         gencode_expr(comp, argiter);
         argreg = popreg(comp->regstack);
         fprintf(OUT, "\tset_imm   I%d, 0, %d\n", indexreg.no, regindexes[argreg.type]);
@@ -1349,15 +1349,15 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
         argiter = argiter->next;   
     
         /* indexreg should NOT be unused. XXX need to find out why. 
-        unuse_reg(comp, indexreg);
+        free_reg(comp, indexreg);
         */
-        unuse_reg(comp, argreg);
+        free_reg(comp, argreg);
         
     }
 
     
     /* init_cf_copy: */
-    m1_reg temp = use_reg(comp, VAL_INT);    
+    m1_reg temp = alloc_reg(comp, VAL_INT);    
     fprintf(OUT, "\tset_imm   I%d, 0, INTERP\n", temp.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, INTERP\n", cf_reg.no, temp.no);
     
@@ -1380,7 +1380,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     fprintf(OUT, "\tset_ref   P%d, I%d, P%d\n", cf_reg.no, temp.no, cf_reg.no);
     
     /* init_cf_zero: */
-    m1_reg temp2 = use_reg(comp, VAL_INT);
+    m1_reg temp2 = alloc_reg(comp, VAL_INT);
     fprintf(OUT, "\tset_imm   I%d, 0, 0\n", temp.no);
     fprintf(OUT, "\tset_imm   I%d, 0, EH\n", temp2.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, I%d\n", cf_reg.no, temp2.no, temp.no); 
@@ -1391,16 +1391,16 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     fprintf(OUT, "\tset_imm   I%d, 0, SPILLCF\n", temp2.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, I%d\n", cf_reg.no, temp2.no, temp.no);
 
-    unuse_reg(comp, temp2);
+    free_reg(comp, temp2);
 
     /* init_cf_retpc: */    
     fprintf(OUT, "\tset_imm   I%d, 0, 10\n", temp.no);
     fprintf(OUT, "\tadd_i     RETPC, PC, I%d\n", temp.no);
 
-    unuse_reg(comp, temp);
+    free_reg(comp, temp);
 
-    cont_offset = use_reg(comp, VAL_INT);
-    pc_reg      = use_reg(comp, VAL_INT);
+    cont_offset = alloc_reg(comp, VAL_INT);
+    pc_reg      = alloc_reg(comp, VAL_INT);
     
     /* init_cf_pc */
     fprintf(OUT, "\tset_imm   I%d, 0, 3\n", cont_offset.no);
@@ -1408,8 +1408,8 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     fprintf(OUT, "\tset_imm   I%d, 0, PC\n", pc_reg.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, I%d\n", cf_reg.no, pc_reg.no, cont_offset.no); 
 
-    unuse_reg(comp, cont_offset);
-    unuse_reg(comp, pc_reg);
+    free_reg(comp, cont_offset);
+    free_reg(comp, pc_reg);
 
     fprintf(OUT, "\tset       CF, P%d, x\n", cf_reg.no);
      
@@ -1427,10 +1427,10 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     fprintf(OUT, "\tset_imm    P%d, 0, %d\n", cf_reg.no, calledfun_index);
     fprintf(OUT, "\tderef      P%d, CONSTS, P%d\n", cf_reg.no, cf_reg.no);
     
-    m1_reg I0 = use_reg(comp, VAL_INT);    
+    m1_reg I0 = alloc_reg(comp, VAL_INT);    
     fprintf(OUT, "\tset_imm    I%d, 0, 0\n", I0.no);
     fprintf(OUT, "\tgoto_chunk P%d, I%d, x\n", cf_reg.no, I0.no);
-    unuse_reg(comp, I0);
+    free_reg(comp, I0);
 
 
     /*
@@ -1444,7 +1444,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     restore_cf:
     */
 
-    m1_reg I9 = use_reg(comp, VAL_INT);  
+    m1_reg I9 = alloc_reg(comp, VAL_INT);  
 /*
     # set PCF[CHUNK] to the current call frame's CHUNK
     set_imm  I9,  0,  CHUNK
@@ -1485,15 +1485,15 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     set_imm I9,  0,  CF
     set_ref PCF, I9, PCF
     */
-    m1_reg I1 = use_reg(comp, VAL_INT);    
+    m1_reg I1 = alloc_reg(comp, VAL_INT);    
     fprintf(OUT, "\tset_imm   I%d, 0,   5\n", I1.no);
     fprintf(OUT, "\tadd_i     I%d, PC,  I%d\n", I1.no, I1.no);
     fprintf(OUT, "\tset_imm   I%d, 0,   PC\n", I9.no);
     fprintf(OUT, "\tset_ref   PCF, I%d, I%d\n", I9.no, I1.no);
     fprintf(OUT, "\tset_imm   I%d, 0,   CF\n", I9.no);         
     fprintf(OUT, "\tset_ref   PCF, I%d, PCF\n", I9.no);
-    unuse_reg(comp, I9);
-    unuse_reg(comp, I1);
+    free_reg(comp, I9);
+    free_reg(comp, I1);
     /* invoke_cf: */
     
     /*
@@ -1510,8 +1510,8 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     
     */
     /* retrieve the return value. */
-    m1_reg idxreg           = use_reg(comp, VAL_INT);
-    m1_reg retvaltarget_reg = use_reg(comp, f->typedecl->valtype);
+    m1_reg idxreg           = alloc_reg(comp, VAL_INT);
+    m1_reg retvaltarget_reg = alloc_reg(comp, f->typedecl->valtype);
     /* load the number of register I0. */
     fprintf(OUT, "\tset_imm\tI%d, 0, %c0\n", idxreg.no, reg_chars[(int)retvaltarget_reg.type]);   
     
@@ -1525,7 +1525,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     pushreg(comp->regstack, retvaltarget_reg);
     
     /* we're accessing the callee's CF, so only free its register now.*/
-    unuse_reg(comp, cf_reg);
+    free_reg(comp, cf_reg);
           
 }
 
@@ -1540,27 +1540,27 @@ gencode_print(M1_compiler *comp, m1_expression *expr) {
     reg = popreg(comp->regstack);
     
     /* register to hold value "1" */    
-    one = use_reg(comp, VAL_INT);    
+    one = alloc_reg(comp, VAL_INT);    
     
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n",  one.no);
     fprintf(OUT, "\tprint_%c\tI%d, %c%d, x\n", type_chars[(int)reg.type], one.no, 
 	                                       reg_chars[(int)reg.type], reg.no);
 		
-    unuse_reg(comp, one);
-    unuse_reg(comp, reg);
+    free_reg(comp, one);
+    free_reg(comp, reg);
 }
 
 static void
 gencode_new(M1_compiler *comp, m1_newexpr *expr) {
-	m1_reg pointerreg = use_reg(comp, VAL_INT); /* reg holding the pointer to new memory */
-	m1_reg sizereg    = use_reg(comp, VAL_INT); /* reg holding the num. of bytes to alloc. */
+	m1_reg pointerreg = alloc_reg(comp, VAL_INT); /* reg holding the pointer to new memory */
+	m1_reg sizereg    = alloc_reg(comp, VAL_INT); /* reg holding the num. of bytes to alloc. */
 
 	unsigned size     = type_get_size(expr->typedecl);
 		
 	fprintf(OUT, "\tset_imm I%d, 0, %d\n", sizereg.no, size);
 	fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", pointerreg.no, sizereg.no);
 	
-	unuse_reg(comp, sizereg);
+	free_reg(comp, sizereg);
 	pushreg(comp->regstack, pointerreg);
 }
 
@@ -1600,7 +1600,7 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
     */
     m1_case *caseiter;
     m1_reg   reg;    
-    m1_reg   test     = use_reg(comp, VAL_INT);    
+    m1_reg   test     = alloc_reg(comp, VAL_INT);    
     int      endlabel = gen_label(comp);
 
     
@@ -1629,8 +1629,8 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
         caseiter = caseiter->next;   
     }
 
-    unuse_reg(comp, test);
-    unuse_reg(comp, reg);
+    free_reg(comp, test);
+    free_reg(comp, reg);
     
     if (expr->defaultstat) {
        gencode_expr(comp, expr->defaultstat); 
@@ -1659,7 +1659,7 @@ gencode_var(M1_compiler *comp, m1_var *v) {
             sym->regno = reg.no;
             freeze_reg(comp, reg);
        }
-       unuse_reg(comp, reg);
+       free_reg(comp, reg);
               
     }
     
@@ -1673,7 +1673,7 @@ gencode_var(M1_compiler *comp, m1_var *v) {
         assert(sym != NULL);
         
         if (sym->regno == NO_REG_ALLOCATED_YET) {
-            m1_reg reg = use_reg(comp, sym->valtype);
+            m1_reg reg = alloc_reg(comp, sym->valtype);
             sym->regno = reg.no;
             freeze_reg(comp, reg);
         }
@@ -1684,7 +1684,7 @@ gencode_var(M1_compiler *comp, m1_var *v) {
          */
         size = v->num_elems * elem_size;
         
-        memsize = use_reg(comp, VAL_INT);
+        memsize = alloc_reg(comp, VAL_INT);
               
         if (size < (256*255)) {
             int remainder = size % 256;   
@@ -1693,16 +1693,16 @@ gencode_var(M1_compiler *comp, m1_var *v) {
         }
         else {
             m1_symbol *sizesym = sym_find_int(&comp->currentchunk->constants, size);
-            m1_reg indexreg = use_reg(comp, VAL_INT);
+            m1_reg indexreg = alloc_reg(comp, VAL_INT);
             assert(sizesym != NULL);
             /* XXX this will fail if the const index in the CONSTS segment > 255. */
             fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", indexreg.no, sizesym->constindex); 
             fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", memsize.no, indexreg.no);
-            unuse_reg(comp, indexreg);
+            free_reg(comp, indexreg);
         }
         
         fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", sym->regno, memsize.no);
-        unuse_reg(comp, memsize);
+        free_reg(comp, memsize);
     }
        
 }
@@ -1726,7 +1726,7 @@ gencode_cast(M1_compiler *comp, m1_castexpr *expr) {
     
     gencode_expr(comp, expr->expr);
     reg    = popreg(comp->regstack);
-    result = use_reg(comp, expr->targettype);
+    result = alloc_reg(comp, expr->targettype);
     
     switch (expr->targettype) {
         case VAL_INT:
@@ -1740,7 +1740,7 @@ gencode_cast(M1_compiler *comp, m1_castexpr *expr) {
             break;
     }
 
-    unuse_reg(comp, reg);
+    free_reg(comp, reg);
     pushreg(comp->regstack, result);
   
 }
@@ -1939,22 +1939,22 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *chunk) {
     /* XXX only generate if not already generated for an explicit return statement. */ 
     if (strcmp(chunk->name, "main") != 0) {        
         m1_reg chunk_index;
-        m1_reg retpc_reg   = use_reg(comp, VAL_INT);
-        m1_reg retpc_index = use_reg(comp, VAL_INT);
+        m1_reg retpc_reg   = alloc_reg(comp, VAL_INT);
+        m1_reg retpc_index = alloc_reg(comp, VAL_INT);
 
         fprintf(OUT, "\tset_imm    I%d, 0, RETPC\n", retpc_index.no);
         fprintf(OUT, "\tderef      I%d, PCF, I%d\n", retpc_reg.no, retpc_index.no);
 
-        unuse_reg(comp, retpc_index);
+        free_reg(comp, retpc_index);
 
-        chunk_index = use_reg(comp, VAL_INT);
+        chunk_index = alloc_reg(comp, VAL_INT);
 
         fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
         fprintf(OUT, "\tderef      I%d, PCF, I%d\n", chunk_index.no, chunk_index.no);
         fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", chunk_index.no, retpc_reg.no);        
 
-        unuse_reg(comp, retpc_reg);
-        unuse_reg(comp, chunk_index);
+        free_reg(comp, retpc_reg);
+        free_reg(comp, chunk_index);
     }
 }
 
@@ -1969,7 +1969,7 @@ gencode_parameters(M1_compiler *comp, m1_chunk *chunk) {
             
     while (paramiter != NULL) {
         /* get a new reg for this parameter. */
-        m1_reg r = use_reg(comp, paramiter->sym->valtype); 
+        m1_reg r = alloc_reg(comp, paramiter->sym->valtype); 
         paramiter->sym->regno = r.no;
         freeze_reg(comp, r); /* parameters are like local variables; they keep their register. */
 
@@ -2046,9 +2046,9 @@ gencode_pmc_vtable(M1_compiler *comp, m1_pmc *pmc) {
     fprintf(OUT, ".metadata\n");
     fprintf(OUT, ".bytecode\n");
     
-    m1_reg indexreg      = use_reg(comp, VAL_INT);
-    m1_reg vtablereg     = use_reg(comp, VAL_CHUNK);
-    m1_reg methodreg     = use_reg(comp, VAL_CHUNK);
+    m1_reg indexreg      = alloc_reg(comp, VAL_INT);
+    m1_reg vtablereg     = alloc_reg(comp, VAL_CHUNK);
+    m1_reg methodreg     = alloc_reg(comp, VAL_CHUNK);
 
     
     
@@ -2070,8 +2070,8 @@ gencode_pmc_vtable(M1_compiler *comp, m1_pmc *pmc) {
     
     /* XXX need to generate code to return the vtable object. */
     
-    unuse_reg(comp, methodreg);
-    unuse_reg(comp, indexreg);
+    free_reg(comp, methodreg);
+    free_reg(comp, indexreg);
        
 }
 

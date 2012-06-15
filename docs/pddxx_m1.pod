@@ -245,8 +245,8 @@ This section describes a number of subsystems and how they work.
 M1 has a nifty register allocation system. Three functions are the core of this
 system:
 
- void use_reg(M1_compiler *c);
- void unuse_reg(M1_compiler *c, m1_reg r);
+ void alloc_reg(M1_compiler *c);
+ void free_reg(M1_compiler *c, m1_reg r);
  void freeze_reg(M1_compiler *c, m1_reg r);
  
 
