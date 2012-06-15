@@ -437,11 +437,11 @@ OBJECT_LINK------>     L3
     | I2 (2) | <--SP (stack pointer)
     | I1 (1) |
     | I0 (x) |
-    ----------
+    ---------- <--SB (stack base)
     
     Since set_ref and deref ops only use 2 operands for the target or source, respectively,
     we need to combine 2 registers into 1. We'll combine I0 and I1, by adding I1 to I0.
-    Access to an array element x[1][2] in an array defined as "int x[3][4]" is laid out 
+    Access to an array element x[1][2] in an array defined as "int x[4][3]" is laid out 
     as follows, marked with "XX" : (|--| is 1 integer)
     
            x[0][0]         x[1][2] 
@@ -450,9 +450,9 @@ OBJECT_LINK------>     L3
              V         |      V
                        V      XX 
             |--|--|--| |--|--|--| |--|--|--| |--|--|--| 
-              0  1  2    0  1  2    0  1  2    0  1  2             [4]
+              0  1  2    0  1  2    0  1  2    0  1  2             [3]
             __________ __________ __________ __________
-                 0          1          2          3                x[3]
+                 0          1          2          3                x[4]
     
     Therefore, x[1] represents the base address of "x" + "1 X 3" (since each "element"
     in the first dimension has length 3). Therefore, generate the following instruction:
@@ -467,9 +467,10 @@ OBJECT_LINK------>     L3
     |            |
     | I2 (4)     |  <---SP
     | I0 (x+[3]) |
-    --------------
+    --------------  <---SB 
     
-    
+    For each additional dimension, do the same thing, whenever there are 3 registers 
+    on the stack, reduce it to two.
     
     
                         
@@ -524,6 +525,10 @@ OBJECT_LINK------>     L3
                 m1_reg last = popreg(comp->regstack);   /* latest added; store here for now. */
                 m1_reg field = popreg(comp->regstack);  /* 2nd latest, this one needs to be removed. */
                 m1_reg parent = popreg(comp->regstack); /* x in x[2][3]. */
+                
+                m1_reg size_reg = alloc_reg(comp, VAL_INT);
+                fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", size_reg.no, 3 /* XXX fix size. */);
+                fprintf(OUT, "\tmult_i\tI%d, I%d, I%d\n", field.no, field.no, size_reg.no);
                 fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", parent.no, parent.no, field.no);
                 
                 pushreg(comp->regstack, parent);       /* push back x in x[2][3] */
