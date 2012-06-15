@@ -423,7 +423,9 @@ OBJECT_LINK------>     L3
                        ^
                        |
                       ROOT
-                      
+    
+    Case for l-values: (x[1][2] = ...)
+    ==================================
     When traversing the tree starting at ROOT (L3), we go down towards OBJECT_MAIN
     first by following the nodes' <parent> links. From L3->L2->L1->x. Then the OUT
     parameter <parent> is set to x, and the register containing x (say, I0) is 
@@ -472,7 +474,38 @@ OBJECT_LINK------>     L3
     For each additional dimension, do the same thing, whenever there are 3 registers 
     on the stack, reduce it to two.
     
+    Case for r-values: ( ... = x[1][2])
+    ===================================
+    Same example, accessing x[1][2] in same array defined as x[4][3], as above.
     
+    Instead of "set_ref", we want to generate "deref".
+    
+    I0 contains pointer to "x".
+    Load 1 and 2 in registers I1 and I2 respectively, so the stack looks like this:
+    
+    |    |
+    | I2 | # holds 2
+    | I1 | # holds 1
+    | I0 | # holds x
+    ------
+    
+    Since we want to "dereference" x with indices [1] and [2], storing the result in [3]
+    we want to write:
+    
+    deref I3, I0, I1, I2
+    
+    but since there are only 3 operands, I0 and I1 are combined into I0:
+    
+    deref I3, I0, I2
+    
+    For that to work, I0 and I1 need to be combined:
+    
+    set_imm   I4, 0, 3    # load size of elements in first dimension
+    mult_i    I1, I1, I4  # multiply I1 by 3
+    add_i     I0, I0, I1  # x = x + 3
+    
+    and then the deref instruction.
+        
                         
     */
 
@@ -522,16 +555,16 @@ OBJECT_LINK------>     L3
             fprintf(stderr, "OBJECT_LINK: %d\n", numregs_pushed);
             
             if (is_target && numregs_pushed == 3) {
-                m1_reg last = popreg(comp->regstack);   /* latest added; store here for now. */
-                m1_reg field = popreg(comp->regstack);  /* 2nd latest, this one needs to be removed. */
-                m1_reg parent = popreg(comp->regstack); /* x in x[2][3]. */
-                
-                m1_reg size_reg = alloc_reg(comp, VAL_INT);
+                m1_reg last     = popreg(comp->regstack);   /* latest added; store here for now. */
+                m1_reg field    = popreg(comp->regstack);  /* 2nd latest, this one needs to be removed. */
+                m1_reg parent   = popreg(comp->regstack); /* x in x[2][3]. */                
+                m1_reg size_reg       = alloc_reg(comp, VAL_INT);
+                m1_reg updated_parent = alloc_reg(comp, VAL_INT); 
                 fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", size_reg.no, 3 /* XXX fix size. */);
                 fprintf(OUT, "\tmult_i\tI%d, I%d, I%d\n", field.no, field.no, size_reg.no);
-                fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", parent.no, parent.no, field.no);
+                fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", updated_parent.no, parent.no, field.no);
                 
-                pushreg(comp->regstack, parent);       /* push back x in x[2][3] */
+                pushreg(comp->regstack, updated_parent);       /* push back (x+[2]) */
                 pushreg(comp->regstack, last);         /* push back the latest added one. */
                 
                 /* we popped 3, and pushed 2, so effectively decrement by 1. */
