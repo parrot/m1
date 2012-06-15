@@ -422,7 +422,9 @@ OBJECT_LINK------>   L2  /
 OBJECT_LINK------>     L3
                        ^
                        |
-                      ROOT   
+                      ROOT
+                      
+    This should result in code:                         
                         
     */
 
@@ -434,13 +436,56 @@ OBJECT_LINK------>     L3
             /* visit parent recursively. (go depth-first in order to reach first ident. first
                That is, in "x.y.z", we want to visit x first.
              */
+#if 0             
+            /* XXX this needs more thought and testing; only for arrays probably. 
+            As we're going depth-first, decrement the counter as we're going down the tree. 
+            */ 
+            --numregs_pushed;
+            /* count the number of regs pushed by the parent, which is 1. */
+            numregs_pushed += 
+#endif            
             gencode_obj(comp, obj->parent, parent, is_target);
+            
             /* At this point, we're done visiting parents, so now visit the "fields".
                In x.y.z, after returning from x, we're visiting y. After that, we'll visit z.
                As we do this, keep track of how many registers were used to store the result.
              */
-            numregs_pushed += gencode_obj(comp, obj->obj.field, parent, is_target);     
+            numregs_pushed += gencode_obj(comp, obj->obj.field, parent, is_target);   
             
+            /* XXX Let's say we want to index x[2][3]; there are 3 regs on the stack:
+            I0 (x)
+            I1 (2)
+            I2 (3)
+            
+            This must be reduced to two, because a deref or set_ref only takes 2
+            arguments to specify the location/destination, and the 3rd for a target
+            or value.
+            
+            Generate an instruction:
+            add I0, I0, I1
+            
+            XXXX STILL need to handle the size of the "record" in I1; it's a whole subarray.
+            Must be x num_elements.
+            
+            Remove all 3 regs, and only push I0 and I2 back. I1 is handled by the add instruction.
+            
+            */
+#if 0            
+            fprintf(stderr, "OBJECT_LINK: %d\n", numregs_pushed);
+            
+            if (is_target && numregs_pushed == 3) {
+                m1_reg last = popreg(comp->regstack);   /* latest added; store here for now. */
+                m1_reg field = popreg(comp->regstack);  /* 2nd latest, this one needs to be removed. */
+                m1_reg parent = popreg(comp->regstack); /* x in x[2][3]. */
+                fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", parent.no, parent.no, field.no);
+                
+                pushreg(comp->regstack, parent);       /* push back x in x[2][3] */
+                pushreg(comp->regstack, last);         /* push back the latest added one. */
+                
+                /* we popped 3, and pushed 2, so effectively decrement by 1. */
+                --numregs_pushed;
+            }  
+#endif            
             break;
             
         }
@@ -478,8 +523,10 @@ OBJECT_LINK------>     L3
                       
             /* return a pointer to this node by OUT parameter. */
             *parent = obj;
-            
+
             pushreg(comp->regstack, reg);
+            print_stack(comp->regstack, "OBJECT_MAIN\n");
+            
             ++numregs_pushed;
             
             break;
@@ -553,7 +600,18 @@ OBJECT_LINK------>     L3
                    by gencode_expr(). It will be popped by the calling function. 
                 */
                 ++numregs_pushed;
-            
+
+                print_stack(comp->regstack, "OBJECT_INDEX\n");
+                fprintf(stderr, "Num regs pushed (x[42] = ..): %d\n", numregs_pushed);
+/*                if (numregs_pushed == 2) {
+                    m1_reg justpushed = popreg(comp->regstack);
+                    m1_reg pushedbefore = popreg(comp->regstack);
+                    
+                    fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", pushedbefore.no, pushedbefore.no, justpushed.no);
+                    pushreg(comp->regstack, pushedbefore);
+                       
+                }
+*/            
                 
             }
             else { /* ... = x[42] */
@@ -598,6 +656,8 @@ OBJECT_LINK------>     L3
             break;
     }  
 		
+    fprintf(stderr, "[returning from obj] Numregs: %d\n", numregs_pushed);
+    print_stack(comp->regstack, "end of gencode-obj\n");
 	/* return the number of registers that are pushed onto the stack in this function. */	
     return numregs_pushed;
 		

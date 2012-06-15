@@ -9,7 +9,7 @@ Needed by code generator to store labels for break statements, etc.
 #include <assert.h>
 #include "stack.h"
 
-#define STACKDEBUG  0
+#define STACKDEBUG  1
 
 m1_intstack *
 new_intstack(void) {
@@ -85,7 +85,7 @@ pushreg(m1_regstack *stack, m1_reg reg) {
     assert(stack->sp < STACKSIZE);
     
     stack->store[stack->sp++] = reg;
-    print_stack(stack, "push (after)");
+    //print_stack(stack, "push (after)");
 }
 
 m1_reg
@@ -96,7 +96,7 @@ popreg(m1_regstack *stack) {
     assert(stack->sp > 0);
     
     r = stack->store[--stack->sp];   
-    print_stack(stack, "pop (after)");
+    //print_stack(stack, "pop (after)");
     return r;
 }
 
@@ -108,7 +108,7 @@ topreg(m1_regstack *stack) {
     assert(stack->sp > 0);
     
     r = stack->store[stack->sp - 1];   
-    print_stack(stack, "top (after)");
+    //print_stack(stack, "top (after)");
     return r;
 }
 
