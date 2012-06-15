@@ -237,8 +237,21 @@ will allocate 10 * sizeof(int) bytes on the heap.
 
 This section describes a number of subsystems and how they work.
 
-=head3 Variables, Symbols and Registers
+=head3 Variable declarations
 
+TODO: Explain what happens with variable declarations
+
+=head3 Type definitions
+
+TODO: explain how m1_decl work.
+
+=head3 Symbols 
+
+TODO: explain how the symbol storage system works.
+
+=head3 Registers
+
+TODO: explain how registers are used.
 
 =head3 Register allocation and de-allocation
 
