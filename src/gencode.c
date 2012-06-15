@@ -1263,7 +1263,6 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     }
     else { /* prefix; give back the register containing the NEW value. */
         pushreg(comp->regstack, reg);
-        unuse_reg(comp, oldval);
     }
 
     /* release the register that was holding the constant "1". */
