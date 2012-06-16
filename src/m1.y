@@ -949,8 +949,19 @@ unexpr  : '-' expression
                 { $$ = castexpr((M1_compiler *)yyget_extra(yyscanner), $2, $4); }
         | "!" expression 
                 { $$ = unaryexpr((M1_compiler *)yyget_extra(yyscanner), UNOP_NOT, $2); }                        
-        | '~' expression
-                { $$ = unaryexpr((M1_compiler *)yyget_extra(yyscanner), UNOP_BNOT, $2); }
+        | '~' expression 
+        
+        /* bitwise NOT:  ~x == -x -1. See http://en.wikipedia.org/wiki/Bitwise_operation#NOT. 
+         * -x is implemented as x * -1. Implement this in the parser, as we need access to 
+         * the constants segment. 
+         */        
+                { /*$$ = unaryexpr((M1_compiler *)yyget_extra(yyscanner), UNOP_BNOT, $2);*/                 
+                   M1_compiler   *comp   = (M1_compiler *)yyget_extra(yyscanner);                    
+                   /* create a node for "-x" => "x * -1" */
+                   m1_expression *minusX = binexpr(comp, $2, OP_MUL, integer(comp, -1));
+                   /* create a node for (-x) - (1). Note it's not - (-1), as that results in +1.*/
+                   $$ = binexpr(comp, minusX, OP_MINUS, integer(comp, 1));                                      
+                }
         ;            
        
 tertexpr    : expression "?" expression ':' expression

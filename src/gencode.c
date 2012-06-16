@@ -640,11 +640,8 @@ OBJECT_LINK------>     L3
         }
         case OBJECT_DEREF: /* b in a->b */
         {
-            m1_reg reg;
-            gencode_obj(comp, obj->obj.field, parent, is_target);
-            reg = popreg(comp->regstack);
-            fprintf(OUT, "\tadd_i <struct>, I%d\n", reg.no);
-            free_reg(comp, reg);
+            fprintf(stderr, "a->b is not yet implemented\n");
+            assert(0);
             break;
         }
         case OBJECT_INDEX: /* b in a[b] */        

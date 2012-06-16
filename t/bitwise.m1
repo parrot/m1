@@ -5,7 +5,7 @@ int main() {
     int d = 3; /* 00011 */
     int e = 0; /* 00000 */
     
-    print("1..5\n");
+    print("1..6\n");
     
     if (a & b) {
         print("not ok 1\n");
@@ -32,4 +32,9 @@ int main() {
         print("ok 5\n");
     else
         print("not ok 5\n");
+        
+    if (~e == 4294967295)
+        print("ok 6\n");
+    else
+        print("not ok 6\n");
 }
