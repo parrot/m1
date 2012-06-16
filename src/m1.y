@@ -438,6 +438,7 @@ pmc_init        : "pmc" TK_IDENT extends_clause
                        M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
                        $$ = newpmc(comp, $2); 
                        type_enter_pmc(comp, $2, $$);
+                       /* point to this PMC's symbol table. */
                        comp->currentsymtab = &$$->sfields;
                     }
                 ;                
@@ -575,7 +576,9 @@ struct_members      : struct_member
                     | struct_members struct_member
                         {                           
                           /* calculate offset of this field */
-                          $2->offset = $1->offset + field_size($1);                                                                               
+                          $2->offset = $1->offset + field_size($1); 
+                          $$ = $2; /* ensure that next time $1 points to $2. */
+                          fprintf(stderr, "Offset of %s is: %d\n", $2->name, $2->offset);                                                                              
                         }
                           
                     ;
