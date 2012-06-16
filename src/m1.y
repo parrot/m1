@@ -214,6 +214,8 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              opt_array_init
              opt_ret_expr
              expr_list
+             const_list
+
 
 %type <blck>  open_block
              
@@ -936,12 +938,21 @@ nullexpr    : "null"
             ;
             
 arrayconstructor: '{' const_list '}' 
-                     { $$ = NULL; }
+                     { $$ = $2; }
                 ;  
             
                            
-const_list    : constexpr
+const_list    : constexpr                    
               | const_list ',' constexpr            
+                { 
+                  m1_expression *iter = $1;
+                  /* need to link in correct order; find end of list. */
+                  while (iter->next != NULL) 
+                    iter = iter->next;
+                  
+                  iter->next = $3;
+                  $$ = $1;                                           
+                }
               ;
             
 unexpr  : '-' expression

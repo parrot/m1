@@ -1663,7 +1663,7 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
 
 static void
 gencode_var(M1_compiler *comp, m1_var *v) {    
-    if (v->init) { /* generate code for initializations. */
+    if (v->num_elems == 1 && v->init) { /* generate code for initializations. */
        m1_reg     reg;
        m1_symbol *sym;
        
@@ -1725,6 +1725,29 @@ gencode_var(M1_compiler *comp, m1_var *v) {
         
         fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", sym->regno, memsize.no);
         free_reg(comp, memsize);
+        
+        if (v->init) { /* initialize arrays. */
+            m1_expression *iter = v->init;
+            m1_reg index = alloc_reg(comp, VAL_INT);
+            m1_reg one   = alloc_reg(comp, VAL_INT);
+            
+            fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", index.no); /* index register. */
+            fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", one.no);   /* to hold constant 1. */
+            
+            while (iter != NULL) {
+                /* evaluate expression. */
+                gencode_expr(comp, iter);
+                /* get register holding result. */
+                m1_reg res = popreg(comp->regstack);
+                /* and assign to array. */
+                fprintf(OUT, "\tset_ref\tI%d, I%d, %c%d\n", sym->regno, index.no, reg_chars[(int)res.type], res.no);
+                fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", index.no, index.no, one.no); /* increment index. */
+                
+                iter = iter->next;
+            }    
+            free_reg(comp, index);
+            free_reg(comp, one);
+        }
     }
        
 }
