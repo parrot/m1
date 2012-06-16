@@ -255,6 +255,17 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
 }
 
 static void
+gencode_null(M1_compiler *comp) {
+    m1_reg reg;
+    reg = alloc_reg(comp, VAL_INT);
+	/* "null" is just 0, but then in a "pointer" context. */
+    fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", reg.no);
+    
+    pushreg(comp->regstack, reg);
+}   
+
+
+static void
 gencode_bool(M1_compiler *comp, int boolval) {
     /* Generate one of these:
        set_imm Ix, 0, 1 # for true
@@ -286,23 +297,27 @@ gencode_string(M1_compiler *comp, m1_literal *lit) {
     pushreg(comp->regstack, stringreg);
 }
 
-
+/* Generate code for assignments. */
 static void
 gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
     m1_object *parent;        /* pointer storage needed for code generation of LHS. */
     unsigned   lhs_reg_count; /* number of regs holding result of LHS (can be aggregate/indexed) */
-	unsigned   rhs_reg_count;	
+	unsigned   rhs_reg_count; /* number of regs holding result of RHS (can be aggregate/indexed) */
+		
     assert(a != NULL);
 	
 	/* generate code for RHS and get number of registers that hold the result */
     rhs_reg_count = gencode_expr(comp, a->rhs);
     
-    /* generate code for LHS and get number of registers that hold the result */
+    /* Generate code for LHS and get number of registers that hold the result 
+       Note the "1" argument; this is to indicate we want to generate code for LHS
+       as an l-value.
+     */
     lhs_reg_count = gencode_obj(comp, a->lhs, &parent, 1);    
     
 
     if (rhs_reg_count == 2) { /* deref; ... = x[42] */
-        if (lhs_reg_count == 1) { /* lhs_reg_count+rhs_reg_count == 3, so pop 3 regs. */
+        if (lhs_reg_count == 1) { /* lhs_reg_count + rhs_reg_count == 3, so pop 3 regs. */
         
             m1_reg target = popreg(comp->regstack);
             m1_reg index  = popreg(comp->regstack);
@@ -313,7 +328,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
                                                         reg_chars[(int)index.type], index.no);
         }
         else {
-            assert(0);           
+            assert(0); /* should never happen. */          
         }
     }
     else { /* must be set_ref or set */
@@ -343,16 +358,6 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
         }
     }    
 }
-
-static void
-gencode_null(M1_compiler *comp) {
-    m1_reg reg;
-    reg = alloc_reg(comp, VAL_INT);
-	/* "null" is just 0, but then in a "pointer" context. */
-    fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", reg.no);
-    
-    pushreg(comp->regstack, reg);
-}   
 
 static unsigned
 gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target) {
@@ -526,11 +531,7 @@ OBJECT_LINK------>     L3
         {
             /* set OUT parameter to this node (that's currently visited, obj) */
             *parent = obj;   	
-            /* visit parent recursively. (go depth-first in order to reach first ident. first
-               That is, in "x.y.z", we want to visit x first.
-             */
 
-            //--numregs_pushed;
             /* count the number of regs pushed by the parent, which is 1. */
             numregs_pushed += gencode_obj(comp, obj->parent, parent, is_target);
             
@@ -544,13 +545,15 @@ OBJECT_LINK------>     L3
             fprintf(stderr, "OBJECT_LINK: %d\n", numregs_pushed);
             
             if (numregs_pushed == 3) {
-                m1_reg last     = popreg(comp->regstack);   /* latest added; store here for now. */
-                m1_reg field    = popreg(comp->regstack);  /* 2nd latest, this one needs to be removed. */
-                m1_reg parent   = popreg(comp->regstack); /* x in x[2][3]. */                
-                m1_reg size_reg       = alloc_reg(comp, VAL_INT);
-                m1_reg updated_parent = alloc_reg(comp, VAL_INT); 
+                m1_reg last           = popreg(comp->regstack);   /* latest added; store here for now. */
+                m1_reg field          = popreg(comp->regstack);   /* 2nd latest, this one needs to be removed. */
+                m1_reg parent         = popreg(comp->regstack);   /* x in x[2][3]. */                
+                m1_reg size_reg       = alloc_reg(comp, VAL_INT); /* to hold amount to add. */
+                m1_reg updated_parent = alloc_reg(comp, VAL_INT); /* need to copy base address from parent. */
+                
                 fprintf(stderr, "LINK, generating %d for sizereg and %d for updated parent\n", size_reg.no, updated_parent.no);
-                fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", size_reg.no, 3 /* XXX fix size. */);
+                
+                fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", size_reg.no, 3 /* XXX fix size. HACK ALERT */);
                 fprintf(OUT, "\tmult_i\tI%d, I%d, I%d\n", field.no, field.no, size_reg.no);
                 fprintf(OUT, "\tset \tI%d, I%d, x\n", updated_parent.no, parent.no); /* XXX need this otherwise segfault.*/
                 fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", updated_parent.no, updated_parent.no, field.no);
@@ -608,6 +611,11 @@ OBJECT_LINK------>     L3
         }
         case OBJECT_FIELD: /* example: b in a.b */
         {            
+            /* XXX this doesn't work anymore. 
+            
+            This needs much rework after recoding multi-dim arrays. 
+            
+            */
             m1_reg          fieldreg;            
             int             offset;                        
             m1_structfield *field;
@@ -684,8 +692,7 @@ gencode_while(M1_compiler *comp, m1_whileexpr *w) {
 	   ...
 	   goto LTEST
 	LBLOCK
-	  <block>
-	
+	  <block>	
 	LTEST:
 	   code for <cond>
 	   goto_if <cond>, LBLOCK
@@ -811,15 +818,14 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
 
 static void 
 gencode_if(M1_compiler *comp, m1_ifexpr *i) {
-	/*
-	
-      result1 = <evaluate condition>
-	  goto_if L1, result1
+	/*	
+      result = <evaluate condition>
+	  goto_if LIF, result
 	  <code for elseblock>
-	  goto L2
-    L1:
+	  goto LEND
+    LIF:
 	  <code for ifblock>
-	L2:
+	LEND:
 	
 	*/
     m1_reg condreg;
@@ -851,11 +857,13 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
 
 static void
 gencode_deref(M1_compiler *comp, m1_object *o) {
+    /* XXX need equivalent of C's *obj operator. */
     gencode_obj(comp, o, NULL, 0);   
 }
 
 static void
 gencode_address(M1_compiler *comp, m1_object *o) {
+    /* XXX need equivalent of C's &obj operator. */
     gencode_obj(comp, o, NULL, 0);       
 }
 
@@ -1046,23 +1054,6 @@ ne_eq_common(M1_compiler *comp, m1_binexpr *b, int is_eq_op) {
     pushreg(comp->regstack, reg);
 }
 
-/*
-
-The operators == and != are very similar; they are both handled in
-ne_eq_common(), which takes a parameter is_eq_op, indicating whether
-it's the == or the != operator. Leave these wrappers here for sake
-of maintainability.
-
-*/
-static void
-gencode_ne(M1_compiler *comp, m1_binexpr *b) {
-    ne_eq_common(comp, b, 0);
-}
-
-static void
-gencode_eq(M1_compiler *comp, m1_binexpr *b) {    
-    ne_eq_common(comp, b, 1);  
-}
 
 /*
 
@@ -1179,10 +1170,10 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
             lt_le_common(comp, b, "isge");
             break;
         case OP_EQ:
-            gencode_eq(comp, b);
+            ne_eq_common(comp, b, 1);  /* 1 means is_eq_op is true. */
             break;
         case OP_NE: /* a != b;*/
-            gencode_ne(comp, b);
+            ne_eq_common(comp, b, 0); /* 0 means is_eq_op is false. */
             break;
         case OP_AND: /* a && b */
             gencode_and(comp, b);
@@ -1801,8 +1792,9 @@ static unsigned
 gencode_expr(M1_compiler *comp, m1_expression *e) {
     unsigned num_regs = 1;
              
-    if (e == NULL) {
+    if (e == NULL) { /* XXX should check on e before invoking gencode_expr(). */
     	debug("expr e is null in gencode_expr\n");
+    	return 0;
     }
         
     switch (e->type) {
@@ -1920,11 +1912,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
 }
 
 
-/*
-
-Generate the constants segment.
-
-*/
+/* Generate the constants segment. */
 static void
 gencode_consts(m1_symboltable *consttable) {
     m1_symbol *iter;
@@ -2091,11 +2079,7 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     gencode_chunk_return(comp, c);
 }
 
-/*
-
-Generate a function to setup the vtable. 
-
-*/
+/* Generate a function to setup the vtable. */
 static void
 gencode_pmc_vtable(M1_compiler *comp, m1_pmc *pmc) {
     m1_chunk *methoditer = pmc->methods;
