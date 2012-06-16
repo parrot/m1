@@ -636,6 +636,7 @@ OBJECT_LINK------>     L3
             
             
             /* XXX if offset = 0. special case? */
+/*
           //  if (offset > 0) {
                     
                     m1_reg offsetreg = popreg(comp->regstack);
@@ -647,10 +648,13 @@ OBJECT_LINK------>     L3
                                                             reg_chars[(int)offsetreg.type], offsetreg.no);   
                     free_reg(comp, offsetreg);
                     free_reg(comp, parentreg);
-                    pushreg(comp->regstack, reg);
-                    ++numregs_pushed;                                                           
+                    pushreg(comp->regstack, parentreg);
+                    pushreg(comp->regstack, offsetreg);
+
+                    //--numregs_pushed;                                                           
           // }
             
+*/
             /* set parent OUT parameter to the current node. */
             *parent = obj;
             
@@ -663,6 +667,9 @@ OBJECT_LINK------>     L3
             reg = popreg(comp->regstack);
             fprintf(OUT, "\tadd_i <struct>, I%d\n", reg.no);
             free_reg(comp, reg);
+
+            --numregs_pushed;                                                           
+          // }
             break;
         }
         case OBJECT_INDEX: /* b in a[b] */        
