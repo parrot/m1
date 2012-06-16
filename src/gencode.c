@@ -632,7 +632,6 @@ OBJECT_LINK------>     L3
             pushreg(comp->regstack, fieldreg);
             ++numregs_pushed;
                                 
-                    
             m1_reg offsetreg = popreg(comp->regstack);
             m1_reg parentreg = popreg(comp->regstack); 
             m1_reg reg       = alloc_reg(comp, VAL_INT);
