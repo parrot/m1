@@ -379,14 +379,16 @@ m1_struct *
 newstruct(M1_compiler *comp, char *name, m1_structfield *fields) {
     m1_struct *str = (m1_struct *)m1_malloc(sizeof(m1_struct));    
     str->name      = name;
-    str->fields    = fields;
+    //str->fields    = fields;
     
     /* struct fields are linked in reverse order, so the first one is
        in fact the one last added, and therefore has the highest offset.
        The offset of the last field is the size of the whole struct
        except the size of the last field itself, so add that.
      */
-    str->size = fields->offset + field_size(fields);
+    //str->size = fields->offset + field_size(fields);
+    
+    init_symtab(&str->sfields);
     
     assert(comp != NULL);
     return str;   

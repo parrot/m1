@@ -621,9 +621,13 @@ OBJECT_LINK------>     L3
             /* pass comp, a pointer to the struct decl of this obj's parent, and this obj's name. */
             field    = struct_find_field(comp, (*parent)->sym->typedecl->d.s, obj->obj.name);
             
-            assert(field != NULL); /* XXX need to check in semcheck. */
+            /* parent's symbol has a typedecl node, which holds the structdef (d.s), which has a symbol table. */
+            m1_symbol *fieldsym = sym_lookup_symbol(&(*parent)->sym->typedecl->d.s->sfields, obj->obj.name);
             
-            offset   = field->offset;                        
+            //assert(field != NULL); /* XXX need to check in semcheck. */
+            assert(fieldsym != NULL);
+            
+            //offset   = field->offset;                        
             fieldreg = alloc_reg(comp, VAL_INT);/* reg for storing offset of field. */
 
             /* load the offset into a reg. and make it available through the regstack. */
@@ -1727,21 +1731,32 @@ gencode_var(M1_compiler *comp, m1_var *v) {
         free_reg(comp, memsize);
         
         if (v->init) { /* initialize arrays. */
-            m1_expression *iter = v->init;
-            m1_reg index = alloc_reg(comp, VAL_INT);
-            m1_reg one   = alloc_reg(comp, VAL_INT);
+            m1_expression *iter  = v->init;
+            m1_reg         index = alloc_reg(comp, VAL_INT);
+            m1_reg         one   = alloc_reg(comp, VAL_INT);
+            unsigned elem_count  = 0;
             
             fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", index.no); /* index register. */
             fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", one.no);   /* to hold constant 1. */
             
             while (iter != NULL) {
+                /* check for array bounds. */
+                ++elem_count; /* XXX do this in semchec. */
+                if (elem_count > v->num_elems) {
+                    fprintf(stderr, "Error: too many elements for array of size %d\n", v->num_elems);
+                    ++comp->errors;   
+                }
+                
                 /* evaluate expression. */
-                gencode_expr(comp, iter);
+                int numregs = gencode_expr(comp, iter);
+                assert(numregs == 1);
                 /* get register holding result. */
                 m1_reg res = popreg(comp->regstack);
+                
                 /* and assign to array. */
                 fprintf(OUT, "\tset_ref\tI%d, I%d, %c%d\n", sym->regno, index.no, reg_chars[(int)res.type], res.no);
-                fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", index.no, index.no, one.no); /* increment index. */
+                /* increment index. */
+                fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", index.no, index.no, one.no); 
                 
                 iter = iter->next;
             }    

@@ -65,8 +65,13 @@ typedef struct m1_symbol {
     m1_valuetype      valtype;      /* selector of value union. */
     
     unsigned          num_elems;    /* 1 for normal symbols; > 1 for arrays. */
-    int               regno;        /* allocated register */
-
+    
+    /* anonymous union to prevent another level of indirection in notation. */
+    union {
+        int               regno;        /* allocated register */
+        unsigned          offset;
+    };
+    
     int               constindex;   /* index in const segment that holds this symbol's value. */
     struct m1_var    *var;          /* pointer to declaration AST node for var */
     struct m1_decl   *typedecl;     /* pointer to declaration of type. */

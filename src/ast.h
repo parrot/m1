@@ -8,6 +8,7 @@
 
 #include "ann.h"
 
+/* for array dimensions. */
 typedef struct m1_dimension {
     int                  intval;
     struct m1_dimension *next;  
@@ -41,7 +42,7 @@ typedef struct m1_structfield {
     char        *type;              /* type of struct member. */
     unsigned     offset;            /* memory offset of this member in the struct */
     
-    struct m1_structfield *next;    /* fields are stored as a list. */
+    struct m1_structfield *next;    /* fields are stored as a list. */ 
     
 } m1_structfield;
 
@@ -51,7 +52,10 @@ typedef struct m1_struct {
     unsigned size;              /* total size of this struct; can calculate from fields but 
                                    better keep a "cached" value */
     
-    struct m1_structfield *fields; /* list of fields in this struct. */ 
+    struct m1_structfield *fields; /* list of fields in this struct. */ /* XXX replace with symbol table. */
+    struct m1_symboltable sfields; /* a struct is just a very local scope; it's handy to have
+                                      a symbol table, as it makes handling x.y.z easier. 
+                                    */
       
 } m1_struct;
 
