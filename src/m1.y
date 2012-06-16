@@ -529,8 +529,9 @@ function_init   : return_type TK_IDENT
                           comp->currentchunk = $$;
 
                           /* enter name of function declaration in table 
-                          XXX is this still needed? */
+                          XXX is this still needed? Dont think so but leave it for now.
                           sym_enter_chunk(comp, &comp->currentchunk->constants, $2);
+                          */
                           
                           /* enter name of function in global symbol table. */
                           sym_new_symbol(comp, comp->globalsymtab, $2, $1, 1);
@@ -563,9 +564,9 @@ struct_definition   : struct_init '{' struct_members '}'
 struct_init         : "struct" TK_IDENT
                         {
                           M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
-                          $$ = newstruct(comp, $2); 
-                          type_enter_struct(comp, $2, $$);
-                          comp->currentsymtab = &$$->sfields;
+                          $$ = newstruct(comp, $2); /* make AST node for this definition. */
+                          type_enter_struct(comp, $2, $$); /* enter into type definitions. */
+                          comp->currentsymtab = &$$->sfields; /* make symbol table easily accessible. */
                         }
                     ;                      
                     
@@ -578,7 +579,6 @@ struct_members      : struct_member
                           /* calculate offset of this field */
                           $2->offset = $1->offset + field_size($1); 
                           $$ = $2; /* ensure that next time $1 points to $2. */
-                          fprintf(stderr, "Offset of %s is: %d\n", $2->name, $2->offset);                                                                              
                         }
                           
                     ;
@@ -595,7 +595,7 @@ block   : open_block statements close_block
             {  
                 /* a <block> isa <statement>, so need to wrap it as a m1_expression. */
                 m1_expression *e = expression((M1_compiler *)yyget_extra(yyscanner), EXPR_BLOCK);
-                e->expr.blck     = $1;
+                e->expr.blck     = $1; /* store block in the expr union of e. */
                 block_set_stat($1, $2);
                 $$ = e;                                
             }
