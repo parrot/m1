@@ -144,6 +144,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              TK_STRING_CONST
              return_type 
              type 
+             __type
              native_type 
              TK_USERTYPE
              
@@ -940,7 +941,6 @@ expression  : constexpr
             | function_call_expr                
             | nullexpr           
             | newexpr
-            | arrayconstructor
             ;
             
 subexpr     : '(' expression ')'
@@ -1046,19 +1046,17 @@ return_type : type    { $$ = $1; }
             | "void"  { $$ = "void"; }
             ;
             
-type    : native_type   
+type    : __type   
               {
                  M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
                  comp->parsingtype = $1;
                  $$ = $1;  
-              } 
-        | TK_USERTYPE
-              {
-                 M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);         
-                 comp->parsingtype = $1; 
-                 $$ = $1; 
-              }
-                       
+              }         
+        ;
+
+/* __type is a helper rule to prevent code duplication. */              
+__type  : native_type
+        | TK_USERTYPE                                          
         ;
         
 native_type : "int"     { $$ = "int"; }
