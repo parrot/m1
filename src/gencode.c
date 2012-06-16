@@ -611,11 +611,6 @@ OBJECT_LINK------>     L3
         }
         case OBJECT_FIELD: /* example: b in a.b */
         {            
-            /* XXX this doesn't work anymore. 
-            
-            This needs much rework after recoding multi-dim arrays. 
-            
-            */
             m1_reg          fieldreg;            
             int             offset;                        
             m1_structfield *field;
@@ -633,10 +628,10 @@ OBJECT_LINK------>     L3
 
             /* load the offset into a reg. and make it available through the regstack. */
             fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", fieldreg.no, offset);             
+            
             pushreg(comp->regstack, fieldreg);
             ++numregs_pushed;
                                 
-
                     
             m1_reg offsetreg = popreg(comp->regstack);
             m1_reg parentreg = popreg(comp->regstack); 

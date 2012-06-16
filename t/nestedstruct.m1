@@ -1,0 +1,22 @@
+struct value {
+    int value;   
+}
+struct integer {
+    value val;
+}
+
+void main() {
+    print("1..1\n");
+    integer i = new integer();
+    i.val = new value();
+    
+    i.val.x = 42;
+    int j = i.val.x;
+    
+    if (i.val.x == 42)
+        print("ok 1\n");
+    else
+        print("not ok 1\n");
+        
+        
+}
