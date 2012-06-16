@@ -8,6 +8,13 @@
 
 #include "ann.h"
 
+typedef struct m1_ident {
+    char            *name;
+    struct m1_ident *next;    
+    
+} m1_ident;
+
+
 /* for array dimensions. */
 typedef struct m1_dimension {
     int                  intval;
@@ -50,9 +57,9 @@ typedef struct m1_struct {
 } m1_struct;
 
 typedef struct m1_pmc {
-    char    *name;
-    unsigned size;
-
+    char                  *name;
+    unsigned               size;
+    struct m1_ident       *parents;
     struct m1_chunk       *methods;    
     struct m1_symboltable  sfields;
     
@@ -337,7 +344,7 @@ extern void obj_set_ident(m1_object *node, char *ident);
 
 extern m1_struct *newstruct(M1_compiler *comp, char *name);
 
-extern m1_pmc *newpmc(M1_compiler *comp, char *name);
+extern m1_pmc *newpmc(M1_compiler *comp, char *name, m1_ident *parents);
 
 extern m1_expression *ifexpr(M1_compiler *comp, m1_expression *cond, m1_expression *ifblock, m1_expression *elseblock);
 extern m1_expression *whileexpr(M1_compiler *comp, m1_expression *cond, m1_expression *block);
@@ -391,6 +398,8 @@ extern void close_scope(M1_compiler *comp);
 extern void enter_param(M1_compiler *comp, m1_var *parameter);
 
 extern m1_dimension *array_dimension(int ival);
+
+extern m1_ident *identlist(m1_ident *next, char *newnode);
 
 #endif
 

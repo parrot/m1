@@ -378,10 +378,11 @@ newstruct(M1_compiler *comp, char *name)
 }
 
 m1_pmc *
-newpmc(M1_compiler *comp, char *name) 
+newpmc(M1_compiler *comp, char *name, m1_ident *idlist) 
 {
     m1_pmc *pmc  = (m1_pmc *)m1_malloc(sizeof(m1_pmc));    
     pmc->name    = name; 
+    pmc->parents = idlist;
     
     init_symtab(&pmc->sfields);
     
@@ -649,3 +650,10 @@ array_dimension(int ival) {
     return d;    
 }
 
+m1_ident *
+identlist(m1_ident *next, char *newnode) {
+    m1_ident *id = (m1_ident *)m1_malloc(sizeof(m1_ident));
+    id->next     = next;
+    id->name     = newnode;
+    return id;   
+}

@@ -61,6 +61,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
     struct m1_block         *blck;
     struct m1_dimension     *dim;
     struct m1_symbol        *sym;
+    struct m1_ident         *ident;
 }
 
 
@@ -232,8 +233,6 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
               
 %type <sym>  struct_members 
              struct_member
-             pmc_attributes
-             pmc_attr
 
              
 %type <strct> struct_definition
@@ -249,6 +248,8 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 %type <cse> case 
             cases
 
+%type <ident> id_list
+              extends_clause
         
 %token  KW_M0		    "M0"
         TK_NL   
@@ -380,8 +381,9 @@ chunk   : function_definition
 
 enum_definition : "enum" TK_IDENT '{' enum_constants '}'
                     { 
-                      $$ = newenum(comp, $2, $4); 
-                      type_enter_enum((M1_compiler *)yyget_extra(yyscanner), $2, $$);
+                      M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);   
+                      $$ = newenum(comp, $2, $4 ); 
+                      type_enter_enum(comp, $2, $$);
                     }
                 ;
         
@@ -396,9 +398,7 @@ enum_constants  : enum_const
                 ; 
                   
 enum_const      : TK_IDENT opt_enum_val
-                    {
-                      $$ = enumconst((M1_compiler *)yyget_extra(yyscanner), $1, $2);    
-                    }
+                    { $$ = enumconst((M1_compiler *)yyget_extra(yyscanner), $1, $2); }
                 ;
                 
 opt_enum_val    : /* empty */
@@ -427,16 +427,13 @@ namespace_definition: "namespace" TK_IDENT ';'
                          }    
                      ;    
 
-pmc_definition	: pmc_init '{'  pmc_attributes pmc_methods '}'
-                    {          
-                       
-                    }
+pmc_definition	: pmc_init '{'  struct_members pmc_methods '}'
                 ;
                 
 pmc_init        : "pmc" TK_IDENT extends_clause
                     {          
                        M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
-                       $$ = newpmc(comp, $2); 
+                       $$ = newpmc(comp, $2, $3); 
                        type_enter_pmc(comp, $2, $$);
                        /* point to this PMC's symbol table. */
                        comp->currentsymtab = &$$->sfields;
@@ -444,23 +441,18 @@ pmc_init        : "pmc" TK_IDENT extends_clause
                 ;                
                                 
 extends_clause	: /* empty */
+                    { $$ = NULL; }
                 | "extends" id_list
+                    { $$ = $2; }
                 ;
                 
 id_list			: TK_IDENT
+                    { $$ = identlist(NULL, $1); }
                 | id_list ',' TK_IDENT
+                    { $$ = identlist($1, $3); }
                 ;                
 
-pmc_attributes  : pmc_attr
-                | pmc_attributes pmc_attr
-                    { 
-                        $2->next = $1;
-                        $$ = $2;                        
-                    }
-                ;
                 
-pmc_attr		: struct_member
-                ;
                 
 pmc_methods     : /* empty */
                     { $$ = NULL; }
