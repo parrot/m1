@@ -667,9 +667,6 @@ OBJECT_LINK------>     L3
             reg = popreg(comp->regstack);
             fprintf(OUT, "\tadd_i <struct>, I%d\n", reg.no);
             free_reg(comp, reg);
-
-            --numregs_pushed;                                                           
-          // }
             break;
         }
         case OBJECT_INDEX: /* b in a[b] */        
