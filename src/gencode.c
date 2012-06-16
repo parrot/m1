@@ -549,16 +549,13 @@ OBJECT_LINK------>     L3
                 m1_reg field          = popreg(comp->regstack);   /* 2nd latest, this one needs to be removed. */
                 m1_reg parent         = popreg(comp->regstack);   /* x in x[2][3]. */                
                 m1_reg size_reg       = alloc_reg(comp, VAL_INT); /* to hold amount to add. */
-                m1_reg updated_parent = alloc_reg(comp, VAL_INT); /* need to copy base address from parent. */
                 
-                fprintf(stderr, "LINK, generating %d for sizereg and %d for updated parent\n", size_reg.no, updated_parent.no);
+                fprintf(stderr, "LINK, generating %d for sizereg and %d for updated parent\n", size_reg.no, parent.no);
                 
                 fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", size_reg.no, 3 /* XXX fix size. HACK ALERT */);
                 fprintf(OUT, "\tmult_i\tI%d, I%d, I%d\n", field.no, field.no, size_reg.no);
-                fprintf(OUT, "\tset \tI%d, I%d, x\n", updated_parent.no, parent.no); /* XXX need this otherwise segfault.*/
-                fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", updated_parent.no, updated_parent.no, field.no);
                 
-                pushreg(comp->regstack, updated_parent);       /* push back (x+[2]) */
+                pushreg(comp->regstack, parent);       /* push back (x+[2]) */
                 pushreg(comp->regstack, last);         /* push back the latest added one. */
                 
                 /* we popped 3, and pushed 2, so effectively decrement by 1. */
