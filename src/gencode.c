@@ -127,7 +127,7 @@ In that case, the register is left alone.
 */
 static void
 free_reg(M1_compiler *comp, m1_reg r) {
-    int i;
+    
     /* if m1 was invoked with -r, then switch off free_reg(). */
     if (comp->no_reg_opt)
         return;
@@ -137,12 +137,10 @@ free_reg(M1_compiler *comp, m1_reg r) {
 //        fprintf(stderr, "Unusing %d for good\n", r.no);        
         comp->registers[r.type][r.no] = REG_UNUSED;
     }
-    return;
     
-    /* XXX this is for debugging. */
-JUSTPRINT:
-    
-
+    /* XXX this is for debugging. */  
+    /*
+    int i;
     for (i = 0; i < REG_NUM; i++)
         fprintf(stderr, "%d", i % 10);
     
@@ -151,7 +149,7 @@ JUSTPRINT:
         fprintf(stderr, "%d", comp->registers[r.type][i]);   
     }
     fprintf(stderr, "\n\n");
-   
+    */
 }
 
 /*
@@ -291,23 +289,23 @@ gencode_string(M1_compiler *comp, m1_literal *lit) {
 
 static void
 gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
-    m1_reg     rhs;           /* register holding result of right hand side */
     m1_object *parent;        /* pointer storage needed for code generation of LHS. */
     unsigned   lhs_reg_count; /* number of regs holding result of LHS (can be aggregate/indexed) */
 	unsigned   rhs_reg_count;	
     assert(a != NULL);
 	
+	/* generate code for RHS and get number of registers that hold the result */
     rhs_reg_count = gencode_expr(comp, a->rhs);
     
     /* generate code for LHS and get number of registers that hold the result */
     lhs_reg_count = gencode_obj(comp, a->lhs, &parent, 1);    
     
 
-    if (rhs_reg_count == 2) { /* deref */
-        if (lhs_reg_count == 1) {
+    if (rhs_reg_count == 2) { /* deref; ... = x[42] */
+        if (lhs_reg_count == 1) { /* lhs_reg_count+rhs_reg_count == 3, so pop 3 regs. */
         
             m1_reg target = popreg(comp->regstack);
-            m1_reg index = popreg(comp->regstack);
+            m1_reg index  = popreg(comp->regstack);
             m1_reg parent = popreg(comp->regstack);
 
             fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
@@ -315,22 +313,20 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
                                                         reg_chars[(int)index.type], index.no);
         }
         else {
-            assert(0);
-           
+            assert(0);           
         }
     }
     else { /* must be set_ref or set */
-
     
-        if (lhs_reg_count == 1) { /* just a simple lvalue. */    
+        if (lhs_reg_count == 1) { /* just a simple lvalue; a = b; */    
             m1_reg lhs = popreg(comp->regstack);    
             m1_reg rhs = popreg(comp->regstack);
             fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
                                                     reg_chars[(int)rhs.type], rhs.no);
-            free_reg(comp, lhs);
+            pushreg(comp->regstack, rhs);
         }
-        else if (lhs_reg_count == 2) { /* complex lvalue, like x.y, or x[10]. */
-            assert(rhs_reg_count == 1);
+        else if (lhs_reg_count == 2) { /* complex lvalue; x[10] = 42 */
+            assert(rhs_reg_count == 1); /* lhs_reg_count+rhs_reg_count == 3, so pop 3 regs. */
             
             m1_reg index  = popreg(comp->regstack);
             m1_reg parent = popreg(comp->regstack);
@@ -341,12 +337,11 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
                                                           reg_chars[(int)rhs.type], rhs.no);
             free_reg(comp, index);                                                      
             free_reg(comp, parent);
+            
+            /* make result available for next in "chain" of assignments, if any (e.g, a = b = c = 42;). */              
+            pushreg(comp->regstack, rhs);
         }
     }    
-
-    // free_reg(comp, rhs);    
-    /* make result available for next in "chain" of assignments, if any (e.g, a = b = c = 42;). */  
-    pushreg(comp->regstack, rhs);
 }
 
 static void
@@ -534,16 +529,10 @@ OBJECT_LINK------>     L3
             /* visit parent recursively. (go depth-first in order to reach first ident. first
                That is, in "x.y.z", we want to visit x first.
              */
-//#if 0             
-            /* XXX this needs more thought and testing; only for arrays probably. 
-            As we're going depth-first, decrement the counter as we're going down the tree. 
-            */ 
-            
+
             //--numregs_pushed;
             /* count the number of regs pushed by the parent, which is 1. */
-            numregs_pushed += 
-//#endif            
-            gencode_obj(comp, obj->parent, parent, is_target);
+            numregs_pushed += gencode_obj(comp, obj->parent, parent, is_target);
             
             /* At this point, we're done visiting parents, so now visit the "fields".
                In x.y.z, after returning from x, we're visiting y. After that, we'll visit z.
@@ -551,25 +540,7 @@ OBJECT_LINK------>     L3
              */
             numregs_pushed += gencode_obj(comp, obj->obj.field, parent, is_target);   
             
-            /* XXX Let's say we want to index x[2][3]; there are 3 regs on the stack:
-            I0 (x)
-            I1 (2)
-            I2 (3)
-            
-            This must be reduced to two, because a deref or set_ref only takes 2
-            arguments to specify the location/destination, and the 3rd for a target
-            or value.
-            
-            Generate an instruction:
-            add I0, I0, I1
-            
-            XXXX STILL need to handle the size of the "record" in I1; it's a whole subarray.
-            Must be x num_elements.
-            
-            Remove all 3 regs, and only push I0 and I2 back. I1 is handled by the add instruction.
-            
-            */
-//#if 0            
+           
             fprintf(stderr, "OBJECT_LINK: %d\n", numregs_pushed);
             
             if (numregs_pushed == 3) {
@@ -590,7 +561,6 @@ OBJECT_LINK------>     L3
                 /* we popped 3, and pushed 2, so effectively decrement by 1. */
                 --numregs_pushed;
             }  
-//#endif            
             break;
             
         }
@@ -892,7 +862,6 @@ gencode_address(M1_compiler *comp, m1_object *o) {
 static void
 gencode_return(M1_compiler *comp, m1_expression *e) {
         
-
     m1_reg chunk_index,
            retpc_reg,
            retpc_index;
@@ -1317,6 +1286,8 @@ gencode_not(M1_compiler *comp, m1_unexpr *u) {
 static void 
 gencode_bnot(M1_compiler *comp, m1_unexpr *u) {
     fprintf(stderr, "TODO: bitwise not not implemented yet!\n");    
+    assert(comp != NULL);
+    assert(u != NULL);
 }
 
 static void
@@ -1928,19 +1899,24 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             break;
         case EXPR_OBJECT: 
         {
-            m1_object *obj; /* temp. storage. */
+            m1_object *obj; /* temp. storage for a **pointer; 
+                               we're not using the value of <obj>, 
+                               only its space on the C runtime stack. 
+                             */
+                             
             num_regs = gencode_obj(comp, e->expr.t, &obj, 0);            
-            if (num_regs == 2) {                
-                m1_reg index = popreg(comp->regstack);                
+
+            if (num_regs == 2) { /* gencode_obj() may return 2 registers for array and struct access. */
+                m1_reg index  = popreg(comp->regstack);                
                 m1_reg parent = popreg(comp->regstack);
-                m1_reg target = popreg(comp->regstack);
+                m1_reg target = alloc_reg(comp, parent.type); /* XXX fix type */
                 
                 fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
                                                             reg_chars[(int)parent.type], parent.no,
                                                             reg_chars[(int)index.type], index.no);
                                                             
                 pushreg(comp->regstack, target); 
-                --num_regs; /* popped 3, pushed 1. */
+                --num_regs; /* popped 2, pushed 1. */
             }
             break;
         }

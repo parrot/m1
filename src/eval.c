@@ -323,7 +323,7 @@ eval_expr(m1_expression *e) {
 
 static void 
 eval_chunk(m1_chunk *c) {
-    m1_expression *iter = c->block;
+    m1_expression *iter = c->block->stats;
     fprintf(OUT, ".chunk '%s'\n", c->name);
     while (iter != NULL) {
         eval_expr(iter);

@@ -1,6 +1,7 @@
 int main() {
     print("1..20\n");
     string s[10];
+
     s[0] = "-----0---0-------\n";
     s[1] = "----0-----0------\n";  
     s[2] = "---0-------0-----\n";
@@ -17,11 +18,11 @@ int main() {
     int numiter = 20;
     while(numiter > 0) {
         i = j % 10;
-        print("ok ");
-        print(j + 1);
-        print(" - "); 
-        if (j + 1 < 10)
-            print(" ");
+//        print("ok ");
+//        print(j + 1);
+//        print(" - "); 
+//        if (j + 1 < 10)
+//            print(" ");
 
         print(s[i]);
 
