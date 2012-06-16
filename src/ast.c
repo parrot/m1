@@ -35,13 +35,14 @@ m1_malloc(size_t size) {
 
  
 m1_chunk *
-chunk( ARGIN_NOTNULL( M1_compiler * const comp ), ARGIN( char *rettype ), ARGIN_NOTNULL( char *name ) ) 
+chunk( ARGIN_NOTNULL( M1_compiler * const comp ), ARGIN( char *rettype ), ARGIN_NOTNULL( char *name ), int flags) 
 {
     m1_chunk *c = (m1_chunk *)m1_malloc(sizeof(m1_chunk));
     c->rettype  = rettype;
     c->name     = name;
     c->block    = NULL;
     c->next     = NULL;
+    c->flags    = flags;
     
     assert(comp != NULL);
     

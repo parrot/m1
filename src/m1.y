@@ -161,6 +161,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 %type <ival> TK_INT
              m0_op
              m0_arg    
+             opt_vtable
              
 %type <dim> dimension                   
              
@@ -464,24 +465,36 @@ pmc_methods     : /* empty */
                     }
                 ;                                
 
-pmc_method		: method_init '(' parameters ')' block 
-                    {
-                       $1->block = $5->expr.blck;
+pmc_method		: method_init '(' parameters ')' open_block statements '}' 
+                    {  
+                       $1->block = $5; //$5->expr.blck;
+                       block_set_stat($5, $6);
                        $$ = $1;    
+                       $$->parameters = $3; 
+                       
+                       /* add parameters here. */
+                       m1_var *paramiter = $3;
+                       while (paramiter != NULL) {                            
+                         enter_param(comp, paramiter);                            
+                         paramiter = paramiter->next; 
+                         ++$$->num_params;
+                       }
+                       /* now close the scope. */
+                       close_scope(comp);                      
                     }
 				;
 				
 method_init     : opt_vtable "method" type TK_IDENT	
                     {
                       M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);  
-                      $$ = chunk(comp, $3, $4);
+                      $$ = chunk(comp, $3, $4, $1 | CHUNK_ISMETHOD);
                       comp->currentchunk = $$;
                          
                     }			
                 ;
 				
-opt_vtable      : /* empty */
-                | "vtable"
+opt_vtable      : /* empty */   { $$ = 0; }
+                | "vtable"      { $$ = CHUNK_ISVTABLE; }
                 ;				
                                         
 function_definition : function_init '(' parameters ')' open_block statements '}' 
@@ -517,7 +530,7 @@ function_init   : return_type TK_IDENT
                              "current" chunk (for its symbol table etc.). 
                            */  
                           M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);                          
-                          $$ = chunk(comp, $1, $2); 
+                          $$ = chunk(comp, $1, $2, 0); 
                           comp->currentchunk = $$;
 
                           /* enter name of function declaration in table 

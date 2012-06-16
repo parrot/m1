@@ -28,6 +28,12 @@ typedef struct m1_block {
     
 } m1_block;
 
+typedef enum chunk_flag {
+    CHUNK_ISVTABLE = 0x001,
+    CHUNK_ISMETHOD = 0x002
+    
+} chunk_flag;
+
 /* structure to represent a function. */
 typedef struct m1_chunk {
     char                 *rettype;      /* return type of chunk */
@@ -37,6 +43,8 @@ typedef struct m1_chunk {
 
     struct m1_var        *parameters;   /* list of parameters */
     unsigned              num_params;   /* parameter count. */
+    
+    int                   flags;
     
     unsigned              line;         /* line of function declaration. */    
     struct m1_symboltable constants;    /* constants used in this chunk */
@@ -331,7 +339,7 @@ typedef struct m1_expression {
 extern int yyget_lineno(yyscan_t yyscanner);
 
 //extern m1_chunk *chunk(M1_compiler *comp, char *rettype, char *name);
-extern m1_chunk *chunk(ARGIN_NOTNULL(M1_compiler * const comp), ARGIN(char *rettype), ARGIN_NOTNULL(char *name));
+extern m1_chunk *chunk(ARGIN_NOTNULL(M1_compiler * const comp), ARGIN(char *rettype), ARGIN_NOTNULL(char *name), int flags);
 
 //extern m1_expression *block(M1_compiler *comp);
 extern m1_block *block(ARGIN_NOTNULL(M1_compiler *comp));
