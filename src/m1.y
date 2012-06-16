@@ -177,8 +177,8 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              inc_or_dec_expr 
              function_call_expr 
              function_call_stat 
-             lhs
-             rhs
+             lvalue
+             rvalue
              statement 
              statements 
              block
@@ -677,8 +677,12 @@ var         : TK_IDENT opt_init
 dimension   : '[' TK_INT ']'
                 { $$ = array_dimension($2); }
             | dimension '[' TK_INT ']'
-                {  
-                  $1->next = array_dimension($3);
+                { 
+                  m1_dimension *iter = $1;
+                  while (iter->next != NULL)
+                    iter = iter->next;
+                  /* out of while loop; iter->next is now NULL */   
+                  iter->next = array_dimension($3);
                   $$ = $1;  
                 }
             ;
@@ -699,14 +703,14 @@ assign_stat : assign_expr ';'
                 { $$ = $1; }
             ;
             
-assign_expr : lhs assignop rhs
+assign_expr : lvalue assignop rvalue
                 { $$ = assignexpr((M1_compiler *)yyget_extra(yyscanner), $1, $2, $3); }            
             | chained_assign_expr
             ;
             
-chained_assign_expr: lhs '=' rhs
+chained_assign_expr: lvalue '=' rvalue
                         { $$ = assignexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_ASSIGN, $3); }
-                   | lhs '=' chained_assign_expr
+                   | lvalue '=' chained_assign_expr
                         {                         
                           /* The parse tree for:
                           
@@ -783,7 +787,7 @@ default_case: /* empty */
             	{ $$ = $3; }
             ;
                        
-function_call_expr  : lhs '(' arguments ')' 
+function_call_expr  : lvalue '(' arguments ')' 
                          { $$ = funcall((M1_compiler *)yyget_extra(yyscanner), $1->expr.t, $3); }
                     ;
                     
@@ -827,13 +831,13 @@ for_step    : /* empty */
             ;                                                                      
             
 
-inc_or_dec_expr : lhs "++"
+inc_or_dec_expr : lvalue "++"
                     { $$ = inc_or_dec((M1_compiler *)yyget_extra(yyscanner), $1, UNOP_POSTINC); }
-                | lhs "--"
+                | lvalue "--"
                     { $$ = inc_or_dec((M1_compiler *)yyget_extra(yyscanner), $1, UNOP_POSTDEC); }
-                | "++" lhs
+                | "++" lvalue
                     { $$ = inc_or_dec((M1_compiler *)yyget_extra(yyscanner), $2, UNOP_PREINC); }
-                | "--" lhs
+                | "--" lvalue
                     { $$ = inc_or_dec((M1_compiler *)yyget_extra(yyscanner), $2, UNOP_PREDEC); }                    
                 ;
                 
@@ -854,7 +858,7 @@ opt_ret_expr: /* empty */     { $$ = NULL; }
             | expression      { $$ = $1; }
             ;                         
                             
-lhs     : lhs_obj
+lvalue  : lhs_obj
            { $$ = objectexpr((M1_compiler *)yyget_extra(yyscanner), $1, EXPR_OBJECT); }           
         | '*' lhs_obj
            { $$ = objectexpr((M1_compiler *)yyget_extra(yyscanner), $2, EXPR_DEREF); }
@@ -888,7 +892,7 @@ field_access: '[' expression ']'
                 { $$ = NULL; /* do we want this scope operator? */}
             ;        
 
-rhs     : expression
+rvalue  : expression
         ;
         
 constexpr   : TK_NUMBER    
@@ -911,7 +915,7 @@ expression  : constexpr
             | unexpr             
             | binexpr
             | tertexpr
-            | lhs                
+            | lvalue                
             | function_call_expr                
             | nullexpr           
             | newexpr
