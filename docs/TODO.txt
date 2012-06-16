@@ -17,7 +17,7 @@ areas are particularly welcome:
 
 What's working?
 ---------------
-* simple declarations and initializations (int x; int y = 1;).
+* declarations and initializations (int x; int y = 1;).
 * simple assignments (x = 42;).
 * chained assignments (a = b = c = 42; )
 * while loops
@@ -28,13 +28,13 @@ What's working?
 * continue statements (in loops)
 * switch statements
 * !, && and || logical operators.
-* ^, & and | bitwise operators.
+* ~, ^, & and | bitwise operators.
 * math expressions (+, -, /, %, *)
 * boolean operators (!, ==, !=, >, <, <=, >=)
 * pre and postfix ++ and -- operators.
 * unary minus op.
-* array access (x[42] = 3; x = y[3])
-* field access (x.y = 3; )
+* single and multi-dimensional array access (x[42] = 3; x = y[3])
+* field access (x.y = 3; ) Limited to single structs; nested won't work yet.
 * function calls and returns (including recursion).
 * nested scopes.
 * type checking (separate phase of compiler)
@@ -50,7 +50,7 @@ What's not working?
 * self, super
 * import statement.
 * try/catch statement (needed?)
-* complex arrays and structs (multidimensional)
+* complex structs (multidimensional)
 * method calls on PMC instances.
 
 short-term roadmap:
@@ -58,7 +58,7 @@ short-term roadmap:
 * vtables and method calls
 * parameters and arguments
 * self and super
-* complex arrays and structs
+* complex structs
 
 other TODOs:
 ---------------------
