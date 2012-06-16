@@ -1,0 +1,13 @@
+
+void main() {
+    print("1..1\n");
+    int s[10][10][10];
+    
+    s[4][4][4] = 42;
+        
+    if (s[4][4][4] == 42)   
+        print("ok 1\n");
+    else
+        print("not ok 1\n");
+    
+}
