@@ -636,23 +636,6 @@ OBJECT_LINK------>     L3
             pushreg(comp->regstack, fieldreg);
             ++numregs_pushed;
                                 
-
-                    
-            m1_reg offsetreg = popreg(comp->regstack);
-            m1_reg parentreg = popreg(comp->regstack); 
-            m1_reg reg       = alloc_reg(comp, VAL_INT);
-                                   
-            fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)reg.type], reg.no,
-                                                        reg_chars[(int)parentreg.type], parentreg.no,
-                                                        reg_chars[(int)offsetreg.type], offsetreg.no);   
-                                                        
-            //free_reg(comp, offsetreg); // XXX disable for now
-            //free_reg(comp, parentreg); // XXX disable for now
-            pushreg(comp->regstack, parentreg);
-            pushreg(comp->regstack, offsetreg);
-
-            //--numregs_pushed;             
-
             /* set parent OUT parameter to the current node. */
             *parent = obj;
             
