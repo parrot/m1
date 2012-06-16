@@ -1554,17 +1554,20 @@ gencode_print(M1_compiler *comp, m1_expression *expr) {
     m1_reg reg;
     m1_reg one;
     
-    gencode_expr(comp, expr);
+    m1_expression *iter = expr;
 
-    reg = popreg(comp->regstack);
-    
     /* register to hold value "1" */    
     one = alloc_reg(comp, VAL_INT);    
-    
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n",  one.no);
-    fprintf(OUT, "\tprint_%c\tI%d, %c%d, x\n", type_chars[(int)reg.type], one.no, 
-	                                       reg_chars[(int)reg.type], reg.no);
-		
+        
+    while (iter != NULL) {
+        gencode_expr(comp, iter);
+        reg = popreg(comp->regstack);
+        
+        fprintf(OUT, "\tprint_%c\tI%d, %c%d, x\n", type_chars[(int)reg.type], one.no, 
+	                                               reg_chars[(int)reg.type], reg.no);
+        iter = iter->next;	                                               
+    }		
     free_reg(comp, one);
     free_reg(comp, reg);
 }
