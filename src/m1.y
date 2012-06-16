@@ -828,11 +828,8 @@ expr_list   : expression
             | expr_list ',' expression 
                 { 
                   /* link them in reverse order for now. */
-                  m1_expression *iter = $1;
-                  while (iter->next != NULL)
-                    iter = iter->next;
-                  iter->next = $3;
-                  $$ = $1;   
+                  $3->next = $1;
+                  $$ = $3;   
                 }
             ;                                                    
             

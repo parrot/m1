@@ -1550,26 +1550,39 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
 
 
 static void
-gencode_print(M1_compiler *comp, m1_expression *expr) {
-    m1_reg reg;
-    m1_reg one;
+gencode_print_arg(M1_compiler *comp, m1_expression *expr) {
+    if (expr == NULL) 
+        return;
     
-    m1_expression *iter = expr;
+    /* go recursively to next, start at end of list as list is in reverse order. */    
+    gencode_print_arg(comp, expr->next);
+    
+    /* now do the the real work for the current expression. */
+    gencode_expr(comp, expr);    
+    m1_reg reg = popreg(comp->regstack);
+    m1_reg one = topreg(comp->regstack);
+        
+    fprintf(OUT, "\tprint_%c\tI%d, %c%d, x\n", type_chars[(int)reg.type], one.no, 
+                                               reg_chars[(int)reg.type], reg.no);
+                                               
+    free_reg(comp, reg);
+        
+}
 
-    /* register to hold value "1" */    
+static void
+gencode_print(M1_compiler *comp, m1_expression *expr) {    
+    m1_reg one;
+        
     one = alloc_reg(comp, VAL_INT);    
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n",  one.no);
-        
-    while (iter != NULL) {
-        gencode_expr(comp, iter);
-        reg = popreg(comp->regstack);
-        
-        fprintf(OUT, "\tprint_%c\tI%d, %c%d, x\n", type_chars[(int)reg.type], one.no, 
-	                                               reg_chars[(int)reg.type], reg.no);
-        iter = iter->next;	                                               
-    }		
+    
+    pushreg(comp->regstack, one); /* make reg holding "1" available to helper routine... */
+    
+    /* call helper routine. */
+    gencode_print_arg(comp, expr);        
+
+    (void)popreg(comp->regstack); /* .. and remove register holding 1. */
     free_reg(comp, one);
-    free_reg(comp, reg);
 }
 
 static void
