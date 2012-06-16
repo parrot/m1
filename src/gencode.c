@@ -1046,6 +1046,14 @@ ne_eq_common(M1_compiler *comp, m1_binexpr *b, int is_eq_op) {
     pushreg(comp->regstack, reg);
 }
 
+/*
+
+The operators == and != are very similar; they are both handled in
+ne_eq_common(), which takes a parameter is_eq_op, indicating whether
+it's the == or the != operator. Leave these wrappers here for sake
+of maintainability.
+
+*/
 static void
 gencode_ne(M1_compiler *comp, m1_binexpr *b) {
     ne_eq_common(comp, b, 0);
@@ -1056,6 +1064,14 @@ gencode_eq(M1_compiler *comp, m1_binexpr *b) {
     ne_eq_common(comp, b, 1);  
 }
 
+/*
+
+Common code generation for < and <= operators. Note that the operands <left> 
+and <right> are swapped! Therefore, even though this code is _very_ similar
+to other binary math ops (which also handle isgt and isge), this routine
+is different. This /could/ be refactored but it's better for clarity it's not.
+
+*/
 static void
 lt_le_common(M1_compiler *comp, m1_binexpr *b, char const * const op) {
     m1_reg result = alloc_reg(comp, VAL_INT);
@@ -1075,18 +1091,6 @@ lt_le_common(M1_compiler *comp, m1_binexpr *b, char const * const op) {
     free_reg(comp, left);
     free_reg(comp, right);
     pushreg(comp->regstack, result);    
-}
-
-static void
-gencode_lt(M1_compiler *comp, m1_binexpr *b) {
-    /* for LT (<) operator, use the ISGT opcode, but swap its arguments. */
-    lt_le_common(comp, b, "isgt");
-}
-
-static void
-gencode_le(M1_compiler *comp, m1_binexpr *b) {
-    /* for LE (<=) operator, use the ISGE opcode, but swap its arguments. */
-    lt_le_common(comp, b, "isge");
 }
 
 
@@ -1110,21 +1114,16 @@ gencode_binary_bitwise(M1_compiler *comp, m1_binexpr *b, char const * const op) 
     
 }
 
-static void
-gencode_binary_xor(M1_compiler *comp, m1_binexpr *b) {
-    gencode_binary_bitwise(comp, b, "xor");
-} 
 
-static void
-gencode_binary_and(M1_compiler *comp, m1_binexpr *b) {
-    gencode_binary_bitwise(comp, b, "and");
-}
 
-static void
-gencode_binary_or(M1_compiler *comp, m1_binexpr *b) {
-    gencode_binary_bitwise(comp, b, "or");
-}
+/*
 
+Common code generation routine for common math operators and > and >= operators.
+The parameter <op> is the "simple" version, as in "add" (as opposed to "add_i").
+The type suffice (_i, _n) is deduced from the left operand. It is up to the
+type checker (see semcheck.c) that left and right are compatible.
+
+*/
 static void
 gencode_binary_math(M1_compiler *comp, m1_binexpr *b, char const * const op) {
     m1_reg left, 
@@ -1147,75 +1146,37 @@ gencode_binary_math(M1_compiler *comp, m1_binexpr *b, char const * const op) {
     pushreg(comp->regstack, target);               
 }
 
-static void
-gencode_binary_plus(M1_compiler *comp, m1_binexpr *b) {
-    gencode_binary_math(comp, b, "add");   
-}
-
-static void
-gencode_binary_minus(M1_compiler *comp, m1_binexpr *b) {
-    gencode_binary_math(comp, b, "sub");    
-}
-
-static void
-gencode_binary_mult(M1_compiler *comp, m1_binexpr *b) {
-    gencode_binary_math(comp, b, "mult");
-}
-
-static void
-gencode_binary_mod(M1_compiler *comp, m1_binexpr *b) {
-    gencode_binary_math(comp, b, "mod");
-}
-
-static void
-gencode_binary_div(M1_compiler *comp, m1_binexpr *b) {
-    gencode_binary_math(comp, b, "div");
-}
-
-static void
-gencode_binary_isgt(M1_compiler *comp, m1_binexpr *b) {
-    gencode_binary_math(comp, b, "isgt");
-}
-
-static void
-gencode_binary_isge(M1_compiler *comp, m1_binexpr *b) {
-    gencode_binary_math(comp, b, "isge");
-}
 
 
 static void
 gencode_binary(M1_compiler *comp, m1_binexpr *b) {
-
     switch(b->op) {
         case OP_PLUS:
-            gencode_binary_plus(comp, b);
+            gencode_binary_math(comp, b, "add");
             break;            
         case OP_MINUS:
-            gencode_binary_minus(comp, b);
+            gencode_binary_math(comp, b, "sub");    
             break;            
         case OP_MUL:
-            gencode_binary_mult(comp, b);
+            gencode_binary_math(comp, b, "mult");
             break;
         case OP_DIV:
-            gencode_binary_div(comp, b);
+            gencode_binary_math(comp, b, "div");
             break;            
         case OP_MOD:
-            gencode_binary_mod(comp, b);
-            break;            
-        case OP_XOR:
-            gencode_binary_xor(comp, b);
+            gencode_binary_math(comp, b, "mod");
             break;            
         case OP_GT:
-            gencode_binary_isgt(comp, b);
+            gencode_binary_math(comp, b, "isgt");
             break;            
         case OP_GE:
-            gencode_binary_isge(comp, b);
+            gencode_binary_math(comp, b, "isge");
             break;            
         case OP_LT:
-            gencode_lt(comp, b);
+            lt_le_common(comp, b, "isgt"); /* swapping arguments. */
             break;
         case OP_LE:
-            gencode_le(comp, b);
+            lt_le_common(comp, b, "isge");
             break;
         case OP_EQ:
             gencode_eq(comp, b);
@@ -1230,13 +1191,16 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
             gencode_or(comp, b);
             break;
         case OP_BAND:
-            gencode_binary_and(comp, b);
+            gencode_binary_bitwise(comp, b, "and");
             break;            
         case OP_BOR:
-            gencode_binary_or(comp, b);
+            gencode_binary_bitwise(comp, b, "or");
             break;
+        case OP_XOR:
+            gencode_binary_bitwise(comp, b, "xor");
+            break;                        
         default:
-
+            assert(0); /* should never happen. */
             break;   
     }                                
 }
@@ -1744,7 +1708,9 @@ gencode_var(M1_compiler *comp, m1_var *v) {
             sym->regno = reg.no;
             freeze_reg(comp, reg);
        }
-       free_reg(comp, reg);
+       else { /* no point in free()ing if just frozen; hence else clause. */
+           free_reg(comp, reg);
+       }
               
     }
     
@@ -2002,8 +1968,6 @@ gencode_metadata(m1_chunk *c) {
     assert(c != NULL);
 	fprintf(OUT, ".metadata\n");	
 }
-
-
 
 
 static void
