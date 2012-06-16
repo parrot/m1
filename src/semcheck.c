@@ -15,7 +15,7 @@
 
 static m1_decl *check_expr(M1_compiler *comp, m1_expression *e);
 static void check_block(M1_compiler *comp, m1_block *expr);
-static m1_decl *check_obj(M1_compiler *comp, m1_object *obj, unsigned line);
+static m1_decl *check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent);
 
 /* Cache these built-in types. Read-only. */
 static m1_decl *BOOLTYPE;
@@ -106,7 +106,8 @@ be exactly the same, but they need to be compatible.
 */
 static m1_decl *
 check_assign(M1_compiler *comp, m1_assignment *a, unsigned line) {
-    m1_decl *ltype = check_obj(comp, a->lhs, line);
+    m1_object *parent;
+    m1_decl *ltype = check_obj(comp, a->lhs, line, &parent);
     m1_decl *rtype = check_expr(comp, a->rhs);
     
     assert(ltype != NULL);
@@ -121,18 +122,22 @@ check_assign(M1_compiler *comp, m1_assignment *a, unsigned line) {
 
 
 static m1_decl *
-check_obj(M1_compiler *comp, m1_object *obj, unsigned line) {
+check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent) {
     m1_decl *t = NULL;
 
     switch (obj->type) {
         
         case OBJECT_LINK: {
-            t = check_obj(comp, obj->parent, line);   
-            check_obj(comp, obj->obj.field, line);
+            fprintf(stderr, "OBJECT LINK\n");
+            *parent = obj;
+            
+            t = check_obj(comp, obj->parent, line, parent);   
+            check_obj(comp, obj->obj.field, line, parent);
             
             break;   
         }
         case OBJECT_MAIN: {
+
             /* look up identifier's declaration. */
             m1_symbol *sym = sym_lookup_symbol(comp->currentsymtab, obj->obj.name);            
 
@@ -140,17 +145,36 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line) {
                 type_error_extra(comp, line, "Undeclared variable '%s'\n", obj->obj.name);
             }
             else { /* found symbol, now link it to the object node. */
-//                fprintf(stderr, "[semcheck] found var '%s'\n", obj->obj.name);
                 assert(sym != NULL);
                 obj->sym = sym;   
+                /* find the type definition for this symbol's type. */
+                obj->sym->typedecl = type_find_def(comp, sym->type_name);
+                
                 t = sym->typedecl;
                 assert(t != NULL);
-            }                           
+            }             
+            *parent = obj;              
             break;
         }
-        case OBJECT_FIELD:
+        case OBJECT_FIELD: {
 
+            assert((*parent)->sym != NULL);
+            assert((*parent)->sym->typedecl != NULL);
+
+            m1_symbol *sym = sym_lookup_symbol(&(*parent)->sym->typedecl->d.s->sfields, obj->obj.name);
+
+            if (sym == NULL) {
+                type_error_extra(comp, line, "Struct %s has no member %s\n", (*parent)->obj.name, obj->obj.name);
+            }
+            else {
+                obj->sym = sym; 
+                /* find the type declaration for this field's type. */
+                obj->sym->typedecl = type_find_def(comp, sym->type_name);
+                t = sym->typedecl;    
+            }
+            *parent = obj;
             break;
+        }
         case OBJECT_DEREF:
 
             break;
@@ -244,13 +268,15 @@ check_if(M1_compiler *comp, m1_ifexpr *i, unsigned line) {
 
 static m1_decl *
 check_deref(M1_compiler *comp, m1_object *o, unsigned line) {
-    m1_decl *t = check_obj(comp, o, line);
+    m1_object *parent;
+    m1_decl *t = check_obj(comp, o, line, &parent);
     return t;
 }
 
 static m1_decl *
 check_address(M1_compiler *comp, m1_object *o, unsigned line) {
-    m1_decl *t = check_obj(comp, o, line);   
+    m1_object *parent;
+    m1_decl *t = check_obj(comp, o, line, &parent);   
     return t;
 }
 
@@ -541,8 +567,10 @@ check_expr(M1_compiler *comp, m1_expression *e) {
             return check_newexpr(comp, e->expr.n, e->line);
         case EXPR_NULL:   
             break;
-        case EXPR_OBJECT:
-            return check_obj(comp, e->expr.t, e->line);
+        case EXPR_OBJECT: {
+            m1_object *parent;
+            return check_obj(comp, e->expr.t, e->line, &parent);
+        }
         case EXPR_PRINT:
             check_expr(comp, e->expr.e);
             break;            

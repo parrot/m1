@@ -1,5 +1,5 @@
 struct value {
-    int value;   
+    int x;   
 }
 struct integer {
     value val;

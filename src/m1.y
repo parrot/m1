@@ -60,6 +60,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
     struct m1_enumconst     *ecnst;
     struct m1_block         *blck;
     struct m1_dimension     *dim;
+    struct m1_symbol        *sym;
 }
 
 
@@ -229,7 +230,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              param_list
              parameters              
               
-%type <sfld> struct_members 
+%type <sym>  struct_members 
              struct_member
              pmc_attributes
              pmc_attr
@@ -237,7 +238,8 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              
 %type <strct> struct_definition
               struct_init
-%type <pmc>   pmc_definition
+%type <pmc>   pmc_definition    
+              pmc_init
 
 %type <enm> enum_definition
              
@@ -425,14 +427,20 @@ namespace_definition: "namespace" TK_IDENT ';'
                          }    
                      ;    
 
-pmc_definition	: "pmc" TK_IDENT extends_clause '{'  pmc_attributes pmc_methods '}'
+pmc_definition	: pmc_init '{'  pmc_attributes pmc_methods '}'
                     {          
-                       M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
-                       $$ = newpmc(comp, $2, $5, $6); 
-                       type_enter_pmc(comp, $2, $$);
                        
                     }
                 ;
+                
+pmc_init        : "pmc" TK_IDENT extends_clause
+                    {          
+                       M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
+                       $$ = newpmc(comp, $2); 
+                       type_enter_pmc(comp, $2, $$);
+                       comp->currentsymtab = &$$->sfields;
+                    }
+                ;                
                                 
 extends_clause	: /* empty */
                 | "extends" id_list
@@ -549,19 +557,12 @@ param   : type TK_IDENT         { $$ = parameter((M1_compiler *)yyget_extra(yysc
         ;
                                              
 struct_definition   : struct_init '{' struct_members '}' 
-                        { 
-                          /*
-                          M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
-                          $$ = newstruct(comp, $2, $4); 
-                          type_enter_struct(comp, $2, $$);
-                          */
-                        }
                     ;       
                     
 struct_init         : "struct" TK_IDENT
                         {
                           M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
-                          $$ = newstruct(comp, $2, NULL); 
+                          $$ = newstruct(comp, $2); 
                           type_enter_struct(comp, $2, $$);
                           comp->currentsymtab = &$$->sfields;
                         }
@@ -570,28 +571,20 @@ struct_init         : "struct" TK_IDENT
 struct_members      : struct_member
                         { 
                           $1->offset = 0; /* first field, no offset */
-                          $$ = $1;                                                                  
                         }
                     | struct_members struct_member
-                        { 
-                          /* fields are linked in reverse order, but that's ok. */
-                          
+                        {                           
                           /* calculate offset of this field */
-                          $2->offset = $1->offset + field_size($1);
-                           
-                          $$ = $2;
-                          $2->next = $1;                            
+                          $2->offset = $1->offset + field_size($1);                                                                               
                         }
                           
                     ;
                     
 struct_member       : type TK_IDENT ';'
-                        { 
-                           
-                          $$ = structfield((M1_compiler *)yyget_extra(yyscanner), $2, $1); 
+                        {                            
                           M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
                           /* add this member as a field to the current struct's symbol table. */
-                          sym_new_symbol(comp, comp->currentsymtab, $2, $1, 1);                          
+                          $$ = sym_new_symbol(comp, comp->currentsymtab, $2, $1, 1);                          
                         }
                     ;                                        
         

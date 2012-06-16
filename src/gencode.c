@@ -611,31 +611,27 @@ OBJECT_LINK------>     L3
         }
         case OBJECT_FIELD: /* example: b in a.b */
         {            
-            m1_reg          fieldreg;            
-            int             offset;                        
-            m1_structfield *field;
+            m1_reg fieldreg = alloc_reg(comp, VAL_INT);/* reg for storing offset of field. */            
+            
+            assert((*parent) != NULL);
+                      
+            fprintf(stderr, "parent: %s\n", (*parent)->obj.name);                                  
             
             assert((*parent)->sym != NULL);
             assert((*parent)->sym->typedecl != NULL);
             
-            /* pass comp, a pointer to the struct decl of this obj's parent, and this obj's name. */
-            field    = struct_find_field(comp, (*parent)->sym->typedecl->d.s, obj->obj.name);
-            
+            fprintf(stderr, "Lookuping symbol for field %s\n", obj->obj.name);                        
             /* parent's symbol has a typedecl node, which holds the structdef (d.s), which has a symbol table. */
             m1_symbol *fieldsym = sym_lookup_symbol(&(*parent)->sym->typedecl->d.s->sfields, obj->obj.name);
-            
-            //assert(field != NULL); /* XXX need to check in semcheck. */
+                       
             assert(fieldsym != NULL);
             
-            //offset   = field->offset;                        
-            fieldreg = alloc_reg(comp, VAL_INT);/* reg for storing offset of field. */
-
             /* load the offset into a reg. and make it available through the regstack. */
-            fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", fieldreg.no, offset);             
-            
+            fprintf(OUT, "\tset_imm  I%d, 0, %d\n", fieldreg.no, fieldsym->offset);             
+
+            /* make it available through the regstack */
             pushreg(comp->regstack, fieldreg);
-            ++numregs_pushed;
-                                
+            ++numregs_pushed;                                
 
             /* set parent OUT parameter to the current node. */
             *parent = obj;

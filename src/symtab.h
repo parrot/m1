@@ -66,10 +66,9 @@ typedef struct m1_symbol {
     
     unsigned          num_elems;    /* 1 for normal symbols; > 1 for arrays. */
     
-    /* anonymous union to prevent another level of indirection in notation. */
     union {
-        int               regno;        /* allocated register */
         unsigned          offset;
+        int               regno;        /* allocated register */   
     };
     
     int               constindex;   /* index in const segment that holds this symbol's value. */

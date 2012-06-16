@@ -14,11 +14,11 @@ int main() {
     print("1..3\n");
     print("ok ");
     print(s.x);
-    print(" - struct access 1\nok ");   
+    print("\nok ");   
     print(s.y);
-    print(" - struct access 2\nok ");
+    print("\nok ");
     print(s.z);
-    print(" - struct access 3\n");
+    print("\n");
     
     
 }

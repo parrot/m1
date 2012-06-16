@@ -365,29 +365,12 @@ lhsobj(M1_compiler *comp, m1_object *parent, m1_object *field) {
     return lhsobj;   
 }
 
-m1_structfield *
-structfield(M1_compiler *comp, char *name, char *type) {
-    m1_structfield *fld = (m1_structfield *)m1_malloc(sizeof(m1_structfield));
-    fld->name           = name;
-    fld->type           = type;
-    
-    assert(comp != NULL);
-    return fld;   
-}
-
 m1_struct *
-newstruct(M1_compiler *comp, char *name, m1_structfield *fields) {
+newstruct(M1_compiler *comp, char *name) 
+{
     m1_struct *str = (m1_struct *)m1_malloc(sizeof(m1_struct));    
     str->name      = name;
-    //str->fields    = fields;
-    
-    /* struct fields are linked in reverse order, so the first one is
-       in fact the one last added, and therefore has the highest offset.
-       The offset of the last field is the size of the whole struct
-       except the size of the last field itself, so add that.
-     */
-    //str->size = fields->offset + field_size(fields);
-    
+        
     init_symtab(&str->sfields);
     
     assert(comp != NULL);
@@ -395,12 +378,12 @@ newstruct(M1_compiler *comp, char *name, m1_structfield *fields) {
 }
 
 m1_pmc *
-newpmc(M1_compiler *comp, char *name, m1_structfield *fields, m1_chunk *methods) {
-    m1_pmc *pmc  = (m1_pmc *)m1_malloc(sizeof(m1_pmc));
-    
+newpmc(M1_compiler *comp, char *name) 
+{
+    m1_pmc *pmc  = (m1_pmc *)m1_malloc(sizeof(m1_pmc));    
     pmc->name    = name; 
-    pmc->fields  = fields;
-    pmc->methods = methods;
+    
+    init_symtab(&pmc->sfields);
     
     assert(comp != NULL);
     return pmc;    
@@ -537,7 +520,7 @@ dowhileexpr(M1_compiler *comp, m1_expression *cond, m1_expression *block) {
 }
 
 unsigned 
-field_size(struct m1_structfield *field) {
+field_size(struct m1_symbol *field) {
     assert(field != NULL);
 	/*
 	switch (field->type) {
@@ -616,25 +599,6 @@ enumconst(M1_compiler *comp, char *enumitem, int enumvalue) {
 }
 
 
-m1_structfield *
-struct_find_field(M1_compiler *comp, m1_struct *structdef, char *fieldname) {
-    m1_structfield *sfield = NULL;
-    
-    assert(comp != NULL);
-    assert(structdef != NULL);
-    assert(fieldname != NULL);
-    
-    sfield = structdef->fields;
-    
-    /* go through list of struct's member fields, and see whether <fieldname> is present. */    
-    while (sfield != NULL) {
-        if (strcmp(sfield->name, fieldname) == 0) { /* found! */        
-            return sfield;
-        }
-        sfield = sfield->next;   
-    }
-    return sfield;        
-}
 
 m1_block *
 block( ARGIN_NOTNULL( M1_compiler *comp ) ) 
@@ -642,7 +606,7 @@ block( ARGIN_NOTNULL( M1_compiler *comp ) )
     m1_block *block;
     assert(comp != NULL);
     block = (m1_block *)m1_malloc(sizeof(m1_block)); 
-    
+    /* initialize this block's symbol table. */
     init_symtab(&block->locals);
     return block;   
 }

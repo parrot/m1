@@ -36,15 +36,6 @@ typedef struct m1_chunk {
         
 } m1_chunk;
 
-/* Struct to represent each struct field. */
-typedef struct m1_structfield {
-    char        *name;              /* name of struct member. */
-    char        *type;              /* type of struct member. */
-    unsigned     offset;            /* memory offset of this member in the struct */
-    
-    struct m1_structfield *next;    /* fields are stored as a list. */ 
-    
-} m1_structfield;
 
 /* structure that holds an M1 struct definition */
 typedef struct m1_struct {
@@ -52,7 +43,6 @@ typedef struct m1_struct {
     unsigned size;              /* total size of this struct; can calculate from fields but 
                                    better keep a "cached" value */
     
-    struct m1_structfield *fields; /* list of fields in this struct. */ /* XXX replace with symbol table. */
     struct m1_symboltable sfields; /* a struct is just a very local scope; it's handy to have
                                       a symbol table, as it makes handling x.y.z easier. 
                                     */
@@ -64,7 +54,7 @@ typedef struct m1_pmc {
     unsigned size;
 
     struct m1_chunk       *methods;    
-    struct m1_structfield *fields;
+    struct m1_symboltable  sfields;
     
 } m1_pmc;
 
@@ -345,11 +335,9 @@ extern m1_expression *funcall(M1_compiler *comp, m1_object *fun, m1_expression *
 extern m1_object *object(M1_compiler *comp, m1_object_type type);            
 extern void obj_set_ident(m1_object *node, char *ident);
 
-extern m1_structfield *structfield(M1_compiler *comp, char *name, char *type);
+extern m1_struct *newstruct(M1_compiler *comp, char *name);
 
-extern m1_struct *newstruct(M1_compiler *comp, char *name, m1_structfield *fields);
-
-extern m1_pmc *newpmc(M1_compiler *comp, char *name, m1_structfield *fields, m1_chunk *methods);
+extern m1_pmc *newpmc(M1_compiler *comp, char *name);
 
 extern m1_expression *ifexpr(M1_compiler *comp, m1_expression *cond, m1_expression *ifblock, m1_expression *elseblock);
 extern m1_expression *whileexpr(M1_compiler *comp, m1_expression *cond, m1_expression *block);
@@ -379,7 +367,7 @@ extern m1_expression *vardecl(M1_compiler *comp, char *type, m1_var *v);
 extern m1_var *var(M1_compiler *comp, char *name, m1_expression *init);
 extern m1_var *array(M1_compiler *comp, char *name, m1_dimension *dimension, m1_expression *init);
 
-extern unsigned field_size(struct m1_structfield *field);
+extern unsigned field_size(struct m1_symbol *field);
 
 extern m1_expression *switchexpr(M1_compiler *comp, m1_expression *expr, m1_case *cases, m1_expression *defaultstat);
 extern m1_case *switchcase(M1_compiler *comp, int selector, m1_expression *block);
@@ -388,8 +376,6 @@ extern m1_expression *newexpr(M1_compiler *copm, char *type, m1_expression *args
 
 extern m1_object *lhsobj(M1_compiler *comp, m1_object *parent, m1_object *field);
 extern m1_expression *castexpr(M1_compiler *comp, char *type, m1_expression *castedexpr);
-
-extern m1_structfield *struct_find_field(M1_compiler *comp, m1_struct *structdef, char *fieldname);
 
 extern m1_enumconst *enumconst(M1_compiler *comp, char *enumitem, int enumvalue);
 extern m1_enum *newenum(M1_compiler *comp, char *name, m1_enumconst *enumconstants);
