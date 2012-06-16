@@ -571,7 +571,6 @@ OBJECT_LINK------>     L3
         {   
             m1_reg reg;              
 
-//            fprintf(stderr, "[object_main] handling '%s'\n", obj->obj.name); 
         	assert(obj->obj.field != NULL);
         	assert(obj->sym != NULL);
         	assert(obj->sym->typedecl != NULL);
@@ -580,8 +579,9 @@ OBJECT_LINK------>     L3
         	if (obj->sym->regno == NO_REG_ALLOCATED_YET) {
 
                 m1_reg r        = alloc_reg(comp, obj->sym->typedecl->valtype);
-                freeze_reg(comp, r);
                 obj->sym->regno = r.no;
+                freeze_reg(comp, r);
+                
                 fprintf(stderr, "Allocating reg for OBJ MAIN (%s) %d\n", obj->sym->name, r.no);             
         	}  
             
@@ -625,7 +625,9 @@ OBJECT_LINK------>     L3
             
             /* pass comp, a pointer to the struct decl of this obj's parent, and this obj's name. */
             field    = struct_find_field(comp, (*parent)->sym->typedecl->d.s, obj->obj.name);
+            
             assert(field != NULL); /* XXX need to check in semcheck. */
+            
             offset   = field->offset;                        
             fieldreg = alloc_reg(comp, VAL_INT);/* reg for storing offset of field. */
 
@@ -633,28 +635,24 @@ OBJECT_LINK------>     L3
             fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", fieldreg.no, offset);             
             pushreg(comp->regstack, fieldreg);
             ++numregs_pushed;
-            
-            
-            /* XXX if offset = 0. special case? */
-/*
-          //  if (offset > 0) {
-                    
-                    m1_reg offsetreg = popreg(comp->regstack);
-                    m1_reg parentreg = popreg(comp->regstack); 
-                    m1_reg reg       = alloc_reg(comp, VAL_INT);
-                                   
-                    fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)reg.type], reg.no,
-                                                            reg_chars[(int)parentreg.type], parentreg.no,
-                                                            reg_chars[(int)offsetreg.type], offsetreg.no);   
-                    free_reg(comp, offsetreg);
-                    free_reg(comp, parentreg);
-                    pushreg(comp->regstack, parentreg);
-                    pushreg(comp->regstack, offsetreg);
+                                
 
-                    //--numregs_pushed;                                                           
-          // }
-            
-*/
+                    
+            m1_reg offsetreg = popreg(comp->regstack);
+            m1_reg parentreg = popreg(comp->regstack); 
+            m1_reg reg       = alloc_reg(comp, VAL_INT);
+                                   
+            fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)reg.type], reg.no,
+                                                        reg_chars[(int)parentreg.type], parentreg.no,
+                                                        reg_chars[(int)offsetreg.type], offsetreg.no);   
+                                                        
+            //free_reg(comp, offsetreg); // XXX disable for now
+            //free_reg(comp, parentreg); // XXX disable for now
+            pushreg(comp->regstack, parentreg);
+            pushreg(comp->regstack, offsetreg);
+
+            //--numregs_pushed;             
+
             /* set parent OUT parameter to the current node. */
             *parent = obj;
             
