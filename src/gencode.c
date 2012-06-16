@@ -47,7 +47,7 @@ This happens in gencode_number().
 #define M0_REG_S0   134
 #define M0_REG_P0   195
 
-static void gencode_expr(M1_compiler *comp, m1_expression *e);
+static unsigned gencode_expr(M1_compiler *comp, m1_expression *e);
 static void gencode_block(M1_compiler *comp, m1_block *block);
 static unsigned gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target);
 
@@ -293,38 +293,55 @@ static void
 gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
     m1_reg     rhs;           /* register holding result of right hand side */
     m1_object *parent;        /* pointer storage needed for code generation of LHS. */
-    unsigned   obj_reg_count; /* number of regs holding result of LHS (can be aggregate/indexed) */
-		
+    unsigned   lhs_reg_count; /* number of regs holding result of LHS (can be aggregate/indexed) */
+	unsigned   rhs_reg_count;	
     assert(a != NULL);
 	
-    gencode_expr(comp, a->rhs);
-    rhs = popreg(comp->regstack);
+    rhs_reg_count = gencode_expr(comp, a->rhs);
     
     /* generate code for LHS and get number of registers that hold the result */
-    obj_reg_count = gencode_obj(comp, a->lhs, &parent, 1);    
+    lhs_reg_count = gencode_obj(comp, a->lhs, &parent, 1);    
     
-    /* the number of registers that are available is always 1 or 2. 1 for the simple case,
-       and 2 for field access (x.y and x[1]). 
-    */
-    assert (obj_reg_count == 1 || obj_reg_count == 2);
 
-    if (obj_reg_count == 1) { /* just a simple lvalue. */
-
-        m1_reg lhs = popreg(comp->regstack);    
+    if (rhs_reg_count == 2) { /* deref */
+        if (lhs_reg_count == 1) {
         
-        fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
-                                                reg_chars[(int)rhs.type], rhs.no);
-        free_reg(comp, lhs);
+            m1_reg target = popreg(comp->regstack);
+            m1_reg index = popreg(comp->regstack);
+            m1_reg parent = popreg(comp->regstack);
+
+            fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
+                                                        reg_chars[(int)parent.type], parent.no,
+                                                        reg_chars[(int)index.type], index.no);
+        }
+        else {
+            assert(0);
+           
+        }
     }
-    else if (obj_reg_count == 2) { /* complex lvalue, like x.y, or x[10]. */
-        m1_reg index  = popreg(comp->regstack);
-        m1_reg parent = popreg(comp->regstack);
+    else { /* must be set_ref or set */
+
+    
+        if (lhs_reg_count == 1) { /* just a simple lvalue. */    
+            m1_reg lhs = popreg(comp->regstack);    
+            m1_reg rhs = popreg(comp->regstack);
+            fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
+                                                    reg_chars[(int)rhs.type], rhs.no);
+            free_reg(comp, lhs);
+        }
+        else if (lhs_reg_count == 2) { /* complex lvalue, like x.y, or x[10]. */
+            assert(rhs_reg_count == 1);
+            
+            m1_reg index  = popreg(comp->regstack);
+            m1_reg parent = popreg(comp->regstack);
+            m1_reg rhs    = popreg(comp->regstack);
         
-        fprintf(OUT, "\tset_ref\t%c%d, %c%d, %c%d\n", reg_chars[(int)parent.type], parent.no, 
-                                                      reg_chars[(int)index.type], index.no,
-                                                      reg_chars[(int)rhs.type], rhs.no);
-        free_reg(comp, index);                                                      
-        free_reg(comp, parent);
+            fprintf(OUT, "\tset_ref\t%c%d, %c%d, %c%d\n", reg_chars[(int)parent.type], parent.no, 
+                                                          reg_chars[(int)index.type], index.no,
+                                                          reg_chars[(int)rhs.type], rhs.no);
+            free_reg(comp, index);                                                      
+            free_reg(comp, parent);
+        }
     }    
 
     // free_reg(comp, rhs);    
@@ -517,14 +534,15 @@ OBJECT_LINK------>     L3
             /* visit parent recursively. (go depth-first in order to reach first ident. first
                That is, in "x.y.z", we want to visit x first.
              */
-#if 0             
+//#if 0             
             /* XXX this needs more thought and testing; only for arrays probably. 
             As we're going depth-first, decrement the counter as we're going down the tree. 
             */ 
-            --numregs_pushed;
+            
+            //--numregs_pushed;
             /* count the number of regs pushed by the parent, which is 1. */
             numregs_pushed += 
-#endif            
+//#endif            
             gencode_obj(comp, obj->parent, parent, is_target);
             
             /* At this point, we're done visiting parents, so now visit the "fields".
@@ -551,18 +569,20 @@ OBJECT_LINK------>     L3
             Remove all 3 regs, and only push I0 and I2 back. I1 is handled by the add instruction.
             
             */
-#if 0            
+//#if 0            
             fprintf(stderr, "OBJECT_LINK: %d\n", numregs_pushed);
             
-            if (is_target && numregs_pushed == 3) {
+            if (numregs_pushed == 3) {
                 m1_reg last     = popreg(comp->regstack);   /* latest added; store here for now. */
                 m1_reg field    = popreg(comp->regstack);  /* 2nd latest, this one needs to be removed. */
                 m1_reg parent   = popreg(comp->regstack); /* x in x[2][3]. */                
                 m1_reg size_reg       = alloc_reg(comp, VAL_INT);
                 m1_reg updated_parent = alloc_reg(comp, VAL_INT); 
+                fprintf(stderr, "LINK, generating %d for sizereg and %d for updated parent\n", size_reg.no, updated_parent.no);
                 fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", size_reg.no, 3 /* XXX fix size. */);
                 fprintf(OUT, "\tmult_i\tI%d, I%d, I%d\n", field.no, field.no, size_reg.no);
-                fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", updated_parent.no, parent.no, field.no);
+                fprintf(OUT, "\tset \tI%d, I%d, x\n", updated_parent.no, parent.no); /* XXX need this otherwise segfault.*/
+                fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", updated_parent.no, updated_parent.no, field.no);
                 
                 pushreg(comp->regstack, updated_parent);       /* push back (x+[2]) */
                 pushreg(comp->regstack, last);         /* push back the latest added one. */
@@ -570,7 +590,7 @@ OBJECT_LINK------>     L3
                 /* we popped 3, and pushed 2, so effectively decrement by 1. */
                 --numregs_pushed;
             }  
-#endif            
+//#endif            
             break;
             
         }
@@ -582,14 +602,14 @@ OBJECT_LINK------>     L3
         	assert(obj->obj.field != NULL);
         	assert(obj->sym != NULL);
         	assert(obj->sym->typedecl != NULL);
-
-             
+ 
         	/* if symbol has not register allocated yet, do it now. */
         	if (obj->sym->regno == NO_REG_ALLOCATED_YET) {
 
                 m1_reg r        = alloc_reg(comp, obj->sym->typedecl->valtype);
                 freeze_reg(comp, r);
                 obj->sym->regno = r.no;
+                fprintf(stderr, "Allocating reg for OBJ MAIN (%s) %d\n", obj->sym->name, r.no);             
         	}  
             
             /* get the storage type. */
@@ -639,12 +659,6 @@ OBJECT_LINK------>     L3
             
             /* XXX if offset = 0. special case? */
           //  if (offset > 0) {
-                if (is_target) {  /* a.b = ... */
-                    /* reg. holding offset for field b is already pushed onto regstack, count it now. */
-                    ++numregs_pushed;
-
-                }
-                else { /* ... = a.b */
                     
                     m1_reg offsetreg = popreg(comp->regstack);
                     m1_reg parentreg = popreg(comp->regstack); 
@@ -657,8 +671,7 @@ OBJECT_LINK------>     L3
                     free_reg(comp, parentreg);
                     pushreg(comp->regstack, reg);
                     ++numregs_pushed;                                                           
-                }
-           // }
+          // }
             
             /* set parent OUT parameter to the current node. */
             *parent = obj;
@@ -676,63 +689,7 @@ OBJECT_LINK------>     L3
         }
         case OBJECT_INDEX: /* b in a[b] */        
         {
-
-            gencode_expr(comp, obj->obj.index);
-                        
-            if (is_target) { /* x[42] = ... */
-
-                /* don't pop it, just count it as it was pushed onto regstack
-                   by gencode_expr(). It will be popped by the calling function. 
-                */
-                ++numregs_pushed;
-
-                print_stack(comp->regstack, "OBJECT_INDEX\n");
-                fprintf(stderr, "Num regs pushed (x[42] = ..): %d\n", numregs_pushed);
-/*                if (numregs_pushed == 2) {
-                    m1_reg justpushed = popreg(comp->regstack);
-                    m1_reg pushedbefore = popreg(comp->regstack);
-                    
-                    fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", pushedbefore.no, pushedbefore.no, justpushed.no);
-                    pushreg(comp->regstack, pushedbefore);
-                       
-                }
-*/            
-                
-            }
-            else { /* ... = x[42] */
-                m1_reg offsetreg, parentreg, result;
-                
-                assert((*parent) != NULL);
-                assert((*parent)->sym != NULL);
-                assert((*parent)->sym->typedecl != NULL);
-                
-                offsetreg = popreg(comp->regstack); /* containing the index. */
-                parentreg = popreg(comp->regstack); /* containing the struct or array */
-                result    = alloc_reg(comp, (*parent)->sym->typedecl->valtype); /* target reg to store result. */
-                
-                /* deref R<target>, R<array>, R.<index> 
-                
-                */                        
-                fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)result.type], result.no,
-                                                            reg_chars[(int)parentreg.type], parentreg.no,
-                                                            reg_chars[(int)offsetreg.type], offsetreg.no);   
-                
-                /* XXX is the offset not always an integer? */
-                free_reg(comp, parentreg);
-                free_reg(comp, offsetreg);
-                
-                pushreg(comp->regstack, result);
-                ++numregs_pushed;                                                            
-            }
-            
-            /* set parent OUT parameter to current node. */
-//            *parent = obj; 
-            /* setting the parent is not needed when handling an index;
-               in x[3][4], when handling [4], you still want the pointer to refer to x, not [3].
-             */
-                    
-            ++numregs_pushed;
-
+            numregs_pushed += gencode_expr(comp, obj->obj.index);                                                              
             break;            
         }
         default:
@@ -743,6 +700,7 @@ OBJECT_LINK------>     L3
 		
     fprintf(stderr, "[returning from obj] Numregs: %d\n", numregs_pushed);
     print_stack(comp->regstack, "end of gencode-obj\n");
+
 	/* return the number of registers that are pushed onto the stack in this function. */	
     return numregs_pushed;
 		
@@ -1832,6 +1790,7 @@ gencode_var(M1_compiler *comp, m1_var *v) {
             m1_reg reg = alloc_reg(comp, sym->valtype);
             sym->regno = reg.no;
             freeze_reg(comp, reg);
+            fprintf(stderr, "freezing reg for array %d\n", reg.no);
         }
         
         /* calculate total size of array. If smaller than 256*255,
@@ -1901,9 +1860,10 @@ gencode_cast(M1_compiler *comp, m1_castexpr *expr) {
   
 }
 
-static void
+static unsigned
 gencode_expr(M1_compiler *comp, m1_expression *e) {
-            
+    unsigned num_regs = 1;
+             
     if (e == NULL) {
     	debug("expr e is null in gencode_expr\n");
     }
@@ -1969,7 +1929,19 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
         case EXPR_OBJECT: 
         {
             m1_object *obj; /* temp. storage. */
-            gencode_obj(comp, e->expr.t, &obj, 0);            
+            num_regs = gencode_obj(comp, e->expr.t, &obj, 0);            
+            if (num_regs == 2) {                
+                m1_reg index = popreg(comp->regstack);                
+                m1_reg parent = popreg(comp->regstack);
+                m1_reg target = popreg(comp->regstack);
+                
+                fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
+                                                            reg_chars[(int)parent.type], parent.no,
+                                                            reg_chars[(int)index.type], index.no);
+                                                            
+                pushreg(comp->regstack, target); 
+                --num_regs; /* popped 3, pushed 1. */
+            }
             break;
         }
         case EXPR_PRINT:
@@ -1999,7 +1971,9 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
          default:
             fprintf(stderr, "unknown expr type (%d)", e->type);   
             assert(0);
-    }   
+    }  
+    fprintf(stderr, "Returning from gen expr\n");
+    return num_regs; 
 
 }
 
