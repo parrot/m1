@@ -22,15 +22,38 @@ of M1:
 
 =over 4
 
-=item * Maintainability
+=item 1 Maintainability
 
-=item * High-quality output (i.e., M0 instructions)
+=item 2 High-quality output (i.e., M0 instructions)
 
-=item * Extensibility (e.g., easy to add another phase to the compilation process)
+=item 3 Extensibility (e.g., easy to add another phase to the compilation process)
 
-=item * Ease of implementation 
+=item 4 Ease of implementation 
 
 =back
+
+As it turns out, though many of the well-known constructs such as control statements
+(if, while, etc.) are fairly easy to implement, a few things are quite complex, and
+have made M1's implementation non-trivial. The most tricky parts are:
+
+=over 4
+
+=item * assignments
+
+=item * arrays (multi-dimensional)
+
+=item * structs (including nested structs)
+
+=item * function calls and parameters
+
+=back 
+
+So far, goal 1 (maintainability) is becoming a problem, as the AST data structure
+has become quite complex. Goal 2 (high quality output) is not achieved, as the
+code generator is fairly naive and simple. M1's compiler is fairly easy to extend,
+by adding another phase to the compiler that traverses the AST. 
+Goal 4, ease of implementation: it is not I<easy> to implement M1. 
+
 
 =head3 Differences with C
 
@@ -58,8 +81,6 @@ Compared to C, M1 has:
 
 =back
 
-Other differences with C include the following.
-
 
 =head2 M1 Milestones
 
@@ -77,11 +98,15 @@ Completed milestones: (for varying interpretations of "completed")
 
 =item * structs; read and write
 
-=item * function calls and returns
+=item * function calls and returns (but still buggy)
 
 =item * register allocator
 
 =item * semantic checker
+
+=item * Enumerations
+
+=item * PMC definitions (though not running)
 
 =back
 
@@ -90,10 +115,6 @@ Incomplete milestones:
 =over 4
 
 =item * bug-free function calls
-
-=item * Enumerations
-
-=item * PMC definitions
 
 =item * methods (as part of a PMC)
 
@@ -166,28 +187,28 @@ The implementation consists of the following files:
 
 =over 4
 
-=item m1.l - lexer specification.
+=item * m1.l - lexer specification.
 
-=item m1.y - parser specification.
+=item * m1.y - parser specification.
 
-=item ast.{c,h} - abstract syntax tree nodes definitions and constructors.
+=item * ast.{c,h} - abstract syntax tree nodes definitions and constructors.
 
-=item eval.{c,h} - code to generate M1 code from the AST. This is to ensure that the compiler
+=item * eval.{c,h} - code to generate M1 code from the AST. This is to ensure that the compiler
 can generate the same code as it has parsed.
 
-=item semcheck.{c,h} - implementation of the semantic check phase.
+=item * semcheck.{c,h} - implementation of the semantic check phase.
 
-=item instr.{c,h} - structures and code to represent M0 instructions.
+=item * instr.{c,h} - structures and code to represent M0 instructions.
 
-=item decl.{c,h} - structures and code to represent type declarations {{XXX needs better name}}
+=item * decl.{c,h} - structures and code to represent type declarations {{XXX needs better name}}
 
-=item gencode.{c,h} - code generation.
+=item * gencode.{c,h} - code generation.
 
-=item stack.{c,h} - implementation of a stack
+=item * stack.{c,h} - implementation of a stack
 
-=item symtab.{c,h} - symbol table implementation.
+=item * symtab.{c,h} - symbol table implementation.
 
-=item ann.h - code annotation #defines for splint. {{XXX needs better name}}
+=item * ann.h - code annotation #defines for splint. {{XXX needs better name}}
 
 =back
 
@@ -244,6 +265,15 @@ allocate memory for them. For instance, the following declaration:
  
 will allocate 10 * sizeof(int) bytes on the heap. 
 
+=head3 Structs and PMCs
+
+Structs and PMCs are very similar. Structs are similar to C's structures. 
+PMCs are like structs, but may have methods. In that sense, they are
+somewhat similar to C++ classes. Within PMC methods, the C<self> handle
+refers to the current object.
+
+Structs and PMCs can be allocated with the C<new> keyword; they are allocated
+on the heap.
 
 =head2 Subsystems
 
@@ -272,7 +302,7 @@ types by doing pointer-comparisons. That is:
  ... // assign ltype and rtype
  
  if (ltype != rtype) { // error! types do not match.
- 
+ ... 
 
 
 =head3 Symbols 
@@ -340,6 +370,44 @@ In general, C<free_reg> can be called on register that are just popped off the
 C<regstack>. If you allocate register that you push onto the C<regstack>, then
 obviously you should B<not> free it, as you're making it available to other 
 code generation functions that will use it.
+
+=head3 Stacks
+
+The M1 compiler uses a number of stacks: two for C<break> and C<continue>
+statements, and one for holding registers in the code generator.
+
+C<continue> statements are only allowed within C<for>, C<while>, and
+C<do-while> statements. C<break> statements are allowed wherever C<continue>
+statements are allowed, plus within C<switch> statements. The parser allows
+to write them I<anywhere>; the check whether the C<break> (or C<continue>)
+statement is allowed is done in the semantic checker. The compiler pushes
+the value "1" on the break-stack whenever it encounteres a C<for>, C<while>, 
+C<do-while> or C<switch> statement. Whenever a break statement is encountered,
+the breakstack is topped, to see whether there is in fact a "1" on top of the
+stack. In any other contex, there is a "0" on the stack.
+
+A stack is also used in the code generator. The AST is traversed to generate
+instructions for each node. A single statement may be represented by more 
+than one AST node. The regstack allows them to communicate. For instance,
+consider the statement:
+
+ x = 42;
+ 
+First, the AST node representing the rvalue (42) is visited; a new register
+is allocated, and an instruction is generated to load the constant into that
+register:
+
+ set_imm I0, 0, 42
+ 
+The register is pushed onto the regstack.
+ 
+Then, the C<assignment> node is visited, which will allocate a new register
+for C<x> if it hasn't been assigned one before. The assignment node can
+pop off the register that was assigned to keep the value 42. 
+
+A stack is used rather than the code generator functions' return values,
+since some nodes may be represented by two nodes, in particular for generating
+instructions for lvalues (which can become quite complex, such as x[3].y[4].z).
 
 =head2 M1 Language Specification
 
