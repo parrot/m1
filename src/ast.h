@@ -404,11 +404,11 @@ extern void block_set_stat(m1_block *block, m1_expression *stat);
 extern struct m1_block *open_scope(M1_compiler *comp);
 extern void close_scope(M1_compiler *comp);
 
-extern void enter_param(M1_compiler *comp, m1_var *parameter);
-
 extern m1_dimension *array_dimension(int ival);
 
 extern m1_ident *identlist(m1_ident *next, char *newnode);
+
+extern void add_chunk_parameters(M1_compiler *comp, m1_chunk *chunk, m1_var *paramlist, int flags);
 
 #endif
 

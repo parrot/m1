@@ -462,23 +462,15 @@ pmc_methods     : /* empty */
                     }
                 ;                                
 
+
 pmc_method		: method_init '(' parameters ')' open_block statements '}' 
                     {                         
-                       $1->block = $5; //$5->expr.blck;
+                       $1->block = $5;
                        block_set_stat($5, $6);
                        $$ = $1;    
-                       $$->parameters = $3; 
                        
-                       /* add "self" parameter manually */
-                       enter_param(comp, parameter(comp, "type", "self"));
-                       
-                       /* add parameters here. */
-                       m1_var *paramiter = $3;
-                       while (paramiter != NULL) {                            
-                         enter_param(comp, paramiter);                            
-                         paramiter = paramiter->next; 
-                         ++$$->num_params;
-                       }
+                       add_chunk_parameters(comp, $$, $3, CHUNK_ISMETHOD);
+                                              
                        /* now close the scope. */
                        close_scope(comp);                      
                     }
@@ -503,16 +495,9 @@ function_definition : function_init '(' parameters ')' open_block statements '}'
                           block_set_stat($5, $6);    
                           
                           $$ = $1;
-                          $$->parameters = $3;
-                                                    
-                          /* add parameters here. */
-                          m1_var *paramiter = $3;
-                          while (paramiter != NULL) {
-                            
-                            enter_param(comp, paramiter);                            
-                            paramiter = paramiter->next; 
-                            ++$$->num_params;
-                          }
+
+                          add_chunk_parameters(comp, $$, $3, 0); /* 0 for not a method. */
+                                                                                                                                  
                           /* now close the scope. */
                           close_scope(comp);                      
 
@@ -598,9 +583,9 @@ block   : open_block statements close_block
             {  
                 /* a <block> isa <statement>, so need to wrap it as a m1_expression. */
                 m1_expression *e = expression(comp, EXPR_BLOCK);
-                e->expr.blck     = $1; /* store block in the expr union of e. */
+                e->expr.blck          = $1; /* store block in the expr union of e. */
                 block_set_stat($1, $2);
-                $$ = e;                                
+                $$ = e;
             }
         ;
         
@@ -1040,10 +1025,7 @@ return_type : type    { $$ = $1; }
             ;
             
 type    : __type   
-              {
-                 comp->parsingtype = $1;
-                 $$ = $1;  
-              }         
+              { $$ = comp->parsingtype = $1; }         
         ;
 
 /* __type is a helper rule to prevent code duplication. */              

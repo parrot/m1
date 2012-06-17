@@ -464,7 +464,7 @@ parameter(M1_compiler *comp, char *paramtype, char *paramname) {
     return p;
 }
 
-void
+static void
 enter_param(M1_compiler *comp, m1_var *parameter) {
     assert(parameter->type != NULL);
     assert(parameter->name != NULL);
@@ -636,4 +636,24 @@ identlist(m1_ident *next, char *newnode) {
     id->next     = next;
     id->name     = newnode;
     return id;   
+}
+
+/* add parameters to chunk's main scope's symbol table. */
+void
+add_chunk_parameters(M1_compiler *comp, m1_chunk *chunk, m1_var *paramlist, int flags) {
+    m1_var *paramiter = paramlist;
+    chunk->parameters = paramlist;
+    
+    if (flags & CHUNK_ISMETHOD) {
+        /* add "self" parameter manually */
+        enter_param(comp, parameter(comp, "type", "self"));
+    }
+    
+    /* add parameters here. */    
+    while (paramiter != NULL) {
+                            
+        enter_param(comp, paramiter);                            
+        paramiter = paramiter->next; 
+        ++chunk->num_params;
+    }   
 }
