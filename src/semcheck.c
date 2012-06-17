@@ -128,14 +128,17 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
     switch (obj->type) 
     {        
         case OBJECT_LINK: {
+            m1_decl *fieldtype;
+            
             *parent = obj;
             
             t = check_obj(comp, obj->parent, line, parent);   
             /* in case field is a member of a struct, get _that_ type;
                when it's an index, return the type of obj->parent. 
              */
+            fieldtype = check_obj(comp, obj->obj.field, line, parent); 
             if (obj->obj.field->type == OBJECT_FIELD) 
-                t = check_obj(comp, obj->obj.field, line, parent);
+                t = fieldtype;
             
             break;   
         }
