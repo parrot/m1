@@ -9,7 +9,7 @@ M0 can be considered as a virtual machine which defines an instruction set
 and a computation model. Details of M0 can be found in [1].
 
 The M1 compiler is reentrant, which means it is thread-safe. This allows to 
-invoke the M1 compiler if it's already running.
+invoke another instance of the M1 compiler if it's already running.
 
 =head2 Status
 
@@ -46,8 +46,6 @@ Compared to C, M1 has:
 
 =item * a simpler (and more restrictive) grammar;
 
-=item * no union construct {{XXX do we want that?}}
-
 =item * no C<goto> statement (to prevent spaghetti code)
 
 =item * namespaces {{XXX do we want that?}}
@@ -56,6 +54,8 @@ Compared to C, M1 has:
 
 =item * nested multi-line comments (/* comment 1 /* nested comment */ comment 1 part 2 */ )
 
+=item * no pointers; instead, structs and PMCs are treated as references (similar to Java).
+
 =back
 
 Other differences with C include the following.
@@ -63,7 +63,7 @@ Other differences with C include the following.
 
 =head2 M1 Milestones
 
-Completed milestones:
+Completed milestones: (for varying interpretations of "completed")
 
 =over 4
 
@@ -73,17 +73,23 @@ Completed milestones:
 
 =item * conditional statements (if/else, switch)
 
-=item * one-dimensional arrays; read and write
+=item * arrays; read and write
 
-=item * simple structs; read and write
+=item * structs; read and write
 
 =item * function calls and returns
+
+=item * register allocator
+
+=item * semantic checker
 
 =back
 
 Incomplete milestones:
 
 =over 4
+
+=item * bug-free function calls
 
 =item * Enumerations
 
@@ -97,11 +103,7 @@ Incomplete milestones:
 
 =item * namespaces
 
-=item * semantic checker
-
 =item * module system (preprocessor?)
-
-=item * register allocator
 
 =item * optimization phase
 
@@ -123,11 +125,11 @@ Each phase of the compiler is one "filter". The M1 compiler has the following ph
 
 =item 2. Semantic analysis/type checking.
 
-=item 3. Instruction generation.
+=item 3. Instruction generation. 
 
-=item 4. Optimization and register allocation.
+=item 4. Optimization and register optimization. (not implemented)
 
-=item 5. File generation (writing instructions to an M0 file).
+=item 5. File generation (writing instructions to an M0 file). (not implemented)
 
 =back
 
@@ -138,7 +140,10 @@ is reached. During the parse, an Abstract Syntax Tree (AST) is constructed for
 later phases.
 
 After the parse, the AST is passed on to the semantic analysis phase. In this phase,
-the compiler performs a number of type checks.
+the compiler performs a number of type checks. Also, the semantic analysis phase
+visits all nodes and finds the right type information for variables. In this 
+process, pointers are set to type definitions. In the parsing phase, a variable
+may be declared of a type that has not been parsed itself yet. 
 
 After the type checking phase, the code generation phase traverses the AST, and
 generates appropriate instructions for each node. 
@@ -219,6 +224,17 @@ language-dependent behavior. A PMC can be compared to a C++ class definition.
 
 =head3 Assignments
 
+Assignments are as simple as:
+
+ lvalue '=' rvalue 
+ 
+Assignments can be chained; that is, you can write:
+
+ int a, b, c;
+ 
+ a = b = c = 42; // initializes a, b, and c to 42.
+ 
+
 =head3 Arrays
 
 Arrays, when declared, are auto-vivivied. This means that code is generated to 
@@ -228,10 +244,6 @@ allocate memory for them. For instance, the following declaration:
  
 will allocate 10 * sizeof(int) bytes on the heap. 
 
-=head3 Structs
-
-
-=head3 User-defined type definitions
 
 =head2 Subsystems
 
@@ -239,31 +251,95 @@ This section describes a number of subsystems and how they work.
 
 =head3 Variable declarations
 
-TODO: Explain what happens with variable declarations
+Variable declarations are stored in the AST by C<m1_var> nodes. For each
+variable that is declared, a new C<m1_symbol> is also created and inserted
+into the currently active symbol table. The AST node (C<m1_var>) has a pointer
+to the C<m1_symbol> structure. 
 
 =head3 Type definitions
 
-TODO: explain how m1_decl work.
+Types are represented by a C<m1_decl> struct instance. For each built-in type,
+the compiler inserts a new C<m1_decl> into the type declaration table. For each
+user-defined type (structs, unions, PMCs and enums), a new C<m1_decl> is created.
+
+The typechecker (in semcheck.c) works mostly with these C<m1_decl> nodes. Since
+there is exactly one C<m1_decl> node for each type, the typechecker compares
+types by doing pointer-comparisons. That is:
+
+ m1_decl *ltype;
+ m1_decl *rtype; 
+ 
+ ... // assign ltype and rtype
+ 
+ if (ltype != rtype) { // error! types do not match.
+ 
+
 
 =head3 Symbols 
 
-TODO: explain how the symbol storage system works.
+For each variable declaration, a C<m1_symbol> struct instance is created, which is 
+stored in the currently active symbol table. Which table this is depends on the 
+situation. If a C<struct>, C<union> or C<PMC> is parsed, this will be the symbol
+table for that C<struct> (or C<union> or C<PMC>). Whenever a variable declaration
+is parsed in a function body (including parameters), they will be entered into 
+the symbol table that is active for that C<block>.
 
-=head3 Registers
+Each nested scope (I<block>) has its own symbol table. The following code 
+illustrates what this implies:
 
-TODO: explain how registers are used.
+ int main() 
+ { // scope for "main"
+ 
+    int i;
+    
+    { // new scope
+       int i; // will result in an error, as it is hiding the variable i above
+       int j;  
+    }
+    
+    {
+       int j; // ok, as this is a different scope/block from above.
+    }
+ }
+       
+    
+
 
 =head3 Register allocation and de-allocation
 
 M1 has a nifty register allocation system. Three functions are the core of this
 system:
 
- void alloc_reg(M1_compiler *c);
- void free_reg(M1_compiler *c, m1_reg r);
- void freeze_reg(M1_compiler *c, m1_reg r);
- 
+=over 4
 
+=item * void alloc_reg(M1_compiler *c, m1_valuetype type);
 
+=item * void free_reg(M1_compiler *c, m1_reg r);
+
+=item * void freeze_reg(M1_compiler *c, m1_reg r);
+
+=back
+
+Whenever a new register is needed, for instance, to store a result of a calculation,
+you can allocate one with C<alloc_reg>. This function takes as a second parameter
+the type that the register should be (int, num, string or pmc). 
+
+Once you're done with a register, and you know that you won't need it any longer,
+then you can give it back to the register manager. This will make the register
+available; next time you invoke C<alloc_reg>, you might end up with the register
+you just freed.
+
+In cases where you want to allocate a register to a symbol (a declared variable),
+you can I<freeze> the register by calling C<freeze_reg>. It takes as an argument
+the register you want to freeze. This means that the register will be reserved
+for the symbol that you assign the register number to (a C<m1_symbol> structure
+stores the register). The C<freeze_reg> function ensures that, even if you call
+C<free_reg> on a register, it won't be released.
+
+In general, C<free_reg> can be called on register that are just popped off the
+C<regstack>. If you allocate register that you push onto the C<regstack>, then
+obviously you should B<not> free it, as you're making it available to other 
+code generation functions that will use it.
 
 =head2 M1 Language Specification
 
@@ -302,116 +378,128 @@ grammar rules.
 
 M1-program: chunk+
 
-chunk: function-def
-     | pmc-def
-     | struct-def
-     | enum-def
-     | namespace
+ chunk: function-def
+      | pmc-def
+      | struct-def
+      | enum-def
+      | namespace
+      
+ pmc-def: pmc NAME extends-clause { struct-member* pmc-method* }
+ 
+ pmc-method: vtable? method type NAME block      
      
-struct-def: struct NAME { struct-member+ }      
+ struct-def: struct NAME { struct-member+ }      
 
-struct-member: type NAME ;
+ struct-member: type NAME ;
 
-function-def: type NAME ( parameters? ) block
+ function-def: type NAME ( parameters? ) block
 
-parameters: parameter [, parameter]*
+ parameters: parameter [, parameter]*
 
-parameter: type NAME
+ parameter: type NAME
 
-enum-def: enum NAME { enum-constant [, enum-constant]* }
+ enum-def: enum NAME { enum-constant [, enum-constant]* }
 
-enum-constant: NAME
+ enum-constant: NAME [= INTEGER]?
          
-block: { statement* }    
+ block: { statement* }    
 
-statement: assignment
-         | if-stat
-         | while-stat
-         | do-while-stat
-         | break-stat
-         | for-stat
-         | switch-stat
-         | return-stat
-         | funcall-stat
-         | block
-         | var-decl
-         | const-decl
+ statement: assignment
+          | if-stat
+          | while-stat
+          | do-while-stat
+          | break-stat
+          | continue-stat
+          | for-stat
+          | switch-stat
+          | return-stat
+          | funcall-stat
+          | block
+          | var-decl
+          | const-decl
          
-assignment: target assignop expression ;
+ assignment: lvalue '=' expression ;
+           | lvalue '=' assignment ;
+           | assignop-expr
 
-assignop: = | += | -= | *= | /= | %= | >>= | <<= | &= | |=
+ assignop-expr: lvalue assignop rvalue ;
 
-if-stat: if ( expression ) statement [else statement]?
+ assignop: += | -= | *= | /= | %= | >>= | <<= | &= | |=
 
-while-stat: while ( expression ) statement
+ if-stat: if ( expression ) statement [else statement]?
 
-do-while-stat: do { statement* } while ( expression ) ;
+ while-stat: while ( expression ) statement
 
-for-statement: for ( for-init? ; for-cond? ; for-step? ) statement
+ do-while-stat: do { statement* } while ( expression ) ;
 
-break-stat: break
+ for-statement: for ( for-init? ; for-cond? ; for-step? ) statement
 
-switch-stat: switch ( expression ) { case* default-case? }
+ break-stat: break
+ 
+ continue-stat: continue
 
-case: case INTEGER : statement*
+ switch-stat: switch ( expression ) { case* default-case? }
 
-default-case: default : statement *
+ case: case INTEGER : statement*
+
+ default-case: default : statement *
   
-return-stat: return expression? ;
+ return-stat: return expression? ;
 
-funcall-stat: funcall ';'
+ funcall-stat: funcall ';'
 
-funcall: NAME ( arguments? )
+ funcall: lvalue ( arguments? )
 
-arguments: argument [, argument]*
+ arguments: argument [, argument]*
 
-argument: expression
+ argument: expression
               
-expression: INTEGER
-          | NUMBER
-          | STRING
-          | CHAR
-          | true
-          | false
-          | null
-          | new NAME ( arguments? )
-          | expression ? expression : expression
-          | expression binop expression
-          | unop expression
-          | funcall
-          | target
-          | target ++
-          | target --
-          | ++ target
-          | -- target
-          | ( expression )
+ expression: INTEGER
+           | NUMBER
+           | STRING
+           | CHAR
+           | true
+           | false
+           | null
+           | new NAME ( arguments? )
+           | expression ? expression : expression
+           | expression binop expression
+           | unop expression
+           | funcall
+           | target
+           | lvalue ++
+           | lvalue --
+           | ++ lvalue
+           | -- lvalue
+           | ( expression )
           
 
-binop: + | - | * | % | / | >> | << | > | < | >= | <= | == | != | = | & | "|" | && | "||"
+ binop: + | - | * | % | / | >> | << | > | < | >= | <= | == | != | = | & | "|" | && | "||"
      
 
-unop: ! 
-    | -
+ unop: ! 
+     | -
+     | ~
               
-target: object field-access*
+ target: object field-access*
 
-object: NAME
-      | self
-      | super
+ object: NAME
+       | self
+       | super
       
-field-access: "." NAME
-            | "[" expression "]"
+ field-access: "." NAME
+             | "[" expression "]"
                        
               
               
-type: native-type
-    | userdefined-type
+ type: native-type
+     | userdefined-type
     
-native-type: int
-           | num
-           | char
-           | string
-           | bool         
+ native-type: int
+            | num
+            | char
+            | string
+            | bool         
 
 =head3 M1 Semantic rules
 
