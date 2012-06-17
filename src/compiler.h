@@ -18,6 +18,7 @@ typedef void * yyscan_t;
 
 /* compiler struct that is passed around to ALL functions. */
 typedef struct M1_compiler {
+    char                  *current_filename;
 	unsigned int           errors;
 	unsigned int           warnings;
 	

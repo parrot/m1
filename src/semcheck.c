@@ -46,7 +46,8 @@ type_error(M1_compiler *comp, unsigned line, char *msg, ...) {
     char fmtbuf[256];
         
     ++comp->errors;  
-    fprintf(stderr, "Error (line %d): ", line);  
+    fprintf(stderr, "%s:%d: error: ", comp->current_filename, line);  
+    
     va_start(argp, msg);
            
     for (p = msg; *p != '\0'; p++) {
@@ -84,7 +85,7 @@ type_error(M1_compiler *comp, unsigned line, char *msg, ...) {
 static void
 warning(M1_compiler *comp, unsigned line, char *msg) {
     assert(comp != NULL);
-    fprintf(stderr, "Warning (line %d): %s\n", line, msg);   
+    fprintf(stderr, "%s:%d: warning: %s\n", comp->current_filename, line, msg);   
     ++comp->warnings;
 }
 
@@ -113,7 +114,7 @@ check_assign(M1_compiler *comp, m1_assignment *a, unsigned line) {
      */
     if (ltype != rtype) { 
         type_error(comp, line, "type of left expression (%s) does not match type "
-                               "of right expression (%s) in assignment\n", 
+                               "of right expression (%s) in assignment", 
                                ltype->name, rtype->name);   
     }
     return rtype;
@@ -148,7 +149,7 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
             m1_symbol *sym = sym_lookup_symbol(comp->currentsymtab, obj->obj.name);            
 
             if (sym == NULL) {
-                type_error(comp, line, "Undeclared variable '%s'\n", obj->obj.name);
+                type_error(comp, line, "Undeclared variable '%s'", obj->obj.name);
             }
             else { /* found symbol, now link it to the object node. */
                 assert(sym != NULL);
@@ -158,7 +159,7 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
                 /* find the type definition for this symbol's type. */
                 obj->sym->typedecl = type_find_def(comp, sym->type_name);
                 if (obj->sym->typedecl == NULL) {
-                    type_error(comp, line, "Type '%s' is not defined\n", sym->type_name);   
+                    type_error(comp, line, "Type '%s' is not defined", sym->type_name);   
                 }
                 t = sym->typedecl;
 
@@ -176,7 +177,7 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
                                           &(*parent)->sym->typedecl->d.s->sfields, obj->obj.name);
 
             if (sym == NULL) {
-                type_error(comp, line, "Struct %s has no member %s\n", 
+                type_error(comp, line, "Struct %s has no member %s", 
                            (*parent)->obj.name, obj->obj.name);
             }
             else {
@@ -184,7 +185,7 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
                 /* find the type declaration for this field's type. */
                 obj->sym->typedecl = type_find_def(comp, sym->type_name);
                 if (obj->sym->typedecl == NULL) {
-                    type_error(comp, line, "Type '%s' is not defined\n", sym->type_name);   
+                    type_error(comp, line, "Type '%s' is not defined", sym->type_name);   
                 }
                 t = sym->typedecl;    
             }
@@ -198,7 +199,7 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
         case OBJECT_INDEX: 
             t = check_expr(comp, obj->obj.index);
             if (t != INTTYPE) {
-                type_error(comp, line, "result of expression does not yield an integer value!\n");   
+                type_error(comp, line, "result of expression does not yield an integer value");   
             }
             break;                    
         default:
@@ -214,7 +215,7 @@ check_while(M1_compiler *comp, m1_whileexpr *w, unsigned line) {
     push(comp->breakstack, 1);
     
     if (condtype != BOOLTYPE) {
-        warning(comp, line, "condition in while statement is not a boolean expression\n");       
+        warning(comp, line, "condition in while statement is not a boolean expression");       
     }
 
     (void)check_expr(comp, w->block);
@@ -230,7 +231,7 @@ check_dowhile(M1_compiler *comp, m1_whileexpr *w, unsigned line) {
     condtype = check_expr(comp, w->cond);
  
     if (condtype != BOOLTYPE) {
-        warning(comp, line, "condition in do-while statement is not a boolean expression\n");   
+        warning(comp, line, "condition in do-while statement is not a boolean expression");   
     }
     
     (void)check_expr(comp, w->block);    
@@ -248,7 +249,7 @@ check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
     if (i->cond) {
         m1_decl *t = check_expr(comp, i->cond);
         if (t != BOOLTYPE) {
-            warning(comp, line, "condition in for-loop is not a boolean expression\n");   
+            warning(comp, line, "condition in for-loop is not a boolean expression");   
         }        
     }
 
@@ -266,7 +267,7 @@ check_if(M1_compiler *comp, m1_ifexpr *i, unsigned line) {
 
     m1_decl *condtype = check_expr(comp, i->cond);
     if (condtype != BOOLTYPE) {
-        warning(comp, line, "condition in if-statement does not yield boolean value\n");   
+        warning(comp, line, "condition in if-statement does not yield boolean value");   
     }
 
     (void)check_expr(comp, i->ifblock);
@@ -434,7 +435,7 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
     m1_symbol *funsym = sym_lookup_symbol(comp->globalsymtab, f->name);
     
     if (funsym == NULL) {
-        type_error(comp, line, "function '%s' not defined\n", f->name);
+        type_error(comp, line, "function '%s' not defined", f->name);
         return NULL;    
     }
     /* set the function's return type declaration as stored in the symbol. */
@@ -443,7 +444,7 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
         funsym->typedecl = f->typedecl = type_find_def(comp, funsym->type_name);
         
         if (f->typedecl == NULL) {
-            type_error(comp, line, "Return type '%s' of function '%s' is not defined\n", 
+            type_error(comp, line, "Return type '%s' of function '%s' is not defined", 
                        funsym->type_name, f->name);               
         }   
         
@@ -496,7 +497,7 @@ check_newexpr(M1_compiler *comp, m1_newexpr *n, unsigned line) {
     n->typedecl = type_find_def(comp, n->type); 
     
     if (n->typedecl == NULL) { 
-        type_error(comp, line, "Cannot find type '%s' requested for in new-statement\n", n->type);         
+        type_error(comp, line, "Cannot find type '%s' requested for in new-statement", n->type);         
     }
     return n->typedecl;
 }
@@ -510,7 +511,7 @@ check_vardecl(M1_compiler *comp, m1_var *v, unsigned line) {
 
     if (v->sym->typedecl == NULL) {        
         type_error(comp, line, 
-                   "Cannot find type '%s' for variable '%s'\n", v->type, v->name);   
+                   "Cannot find type '%s' for variable '%s'", v->type, v->name);   
     }
     else {
         /* now check the type of the initialization expression and check 

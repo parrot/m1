@@ -68,7 +68,8 @@ main(int argc, char *argv[]) {
    
     /* set up compiler */
     init_compiler(&comp);
-    comp.no_reg_opt = turnoff_reg_opt;
+    comp.no_reg_opt       = turnoff_reg_opt;
+    comp.current_filename = argv[1];
                                        
     /* set up lexer and parser */   	
     yylex_init(&yyscanner);    
@@ -86,10 +87,13 @@ main(int argc, char *argv[]) {
         assert(intstack_isempty(comp.continuestack) != 0);
         
     	check(&comp, comp.ast); /*  need to finish */
-    	//if (comp.errors == 0) 
+    	if (comp.errors == 0) 
     	{
         	fprintf(stderr, "generating code...\n");
 	        gencode(&comp, comp.ast);
+    	}
+    	else {
+    	   fprintf(stderr, "%d errors and %d warnings\n", comp.errors, comp.warnings);
     	}
     }
     
