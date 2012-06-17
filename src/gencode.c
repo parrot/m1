@@ -359,6 +359,17 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
     }    
 }
 
+/*
+
+Generate instructions for an m1_object node; this may be as simple as a single identifier
+(e.g., "x"), or as complex as a combination of array access and struct member access 
+(e.g., x[1][2][3], x.y.z). The function returns the number of registers that are used
+to refer to the object; this is either 1 (simple case) or 2 (array or struct). Though
+an object can be of arbitrary complexity, this is always reduced to 2 registers
+(possibly emitting instructions in this function; as soon as 3 registers are needed,
+an instruction is emitted, and one register is removed. See the comments inside.)
+
+*/
 static unsigned
 gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target) {
 
@@ -540,10 +551,7 @@ OBJECT_LINK------>     L3
                As we do this, keep track of how many registers were used to store the result.
              */
             numregs_pushed += gencode_obj(comp, obj->obj.field, parent, is_target);   
-            
-           
-            //fprintf(stderr, "OBJECT_LINK: %d\n", numregs_pushed);
-            
+                                   
             if (numregs_pushed == 3) {
                 /* if the field was an index. (a[b]) */
                 if (obj->obj.field->type == OBJECT_INDEX) {
@@ -552,26 +560,20 @@ OBJECT_LINK------>     L3
                     m1_reg parent         = popreg(comp->regstack);   /* x in x[2][3]. */                
                     m1_reg size_reg       = alloc_reg(comp, VAL_INT); /* to hold amount to add. */
                     m1_reg updated_parent = alloc_reg(comp, VAL_INT); /* need to copy base address from parent. */
-                
-                    //fprintf(stderr, "LINK, generating %d for sizereg and %d for updated parent\n", 
-                     //size_reg.no, updated_parent.no);
-                
-                    /* XXX NOTE: this code is executed for both arrays and struct-field access. 
-                    TEST THIS FOR BOTH CASES; MAY NEED SPECIAL CASES FOR ARRAY AND STRUCT.
-                      */
+                                
                     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", size_reg.no, 3 /* XXX fix size. HACK ALERT */);
                     fprintf(OUT, "\tmult_i\tI%d, I%d, I%d\n", field.no, field.no, size_reg.no);
                     fprintf(OUT, "\tset \tI%d, I%d, x\n", updated_parent.no, parent.no); /* XXX need this otherwise segfault.*/
                     fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", updated_parent.no, updated_parent.no, field.no);
                 
-                    pushreg(comp->regstack, updated_parent);       /* push back (x+[2]) */
-                    pushreg(comp->regstack, last);         /* push back the latest added one. */
+                    pushreg(comp->regstack, updated_parent);   /* push back (x+[2]) */
+                    pushreg(comp->regstack, last);             /* push back the latest added one. */
                     free_reg(comp, size_reg);
                     free_reg(comp, field);
                     /* we popped 3, and pushed 2, so effectively decrement by 1. */
                     --numregs_pushed;
                 }              
-                else if (numregs_pushed == 3 && obj->obj.field->type == OBJECT_FIELD) {
+                else if (obj->obj.field->type == OBJECT_FIELD) {
                     /* field is a struct member access (a.b) */
                     m1_reg last   = popreg(comp->regstack);
                     m1_reg offset = popreg(comp->regstack);
@@ -599,12 +601,9 @@ OBJECT_LINK------>     L3
  
         	/* if symbol has not register allocated yet, do it now. */
         	if (obj->sym->regno == NO_REG_ALLOCATED_YET) {
-
                 m1_reg r        = alloc_reg(comp, obj->sym->typedecl->valtype);
                 obj->sym->regno = r.no;
-                freeze_reg(comp, r);
-                
-                //fprintf(stderr, "Allocating reg for OBJ MAIN (%s) %d\n", obj->sym->name, r.no);             
+                freeze_reg(comp, r);                
         	}  
             
             /* get the storage type. */
@@ -613,8 +612,7 @@ OBJECT_LINK------>     L3
             }
             else { 
              /* it's not an array; just get the root type (in string[10], that's string). */
-                assert(obj->sym->num_elems == 1);
-                
+                assert(obj->sym->num_elems == 1);                
                 reg.type = obj->sym->typedecl->valtype;     
             }
             
@@ -624,10 +622,8 @@ OBJECT_LINK------>     L3
             /* return a pointer to this node by OUT parameter. */
             *parent = obj;
 
-            pushreg(comp->regstack, reg);
-            print_stack(comp->regstack, "OBJECT_MAIN done\n");
-            
-            ++numregs_pushed;
+            pushreg(comp->regstack, reg);            
+            ++numregs_pushed; /* just pushed, count it. */
             
             break;
         }
@@ -635,14 +631,10 @@ OBJECT_LINK------>     L3
         {            
             m1_reg fieldreg = alloc_reg(comp, VAL_INT);/* reg for storing offset of field. */            
             
-            assert((*parent) != NULL);
-                      
-            fprintf(stderr, "parent: %s\n", (*parent)->obj.name);                                  
-            
+            assert((*parent) != NULL);                                 
             assert((*parent)->sym != NULL);
             assert((*parent)->sym->typedecl != NULL);
-            
-            fprintf(stderr, "Lookuping symbol for field %s\n", obj->obj.name);                        
+                        
             /* parent's symbol has a typedecl node, which holds the structdef (d.s), which has a symbol table. */
             m1_symbol *fieldsym = sym_lookup_symbol(&(*parent)->sym->typedecl->d.s->sfields, obj->obj.name);
                        
@@ -677,9 +669,6 @@ OBJECT_LINK------>     L3
             break;
     }  
 		
-    //fprintf(stderr, "[returning from obj] Numregs: %d\n", numregs_pushed);
-    print_stack(comp->regstack, "end of gencode-obj\n");
-
 	/* return the number of registers that are pushed onto the stack in this function. */	
     return numregs_pushed;
 		
@@ -1241,9 +1230,12 @@ gencode_not(M1_compiler *comp, m1_unexpr *u) {
 
 static void 
 gencode_bnot(M1_compiler *comp, m1_unexpr *u) {
-    fprintf(stderr, "TODO: bitwise not not implemented yet!\n");    
+    /* Binary not (~x) is implemented as -x- 1). 
+       Leave this in case M0 gets native support. 
+     */
     assert(comp != NULL);
     assert(u != NULL);
+    assert(0);
 }
 
 static void
@@ -1272,12 +1264,13 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
             break;
         case UNOP_NOT:
             gencode_not(comp, u);
-            return;
+            return; /* return after gencode_not(). */
         case UNOP_BNOT:
             gencode_bnot(comp, u);
-            return;
+            return; 
         default:
-            op = "unknown op";
+            fprintf(stderr, "unknown unary operator. Bailing out\n");
+            assert(0);
             break;   
     }   
     
@@ -1335,17 +1328,14 @@ gencode_break(M1_compiler *comp) {
  */
 static void
 gencode_funcall(M1_compiler *comp, m1_funcall *f) {
-    m1_symbol *fun;
+    m1_symbol *fun = f->funsym;
+    
+    /* XXX figure out why this lookup is still needed. */
     fun = sym_find_chunk(&comp->currentchunk->constants, f->name);
+    
     m1_reg pc_reg, cont_offset;
 
-    
-    if (fun == NULL) { // XXX need to check in semcheck 
-        fprintf(stderr, "Cant find function '%s'\n", f->name);
-        ++comp->errors;
-        return;
-    }
-    
+     
     m1_reg cf_reg   = alloc_reg(comp, VAL_CHUNK);
     m1_reg sizereg  = alloc_reg(comp, VAL_INT);
     m1_reg flagsreg = alloc_reg(comp, VAL_INT);

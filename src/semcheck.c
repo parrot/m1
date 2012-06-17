@@ -429,7 +429,7 @@ check_break(M1_compiler *comp, unsigned line) {
 static void
 check_continue(M1_compiler *comp, unsigned line) {
     if (top(comp->continuestack) == 0) {
-        type_error(comp, line, "Cannot use continue in non-iterating block");
+        type_error(comp, line, "cannot use continue in non-iterating block");
     }
 }
 
@@ -440,7 +440,7 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
     assert(f != NULL);    
     assert(line != 0);
         
-    m1_symbol *funsym = sym_lookup_symbol(comp->globalsymtab, f->name);
+    m1_symbol *funsym = f->funsym = sym_lookup_symbol(comp->globalsymtab, f->name);
     
     if (funsym == NULL) {
         type_error(comp, line, "function '%s' not defined", f->name);
@@ -452,7 +452,7 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
         funsym->typedecl = f->typedecl = type_find_def(comp, funsym->type_name);
         
         if (f->typedecl == NULL) {
-            type_error(comp, line, "Return type '%s' of function '%s' is not defined", 
+            type_error(comp, line, "return type '%s' of function '%s' is not defined", 
                        funsym->type_name, f->name);               
         }   
         

@@ -207,7 +207,7 @@ funcall(M1_compiler *comp, m1_object *fun, m1_expression *args) {
 	m1_expression *expr     = expression(comp, EXPR_FUNCALL);
 	expr->expr.f            = (m1_funcall *)m1_malloc(sizeof(m1_funcall));
 	
-	
+    /* XXX need to handle method calls. */	
     expr->expr.f->name      = fun->obj.name;
     expr->expr.f->arguments = args;	
     

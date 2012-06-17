@@ -85,7 +85,8 @@ typedef struct m1_assignment {
 typedef struct m1_funcall {
     char                 *name;
     struct m1_expression *arguments;
-    struct m1_decl       *typedecl;
+    struct m1_decl       *typedecl;  /* type declaration for return type; needed for type checking */
+    struct m1_symbol     *funsym; /* entry in symbol table. */
     
 } m1_funcall;
 
