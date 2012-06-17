@@ -406,14 +406,11 @@ opt_enum_val    : /* empty */
                     { /* if no value is specified, get one from comp. */
                        $$ = comp->enum_const_counter++; 
                     }
-                |'=' TK_INT
+                | '=' TK_INT
                     { 
                        /* a specified value for an enum const; the NEXT enum
                           without a specified value will have THIS value + 1.
-                          Therefore, update comp->enum_const_counter.
-                          
-                          Checks for duplicate numbers are done in the 
-                          semantic checker phase.
+                          Therefore, update comp->enum_const_counter.                          
                         */                      
                        comp->enum_const_counter = $2 + 1;
                        $$ = $2;                        
@@ -421,10 +418,8 @@ opt_enum_val    : /* empty */
                 ;
                    
 namespace_definition: "namespace" TK_IDENT ';'
-                         { 
-                           /* TODO */
-                         }    
-                     ;    
+                         { comp->current_namespace = $2; }    
+                    ;    
 
 pmc_definition	: pmc_init '{'  struct_members pmc_methods '}'
                 ;
@@ -557,7 +552,7 @@ struct_init         : struct_or_union TK_IDENT
                           $$ = newstruct(comp, $2); /* make AST node for this definition. */
                           type_enter_struct(comp, $2, $$); /* enter into type definitions. */
                           comp->currentsymtab = &$$->sfields; /* make symbol table easily accessible. */
-                          $$->is_union = $1; /* offsets are ignored in unions, as all members overlap. */
+                          $$->is_union = $1; 
                         }
                     ;  
                     
@@ -568,7 +563,7 @@ struct_or_union     : "struct"  { $$ = 0; }
 struct_members      : struct_member   
                         { $$ = $1; }                     
                     | struct_members struct_member                          
-                        { $$ += $2; }
+                        { $$ = $1 + $2; }
                     ;
                     
 struct_member       : type TK_IDENT ';'
@@ -583,7 +578,7 @@ block   : open_block statements close_block
             {  
                 /* a <block> isa <statement>, so need to wrap it as a m1_expression. */
                 m1_expression *e = expression(comp, EXPR_BLOCK);
-                e->expr.blck          = $1; /* store block in the expr union of e. */
+                e->expr.blck     = $1; /* store block in the expr union of e. */
                 block_set_stat($1, $2);
                 $$ = e;
             }
@@ -849,18 +844,21 @@ inc_or_dec_stat : inc_or_dec_expr ';'
                     { $$ = $1; }
                 ;
 
-break_stat  : "break" ';'
-                { $$ = expression(comp, EXPR_BREAK); }                
-continue_stat  : "continue" ';'
-                { $$ = expression(comp, EXPR_CONTINUE); }                
+break_stat      : "break" ';'
+                    { $$ = expression(comp, EXPR_BREAK); }                
+                ;
                 
-return_stat : "return" opt_ret_expr ';'
-                { $$ = returnexpr(comp, $2); }
-            ;   
+continue_stat   : "continue" ';'
+                    { $$ = expression(comp, EXPR_CONTINUE); }                
+                ;
+                
+return_stat     : "return" opt_ret_expr ';'
+                    { $$ = returnexpr(comp, $2); }
+                ;   
             
-opt_ret_expr: /* empty */     { $$ = NULL; }
-            | expression      { $$ = $1; }
-            ;                         
+opt_ret_expr    : /* empty */     { $$ = NULL; }
+                | expression      { $$ = $1; }
+                ;                         
                             
 lvalue  : lhs_obj
            { $$ = objectexpr(comp, $1, EXPR_OBJECT); }           
@@ -872,7 +870,7 @@ lvalue  : lhs_obj
         
 lhs_obj : TK_IDENT
             { 
-              $$ = object( comp, OBJECT_MAIN); 
+              $$ = object(comp, OBJECT_MAIN); 
               obj_set_ident($$, $1);
             }            
         | lhs_obj field_access
@@ -1015,23 +1013,21 @@ binexpr     : expression '+' expression
             | expression "<<" expression
                 { $$ = binexpr(comp, $1, OP_LSH, $3); }
             | expression ">>" expression
-                { $$ = binexpr(comp, $1, OP_RSH, $3); }   
-                                      
-                                    
+                { $$ = binexpr(comp, $1, OP_RSH, $3); }                                                                             
             ;
            
 return_type : type    { $$ = $1; }
             | "void"  { $$ = "void"; }
             ;
             
-type    : __type   
-              { $$ = comp->parsingtype = $1; }         
-        ;
+type        : __type   
+               { $$ = comp->parsingtype = $1; }         
+            ;
 
 /* __type is a helper rule to prevent code duplication. */              
-__type  : native_type
-        | TK_USERTYPE                                          
-        ;
+__type      : native_type
+            | TK_USERTYPE                                          
+            ;
         
 native_type : "int"     { $$ = "int"; }
             | "num"     { $$ = "num"; }
