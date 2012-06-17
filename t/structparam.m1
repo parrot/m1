@@ -1,6 +1,11 @@
+struct B {
+    int k;
+}
+
 struct nestedstruct {
     int a;
     int b;   
+    B c;
 }
 struct value {
     int x;
@@ -9,11 +14,12 @@ struct value {
 }
 
 void main() {
-    print("1..8\n");
+    print("1..9\n");
     value v = new value();
     v.x = 1;
     v.y = 2;
     v.n = new nestedstruct();
+    v.n.c = new B();
     v.n.a = 5;
     v.n.b = 6;
     
@@ -25,8 +31,13 @@ void main() {
     print("ok ", v.n.b, "\n");
     
     bar(v.n);
+    
+    v.n.c.k = 9;
     print("ok ", v.n.a, "\n");
     print("ok ", v.n.b, "\n");
+    
+    print("ok ", v.n.c.k, "\n");
+
 }
 
 void foo(value v) {

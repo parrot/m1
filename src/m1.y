@@ -570,7 +570,7 @@ param   : type TK_IDENT         { $$ = parameter((M1_compiler *)yyget_extra(yysc
         ;
                                              
 struct_definition   : struct_init '{' struct_members '}' 
-                        { $$->size = $3; }
+                        { $$->size = $3; fprintf(stderr, "Size of struct %s is %d\n", $1->name, $3);}
                     ;       
                     
 struct_init         : struct_or_union TK_IDENT

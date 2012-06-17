@@ -576,7 +576,10 @@ OBJECT_LINK------>     L3
                     m1_reg offset = popreg(comp->regstack);
                     m1_reg parent = popreg(comp->regstack);
                     m1_reg target = alloc_reg(comp, VAL_INT);
-                    fprintf(OUT, "\tderef\tI%d, I%d, I%d\n", target.no, parent.no, offset.no);   
+                    m1_reg newparent = alloc_reg(comp, VAL_INT);
+                    
+                    fprintf(OUT, "\tset \tI%d, I%d, x\n", newparent.no, parent.no);
+                    fprintf(OUT, "\tderef\tI%d, I%d, I%d\n", target.no, newparent.no, offset.no);   
                     
                     pushreg(comp->regstack, target);
                     pushreg(comp->regstack, last);
