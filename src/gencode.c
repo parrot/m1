@@ -553,6 +553,9 @@ OBJECT_LINK------>     L3
                 
                 //fprintf(stderr, "LINK, generating %d for sizereg and %d for updated parent\n", size_reg.no, updated_parent.no);
                 
+                /* XXX NOTE: this code is executed for both arrays and struct-field access. 
+                   TEST THIS FOR BOTH CASES; MAY NEED SPECIAL CASES FOR ARRAY AND STRUCT.
+                 */
                 fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", size_reg.no, 3 /* XXX fix size. HACK ALERT */);
                 fprintf(OUT, "\tmult_i\tI%d, I%d, I%d\n", field.no, field.no, size_reg.no);
                 fprintf(OUT, "\tset \tI%d, I%d, x\n", updated_parent.no, parent.no); /* XXX need this otherwise segfault.*/
