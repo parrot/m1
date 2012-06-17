@@ -542,7 +542,7 @@ OBJECT_LINK------>     L3
             numregs_pushed += gencode_obj(comp, obj->obj.field, parent, is_target);   
             
            
-            fprintf(stderr, "OBJECT_LINK: %d\n", numregs_pushed);
+            //fprintf(stderr, "OBJECT_LINK: %d\n", numregs_pushed);
             
             if (numregs_pushed == 3) {
                 m1_reg last           = popreg(comp->regstack);   /* latest added; store here for now. */
@@ -551,7 +551,7 @@ OBJECT_LINK------>     L3
                 m1_reg size_reg       = alloc_reg(comp, VAL_INT); /* to hold amount to add. */
                 m1_reg updated_parent = alloc_reg(comp, VAL_INT); /* need to copy base address from parent. */
                 
-                fprintf(stderr, "LINK, generating %d for sizereg and %d for updated parent\n", size_reg.no, updated_parent.no);
+                //fprintf(stderr, "LINK, generating %d for sizereg and %d for updated parent\n", size_reg.no, updated_parent.no);
                 
                 fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", size_reg.no, 3 /* XXX fix size. HACK ALERT */);
                 fprintf(OUT, "\tmult_i\tI%d, I%d, I%d\n", field.no, field.no, size_reg.no);
@@ -570,7 +570,7 @@ OBJECT_LINK------>     L3
         case OBJECT_MAIN: 
         {   
             m1_reg reg;              
-
+            fprintf(stderr, "OBJECT MAIN: %s\n", obj->obj.name);
         	assert(obj->obj.field != NULL);
         	assert(obj->sym != NULL);
         	assert(obj->sym->typedecl != NULL);
@@ -582,7 +582,7 @@ OBJECT_LINK------>     L3
                 obj->sym->regno = r.no;
                 freeze_reg(comp, r);
                 
-                fprintf(stderr, "Allocating reg for OBJ MAIN (%s) %d\n", obj->sym->name, r.no);             
+                //fprintf(stderr, "Allocating reg for OBJ MAIN (%s) %d\n", obj->sym->name, r.no);             
         	}  
             
             /* get the storage type. */
@@ -603,7 +603,7 @@ OBJECT_LINK------>     L3
             *parent = obj;
 
             pushreg(comp->regstack, reg);
-            print_stack(comp->regstack, "OBJECT_MAIN\n");
+            print_stack(comp->regstack, "OBJECT_MAIN done\n");
             
             ++numregs_pushed;
             
@@ -655,7 +655,7 @@ OBJECT_LINK------>     L3
             break;
     }  
 		
-    fprintf(stderr, "[returning from obj] Numregs: %d\n", numregs_pushed);
+    //fprintf(stderr, "[returning from obj] Numregs: %d\n", numregs_pushed);
     print_stack(comp->regstack, "end of gencode-obj\n");
 
 	/* return the number of registers that are pushed onto the stack in this function. */	
@@ -1713,7 +1713,6 @@ gencode_var(M1_compiler *comp, m1_var *v) {
             m1_reg reg = alloc_reg(comp, sym->valtype);
             sym->regno = reg.no;
             freeze_reg(comp, reg);
-            fprintf(stderr, "freezing reg for array %d\n", reg.no);
         }
         
         /* calculate total size of array. If smaller than 256*255,
@@ -1890,14 +1889,23 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
                                we're not using the value of <obj>, 
                                only its space on the C runtime stack. 
                              */
-                             
-            num_regs = gencode_obj(comp, e->expr.t, &obj, 0);            
 
+            num_regs = gencode_obj(comp, e->expr.t, &obj, 0);            
+            //fprintf(stderr, "generated code for object: %s\n", obj->obj.name);
+            //fprintf(stderr, "symbol of %s is: %s\n", obj->obj.name, obj->sym->name);
+            
             if (num_regs == 2) { /* gencode_obj() may return 2 registers for array and struct access. */
                 m1_reg index  = popreg(comp->regstack);                
                 m1_reg parent = popreg(comp->regstack);
+                
                 /* string s = stringarray[10]; -> an element of stringarray is therefore a string. */
-                m1_reg target = alloc_reg(comp, parent.type); /* XXX fix type */
+
+                assert(obj != NULL);
+                assert(obj->sym != NULL);
+                assert(obj->sym->typedecl != NULL);
+                
+                m1_decl *target_type = obj->sym->typedecl;
+                m1_reg target = alloc_reg(comp, target_type->valtype); 
                 
                 fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
                                                             reg_chars[(int)parent.type], parent.no,
@@ -1936,7 +1944,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             fprintf(stderr, "unknown expr type (%d)", e->type);   
             assert(0);
     }  
-    fprintf(stderr, "Returning from gen expr\n");
+//    fprintf(stderr, "Returning from gen expr\n");
     return num_regs; 
 
 }

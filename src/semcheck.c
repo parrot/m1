@@ -146,6 +146,7 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent) 
             }
             else { /* found symbol, now link it to the object node. */
                 assert(sym != NULL);
+                fprintf(stderr, "[check obj MAIN] [%s]\n", sym->name);
                 obj->sym = sym;   
 
                 /* find the type definition for this symbol's type. */
@@ -154,7 +155,7 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent) 
                     type_error_extra(comp, line, "Type '%s' is not defined\n", sym->type_name);   
                 }
                 else {
-                    fprintf(stderr, "[check obj] symbol %s has type: %s\n", sym->name, sym->typedecl->name);
+                    fprintf(stderr, "[check obj] symbol %s has type: %s\n", obj->sym->name, obj->sym->typedecl->name);
                 }                
                 t = sym->typedecl;
 
@@ -532,10 +533,23 @@ check_cast(M1_compiler *comp, m1_castexpr *expr, unsigned line) {
     return type; 
 }
 
+static void
+check_print_arg(M1_compiler *comp, m1_expression *e) {
+    if (e == NULL)
+        return;
+    fprintf(stderr, "check print arg\n");        
+    check_print_arg(comp, e->next);
+    
+    check_expr(comp, e);
+       
+}
+
 static m1_decl *
 check_expr(M1_compiler *comp, m1_expression *e) {
     m1_decl *t = VOIDTYPE;
-            
+       
+    assert (e != NULL);
+                
     switch (e->type) {
         case EXPR_ADDRESS:
             return check_address(comp, e->expr.t, e->line);        
@@ -581,10 +595,13 @@ check_expr(M1_compiler *comp, m1_expression *e) {
             break;
         case EXPR_OBJECT: {
             m1_object *parent;
-            return check_obj(comp, e->expr.t, e->line, &parent);
+            t = check_obj(comp, e->expr.t, e->line, &parent);
+            fprintf(stderr, "[check expr] type of expr-obj %s is: %s\n", parent->obj.name, t->name);
+            return t;
         }
         case EXPR_PRINT:
-            check_expr(comp, e->expr.e);
+//            check_expr(comp, e->expr.e);
+            check_print_arg(comp, e->expr.e);
             break;            
         case EXPR_RETURN:
             return check_return(comp, e->expr.e, e->line);

@@ -26,10 +26,7 @@ int main() {
 
         // this is hacky:
         // 1. string t = s[i] results in t always being the same. XXX fix this.
-        // 2. print(s[i]) interprets s as an int type. XXX fix this
-        string t;
-        t = s[i];
-        print(t);
+        print(s[i]);
 
         j++;
         numiter--;
