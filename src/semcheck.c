@@ -440,26 +440,26 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
     assert(f != NULL);    
     assert(line != 0);
         
-    m1_symbol *funsym = f->funsym = sym_lookup_symbol(comp->globalsymtab, f->name);
+    f->funsym = sym_lookup_symbol(comp->globalsymtab, f->name);
     
-    if (funsym == NULL) {
+    if (f->funsym == NULL) {
         type_error(comp, line, "function '%s' not defined", f->name);
         return NULL;    
     }
     /* set the function's return type declaration as stored in the symbol. */
-    if (funsym->typedecl == NULL) { 
+    if (f->funsym->typedecl == NULL) { 
         /* type wasn't declared yet at time that function was defined. */
-        funsym->typedecl = f->typedecl = type_find_def(comp, funsym->type_name);
+        f->funsym->typedecl = f->typedecl = type_find_def(comp, f->funsym->type_name);
         
         if (f->typedecl == NULL) {
             type_error(comp, line, "return type '%s' of function '%s' is not defined", 
-                       funsym->type_name, f->name);               
+                       f->funsym->type_name, f->name);               
         }   
         
     }
     else {
-        assert(funsym->typedecl != NULL);
-        f->typedecl = funsym->typedecl;
+        assert(f->funsym->typedecl != NULL);
+        f->typedecl = f->funsym->typedecl;
     }
     
     /* check arguments of the function call; this is a list of expressions. */
