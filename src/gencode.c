@@ -1330,9 +1330,16 @@ static void
 gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     m1_symbol *fun = f->funsym;
     
-    /* XXX figure out why this lookup is still needed. */
+    assert(f->funsym != NULL);
+    /* XXX figure out why this lookup is still needed. 
+    has to do with fun->constindex
+    */
+
     fun = sym_find_chunk(&comp->currentchunk->constants, f->name);
     
+    /* XXX enable this as soon as it's resolved. */
+    //assert(fun->constindex == f->funsym->constindex);
+        
     m1_reg pc_reg, cont_offset;
 
      
