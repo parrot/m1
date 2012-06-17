@@ -62,7 +62,7 @@ type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structd
     m1_decl *decl = make_decl(comp, DECL_STRUCT);    
     decl->name    = structname;
     decl->d.s     = structdef;
-       
+    decl->d.s->size = 4; /* XXX size of pointer. */   
     /* link in list of declarations */
     decl->next = comp->declarations;
     comp->declarations = decl;
@@ -80,7 +80,7 @@ type_enter_pmc(M1_compiler *comp, char *pmcname, struct m1_pmc *pmcdef) {
     m1_decl *decl = make_decl(comp, DECL_PMC);
     decl->name    = pmcname;
     decl->d.p     = pmcdef;
-    
+    decl->d.p->size = 4; /* XXX size of pointer. */
     /* link in list of declarations. */
     decl->next = comp->declarations;
     comp->declarations = decl;

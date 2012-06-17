@@ -1,16 +1,35 @@
+struct nestedstruct {
+    int a;
+    int b;   
+}
 struct value {
     int x;
-    int y;   
+    int y;
+    nestedstruct n;   
 }
 
 void main() {
-    print("1..4\n");
+    print("1..8\n");
     value v = new value();
     v.x = 1;
     v.y = 2;
+    v.n = new nestedstruct();
+    v.n.a = 5;
+    v.n.b = 6;
+    
     foo(v); 
     print("ok ", v.x, "\n");
     print("ok ", v.y, "\n");  
+    
+    print("ok ", v.n.a, "\n");
+    print("ok ", v.n.b, "\n");
+    
+    ### XXX need this temp variable; cant pass v.n, doesnt work.
+    nestedstruct t = v.n;
+    bar(t);
+    
+    print("ok ", t.a, "\n");
+    print("ok ", t.b, "\n");
 }
 
 void foo(value v) {
@@ -18,4 +37,9 @@ void foo(value v) {
     print("ok ", v.y, "\n");   
     v.x = 3;
     v.y = 4;
+}
+
+void bar(nestedstruct m) {
+    m.a = 7;
+    m.b = 8;   
 }
