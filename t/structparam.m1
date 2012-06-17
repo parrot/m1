@@ -1,0 +1,21 @@
+struct value {
+    int x;
+    int y;   
+}
+
+void main() {
+    print("1..4\n");
+    value v = new value();
+    v.x = 1;
+    v.y = 2;
+    foo(v); 
+    print("ok ", v.x, "\n");
+    print("ok ", v.y, "\n");  
+}
+
+void foo(value v) {
+    print("ok ", v.x, "\n");
+    print("ok ", v.y, "\n");   
+    v.x = 3;
+    v.y = 4;
+}
