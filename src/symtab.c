@@ -18,7 +18,7 @@ new_symtab(void) {
         fprintf(stderr, "cant alloc new symtab");
         exit(EXIT_FAILURE);   
     }
-    table->syms = NULL;
+    init_symtab(table);
     return table;   
 }
 
@@ -97,8 +97,8 @@ sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *ty
     sym = sym_lookup_symbol(table, varname);
     
     if (sym != NULL) {
-        fprintf(stderr, "Error (line %d): already declared a variable '%s'\n", 
-                        yyget_lineno(comp->yyscanner), varname); 
+        fprintf(stderr, "%s:%d: error: already declared a variable '%s'\n", 
+                        comp->current_filename, yyget_lineno(comp->yyscanner), varname); 
         ++comp->errors;  
         return sym;  
     }
@@ -139,6 +139,7 @@ sym_lookup_symbol(m1_symboltable *table, char *name) {
     
     /* try and find the symbol in the parent scope, recursively. */
     if (table->parentscope != NULL) {
+        fprintf(stderr, "looking for %s; going to parent table\n", name);
         return sym_lookup_symbol(table->parentscope, name);
     }
         

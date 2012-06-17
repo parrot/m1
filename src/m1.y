@@ -570,7 +570,12 @@ param   : type TK_IDENT         { $$ = parameter((M1_compiler *)yyget_extra(yysc
         ;
                                              
 struct_definition   : struct_init '{' struct_members '}' 
-                        { $$->size = $3; fprintf(stderr, "Size of struct %s is %d\n", $1->name, $3);}
+                        { 
+                          M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
+                          comp->currentsymtab = NULL; /* otherwise it might be linked as a 
+                                                         parent symtab for a chunk. */
+                          $$->size = $3;
+                        }
                     ;       
                     
 struct_init         : struct_or_union TK_IDENT
