@@ -238,7 +238,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              param_list
              parameters              
               
-%type <sym>  struct_members 
+%type <ival>  struct_members 
              struct_member
 
              
@@ -570,6 +570,7 @@ param   : type TK_IDENT         { $$ = parameter((M1_compiler *)yyget_extra(yysc
         ;
                                              
 struct_definition   : struct_init '{' struct_members '}' 
+                        { $$->size = $3; }
                     ;       
                     
 struct_init         : struct_or_union TK_IDENT
@@ -586,15 +587,18 @@ struct_or_union     : "struct"  { $$ = 0; }
                     | "union"   { $$ = 1; }
                     ;                                        
                     
-struct_members      : struct_member                        
+struct_members      : struct_member   
+                        { $$ = $1; }                     
                     | struct_members struct_member                          
+                        { $$ += $2; }
                     ;
                     
 struct_member       : type TK_IDENT ';'
                         {                            
                           M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
                           /* add this member as a field to the current struct's symbol table. */
-                          $$ = sym_new_symbol(comp, comp->currentsymtab, $2, $1, 1);                          
+                          sym_new_symbol(comp, comp->currentsymtab, $2, $1, 1);   
+                          $$ = 4; /* XXX fix size. */                       
                         }
                     ;                                        
         
