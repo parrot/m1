@@ -24,9 +24,8 @@ int main() {
         if (j + 1 < 10)
             print(" ");
 
-        // this is hacky:
-        // 1. string t = s[i] results in t always being the same. XXX fix this.
-        print(s[i]);
+        string t = s[i];
+        print(t);
 
         j++;
         numiter--;

@@ -14,8 +14,11 @@
 
 
 static m1_decl *check_expr(M1_compiler *comp, m1_expression *e);
+
 static void check_block(M1_compiler *comp, m1_block *expr);
-static m1_decl *check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent);
+
+static m1_decl *check_obj(M1_compiler *comp, m1_object *obj, 
+                          unsigned line, m1_object **parent);
 
 /* Cache these built-in types. Read-only. */
 static m1_decl *BOOLTYPE;
@@ -36,13 +39,7 @@ init_typechecker(M1_compiler *comp) {
 
 
 static void
-type_error(M1_compiler *comp, unsigned line, char *msg) {
-    fprintf(stderr, "Error (line %d): %s.\n", line, msg);
-    ++comp->errors;   
-}
-
-static void
-type_error_extra(M1_compiler *comp, unsigned line, char *msg, ...) {
+type_error(M1_compiler *comp, unsigned line, char *msg, ...) {
     va_list argp;
     char *p;
     char *s;
@@ -105,23 +102,29 @@ be exactly the same, but they need to be compatible.
 */
 static m1_decl *
 check_assign(M1_compiler *comp, m1_assignment *a, unsigned line) {
-    m1_object *parent; /* this is storage on the C runtime stack for check_obj to use. */
+    m1_object *parent; /* storage on the C runtime stack for check_obj. */
     m1_decl *ltype = check_obj(comp, a->lhs, line, &parent);
     m1_decl *rtype = check_expr(comp, a->rhs);
     
     assert(ltype != NULL);
     assert(rtype != NULL);
-    if (ltype != rtype) { /* pointer comparison is fine, since each type is only stored once in the type table. */
-        type_error_extra(comp, line, 
+    
+    /* pointer comparison is fine, since each type is only stored once in 
+       the type table. 
+     */
+    if (ltype != rtype) { 
+        type_error(comp, line, 
                    "type of left expression (%s) does not match type "
-                   "of right expression (%s) in assignment\n", ltype->name, rtype->name);   
+                   "of right expression (%s) in assignment\n", 
+                   ltype->name, rtype->name);   
     }
     return rtype;
 }
 
 
 static m1_decl *
-check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent) {
+check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent) 
+{
     m1_decl *t = VOIDTYPE;
 
     switch (obj->type) {
@@ -139,24 +142,24 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent) 
         case OBJECT_MAIN: {
 
             /* look up identifier's declaration. */
-            m1_symbol *sym = sym_lookup_symbol(comp->currentsymtab, obj->obj.name);            
+            m1_symbol *sym = sym_lookup_symbol(comp->currentsymtab, 
+                                               obj->obj.name);            
 
             if (sym == NULL) {
-                type_error_extra(comp, line, "Undeclared variable '%s'\n", obj->obj.name);
+                type_error(comp, line, "Undeclared variable '%s'\n", 
+                           obj->obj.name);
             }
             else { /* found symbol, now link it to the object node. */
                 assert(sym != NULL);
-                fprintf(stderr, "[check obj MAIN] [%s]\n", sym->name);
+
                 obj->sym = sym;   
 
                 /* find the type definition for this symbol's type. */
                 obj->sym->typedecl = type_find_def(comp, sym->type_name);
                 if (obj->sym->typedecl == NULL) {
-                    type_error_extra(comp, line, "Type '%s' is not defined\n", sym->type_name);   
+                    type_error(comp, line, "Type '%s' is not defined\n",
+                               sym->type_name);   
                 }
-                else {
-                    fprintf(stderr, "[check obj] symbol %s has type: %s\n", obj->sym->name, obj->sym->typedecl->name);
-                }                
                 t = sym->typedecl;
 
                 assert(t != NULL);
@@ -169,17 +172,21 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent) 
             assert((*parent)->sym != NULL);
             assert((*parent)->sym->typedecl != NULL);
 
-            m1_symbol *sym = sym_lookup_symbol(&(*parent)->sym->typedecl->d.s->sfields, obj->obj.name);
+            m1_symbol *sym = sym_lookup_symbol(
+                                    &(*parent)->sym->typedecl->d.s->sfields, 
+                                    obj->obj.name);
 
             if (sym == NULL) {
-                type_error_extra(comp, line, "Struct %s has no member %s\n", (*parent)->obj.name, obj->obj.name);
+                type_error(comp, line, "Struct %s has no member %s\n", 
+                           (*parent)->obj.name, obj->obj.name);
             }
             else {
                 obj->sym = sym; 
                 /* find the type declaration for this field's type. */
                 obj->sym->typedecl = type_find_def(comp, sym->type_name);
                 if (obj->sym->typedecl == NULL) {
-                    type_error_extra(comp, line, "Type '%s' is not defined\n", sym->type_name);   
+                    type_error(comp, line, "Type '%s' is not defined\n", 
+                               sym->type_name);   
                 }
                 t = sym->typedecl;    
             }
@@ -193,7 +200,9 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent) 
         case OBJECT_INDEX: 
             t = check_expr(comp, obj->obj.index);
             if (t != INTTYPE) {
-                type_error(comp, line, "result of expression does not yield an integer value!\n");   
+                type_error(comp, line, 
+                           "result of expression does not yield an "
+                           "integer value!\n");   
             }
             break;                    
         default:
@@ -209,7 +218,8 @@ check_while(M1_compiler *comp, m1_whileexpr *w, unsigned line) {
     push(comp->breakstack, 1);
     
     if (condtype != BOOLTYPE) {
-        warning(comp, line, "condition in while statement is not a boolean expression\n");       
+        warning(comp, line, 
+                "condition in while statement is not a boolean expression\n");       
     }
 
     (void)check_expr(comp, w->block);
@@ -225,7 +235,9 @@ check_dowhile(M1_compiler *comp, m1_whileexpr *w, unsigned line) {
     condtype = check_expr(comp, w->cond);
  
     if (condtype != BOOLTYPE) {
-        warning(comp, line, "condition in do-while statement is not a boolean expression\n");   
+        warning(comp, line, 
+                "condition in do-while statement is not "
+                "a boolean expression\n");   
     }
     
     (void)check_expr(comp, w->block);    
@@ -234,8 +246,8 @@ check_dowhile(M1_compiler *comp, m1_whileexpr *w, unsigned line) {
 
 static void
 check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
-
-    push(comp->breakstack, 1); /* break and continue are allowed in for loops. */
+    /* break and continue are allowed in for loops. */
+    push(comp->breakstack, 1); 
     
     if (i->init)
         check_expr(comp, i->init);
@@ -243,7 +255,8 @@ check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
     if (i->cond) {
         m1_decl *t = check_expr(comp, i->cond);
         if (t != BOOLTYPE) {
-            warning(comp, line, "condition in for-loop is not a boolean expression\n");   
+            warning(comp, line, 
+                    "condition in for-loop is not a boolean expression\n");   
         }        
     }
 
@@ -261,7 +274,8 @@ check_if(M1_compiler *comp, m1_ifexpr *i, unsigned line) {
 
     m1_decl *condtype = check_expr(comp, i->cond);
     if (condtype != BOOLTYPE) {
-        warning(comp, line, "condition in if-statement does not yield boolean value\n");   
+        warning(comp, line, 
+                "condition in if-statement does not yield boolean value\n");   
     }
 
     (void)check_expr(comp, i->ifblock);
@@ -274,7 +288,8 @@ check_if(M1_compiler *comp, m1_ifexpr *i, unsigned line) {
 
 static m1_decl *
 check_deref(M1_compiler *comp, m1_object *o, unsigned line) {
-    m1_object *parent; /* declared here to use the storage space on C runtime stack. */
+    /* declared here to use the storage space on C runtime stack. */
+    m1_object *parent; 
     m1_decl *t = check_obj(comp, o, line, &parent);
     /* XXX *obj not implemented yet. */
     return t;
@@ -282,7 +297,8 @@ check_deref(M1_compiler *comp, m1_object *o, unsigned line) {
 
 static m1_decl *
 check_address(M1_compiler *comp, m1_object *o, unsigned line) {
-    m1_object *parent; /* declared here to use the storage space on C runtime stack. */
+    /* declared here to use the storage space on C runtime stack. */
+    m1_object *parent; 
     m1_decl *t = check_obj(comp, o, line, &parent);   
     /* XXX &obj not implemented yet. */
     return t;
@@ -299,7 +315,9 @@ check_return(M1_compiler *comp, m1_expression *e, unsigned line) {
     }
     
     if (funtype != rettype) {
-        type_error(comp, line, "type of return expression does not match function's return type");   
+        type_error(comp, line, 
+                   "type of return expression does not match "
+                   "function's return type");   
     }
     return rettype; /* return type of the expression */
 }
@@ -324,9 +342,12 @@ check_binary(M1_compiler *comp, m1_binexpr *b, unsigned line) {
         case OP_DIV:       
         case OP_MOD:
         case OP_XOR:
-            if (ltype != INTTYPE && ltype != NUMTYPE && rtype != INTTYPE && rtype != NUMTYPE) {
+            if (ltype != INTTYPE && ltype != NUMTYPE 
+                && rtype != INTTYPE && rtype != NUMTYPE) 
+            {
                 type_error(comp, line, 
-                           "mathematical operator needs integer or floating-point expressions as operands");   
+                           "mathematical operator needs integer or "
+                           "floating-point expressions as operands");   
             }
             break;
         case OP_GT:
@@ -336,25 +357,30 @@ check_binary(M1_compiler *comp, m1_binexpr *b, unsigned line) {
         case OP_EQ:
         case OP_NE:
             if (ltype == NUMTYPE) {
-                warning(comp, line, "comparing floating-point numbers may not yield correct results");       
+                warning(comp, line, 
+              "comparing floating-point numbers may not yield correct results");       
             }
             else if (ltype == STRINGTYPE) {
-                type_error(comp, line, "cannot apply comparison operator on strings");   
+                type_error(comp, line, 
+                           "cannot apply comparison operator on strings");   
             }
             break;
         case OP_AND:
         case OP_OR:
             if (ltype != BOOLTYPE) {
-                warning(comp, line, "left-hand expression in boolean expression is not boolean");
+                warning(comp, line, 
+                   "left-hand expression in boolean expression is not boolean");
             }
             if (rtype != BOOLTYPE) {
-                warning(comp, line, "right-hand expression in boolean expression is not boolean");    
+                warning(comp, line, 
+                  "right-hand expression in boolean expression is not boolean");    
             }
             break;
         case OP_BAND:
         case OP_BOR:
             if (ltype != INTTYPE) {
-                type_error(comp, line, "cannot apply binary & or | operator on non-integer expressions");   
+                type_error(comp, line, 
+              "cannot apply binary & or | operator on non-integer expressions");   
             }
             break;
         default:
@@ -374,18 +400,21 @@ check_unary(M1_compiler *comp, m1_unexpr *u, unsigned line) {
         case UNOP_POSTINC:
         case UNOP_PREINC:
             if (t != INTTYPE) {
-                type_error(comp, line, "cannot apply '++' operator on non-integer expression");   
+                type_error(comp, line, 
+                        "cannot apply '++' operator on non-integer expression");   
             }                    
             break;        
         case UNOP_POSTDEC:
         case UNOP_PREDEC:   
             if (t != INTTYPE) {
-                type_error(comp, line, "cannot apply '--' operator on non-integer expression");   
+                type_error(comp, line, 
+                        "cannot apply '--' operator on non-integer expression");   
             }                    
             break;        
         case UNOP_NOT:
             if (t != BOOLTYPE) {
-                type_error(comp, line, "cannot apply '!' operator on non-boolean expression");
+                type_error(comp, line, 
+                         "cannot apply '!' operator on non-boolean expression");
             }
             break;
         default:
@@ -396,10 +425,10 @@ check_unary(M1_compiler *comp, m1_unexpr *u, unsigned line) {
 }
 
 static void
-check_breakable(M1_compiler *comp, unsigned line, char const * const stattype) {
+check_breakable(M1_compiler *comp, unsigned line, char const * const type) {
     assert(comp != NULL);
     if (top(comp->breakstack) == 0) {
-        type_error_extra(comp, line, "Cannot use '%s' in non-iterating block.", stattype);
+        type_error(comp, line, "Cannot use '%s' in non-iterating block.", type);
     }    
 }
 
@@ -422,7 +451,7 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
         
     m1_symbol *funsym = sym_lookup_symbol(comp->globalsymtab, f->name);
     if (funsym == NULL) {
-        type_error_extra(comp, line, "function '%s' not defined\n", f->name);
+        type_error(comp, line, "function '%s' not defined\n", f->name);
         return NULL;    
     }
     /* set the function's return type declaration as stored in the symbol. */
@@ -431,8 +460,9 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
         funsym->typedecl = f->typedecl = type_find_def(comp, funsym->type_name);
         
         if (f->typedecl == NULL) {
-            type_error_extra(comp, line, "Return type '%s' of function '%s' is not defined\n", 
-                             funsym->type_name, f->name);               
+            type_error(comp, line, 
+                       "Return type '%s' of function '%s' is not defined\n", 
+                       funsym->type_name, f->name);               
         }   
         
     }
@@ -441,12 +471,13 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
         f->typedecl = funsym->typedecl;
     }
     
-    /* check arguments of the function call; this is a list of m1_expressions. */
+    /* check arguments of the function call; this is a list of expressions. */
     if (f->arguments != NULL)
         (void)check_expr(comp, f->arguments);
     
 
-    /* XXX find declaration of function, check arguments against function signature. */
+    /* XXX find declaration of function, check arguments against 
+    function signature. */
     /* TODO */
     
     return f->typedecl;
@@ -457,7 +488,8 @@ check_switch(M1_compiler *comp, m1_switch *s, unsigned line) {
     push(comp->breakstack, 1);
     
     if (s->cases == NULL && s->defaultstat == NULL) {
-        warning(comp, line, "no cases nor a default statement in switch statement");   
+        warning(comp, line, 
+                "no cases nor a default statement in switch statement");   
     }   
     (void)check_expr(comp, s->selector);
     
@@ -479,10 +511,13 @@ check_newexpr(M1_compiler *comp, m1_newexpr *n, unsigned line) {
     assert(comp != NULL);
     assert(n != NULL);
 
-    n->typedecl = type_find_def(comp, n->type); /* find the decl for requested type */
+    /* find the decl for requested type */
+    n->typedecl = type_find_def(comp, n->type); 
     
     if (n->typedecl == NULL) { 
-        type_error_extra(comp, line, "Cannot find type '%s' requested for in new-statement\n", n->type);         
+        type_error(comp, line, 
+                   "Cannot find type '%s' requested for in new-statement\n", 
+                   n->type);         
     }
     return n->typedecl;
 }
@@ -495,17 +530,22 @@ check_vardecl(M1_compiler *comp, m1_var *v, unsigned line) {
     v->sym->typedecl = type_find_def(comp, v->type);
 
     if (v->sym->typedecl == NULL) {        
-        type_error_extra(comp, line, "Cannot find type '%s' for variable '%s'\n", v->type, v->name);   
+        type_error(comp, line, 
+                   "Cannot find type '%s' for variable '%s'\n", 
+                   v->type, v->name);   
     }
     else {
-        /* now check the type of the initialization expression and check compatibility
-           with type of variable. Only do this check if v->sym->typedecl was found.
+        /* now check the type of the initialization expression and check 
+           compatibility with type of variable. Only do this check if 
+           v->sym->typedecl was found.
         */
         if (v->init) {
             m1_decl *inittype = check_expr(comp, v->init);   
                
             if (inittype != v->sym->typedecl) {
-                type_error_extra(comp, line, "Incompatible types in initialization of variable %s.", v->name);       
+                type_error(comp, line, 
+                        "Incompatible types in initialization of variable %s.", 
+                        v->name);       
             }            
         }
     }
@@ -527,7 +567,7 @@ check_cast(M1_compiler *comp, m1_castexpr *expr, unsigned line) {
         type = NUMTYPE;
     }
     else {
-        type_error_extra(comp, line, "Cannot cast value to type %s", expr->type);
+        type_error(comp, line, "Cannot cast value to type %s", expr->type);
         type = type_find_def(comp, expr->type);
     }   
     return type; 
@@ -594,13 +634,12 @@ check_expr(M1_compiler *comp, m1_expression *e) {
         case EXPR_NULL:   
             break;
         case EXPR_OBJECT: {
-            m1_object *parent;
+            m1_object *parent; /* This decl provides storage on C runtime
+                                  stack to use by check_obj.*/
             t = check_obj(comp, e->expr.t, e->line, &parent);
-            fprintf(stderr, "[check expr] type of expr-obj %s is: %s\n", parent->obj.name, t->name);
             return t;
         }
         case EXPR_PRINT:
-//            check_expr(comp, e->expr.e);
             check_print_arg(comp, e->expr.e);
             break;            
         case EXPR_RETURN:
@@ -646,7 +685,7 @@ check_block(M1_compiler *comp, m1_block *block) {
         iter = iter->next;   
     }
        
-    /* closing block, so set current symbol table to the parent scope's symtab. */
+    /* closing block, so set current symbol table to parent scope's symtab. */
     comp->currentsymtab = block->locals.parentscope;
 }
 

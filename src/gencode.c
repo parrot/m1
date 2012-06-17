@@ -1361,7 +1361,8 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
         gencode_expr(comp, argiter);
         argreg = popreg(comp->regstack);
         fprintf(OUT, "\tset_imm   I%d, 0, %d\n", indexreg.no, regindexes[argreg.type]);
-        fprintf(OUT, "\tset_ref   P%d, I%d, %c%d\n", cf_reg.no, indexreg.no, reg_chars[(int)argreg.type], argreg.no);
+        fprintf(OUT, "\tset_ref   P%d, I%d, %c%d\n", cf_reg.no, indexreg.no, 
+                                                     reg_chars[(int)argreg.type], argreg.no);
 
         regindexes[argreg.type]++;
         
