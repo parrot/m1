@@ -545,28 +545,44 @@ OBJECT_LINK------>     L3
             //fprintf(stderr, "OBJECT_LINK: %d\n", numregs_pushed);
             
             if (numregs_pushed == 3) {
-                m1_reg last           = popreg(comp->regstack);   /* latest added; store here for now. */
-                m1_reg field          = popreg(comp->regstack);   /* 2nd latest, this one needs to be removed. */
-                m1_reg parent         = popreg(comp->regstack);   /* x in x[2][3]. */                
-                m1_reg size_reg       = alloc_reg(comp, VAL_INT); /* to hold amount to add. */
-                m1_reg updated_parent = alloc_reg(comp, VAL_INT); /* need to copy base address from parent. */
+                /* if the field was an index. (a[b]) */
+                if (obj->obj.field->type == OBJECT_INDEX) {
+                    m1_reg last           = popreg(comp->regstack);   /* latest added; store here for now. */
+                    m1_reg field          = popreg(comp->regstack);   /* 2nd latest, this one needs to be removed. */
+                    m1_reg parent         = popreg(comp->regstack);   /* x in x[2][3]. */                
+                    m1_reg size_reg       = alloc_reg(comp, VAL_INT); /* to hold amount to add. */
+                    m1_reg updated_parent = alloc_reg(comp, VAL_INT); /* need to copy base address from parent. */
                 
-                //fprintf(stderr, "LINK, generating %d for sizereg and %d for updated parent\n", size_reg.no, updated_parent.no);
+                    //fprintf(stderr, "LINK, generating %d for sizereg and %d for updated parent\n", 
+                     //size_reg.no, updated_parent.no);
                 
-                /* XXX NOTE: this code is executed for both arrays and struct-field access. 
-                   TEST THIS FOR BOTH CASES; MAY NEED SPECIAL CASES FOR ARRAY AND STRUCT.
-                 */
-                fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", size_reg.no, 3 /* XXX fix size. HACK ALERT */);
-                fprintf(OUT, "\tmult_i\tI%d, I%d, I%d\n", field.no, field.no, size_reg.no);
-                fprintf(OUT, "\tset \tI%d, I%d, x\n", updated_parent.no, parent.no); /* XXX need this otherwise segfault.*/
-                fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", updated_parent.no, updated_parent.no, field.no);
+                    /* XXX NOTE: this code is executed for both arrays and struct-field access. 
+                    TEST THIS FOR BOTH CASES; MAY NEED SPECIAL CASES FOR ARRAY AND STRUCT.
+                      */
+                    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", size_reg.no, 3 /* XXX fix size. HACK ALERT */);
+                    fprintf(OUT, "\tmult_i\tI%d, I%d, I%d\n", field.no, field.no, size_reg.no);
+                    fprintf(OUT, "\tset \tI%d, I%d, x\n", updated_parent.no, parent.no); /* XXX need this otherwise segfault.*/
+                    fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", updated_parent.no, updated_parent.no, field.no);
                 
-                pushreg(comp->regstack, updated_parent);       /* push back (x+[2]) */
-                pushreg(comp->regstack, last);         /* push back the latest added one. */
+                    pushreg(comp->regstack, updated_parent);       /* push back (x+[2]) */
+                    pushreg(comp->regstack, last);         /* push back the latest added one. */
                 
-                /* we popped 3, and pushed 2, so effectively decrement by 1. */
-                --numregs_pushed;
-            }  
+                    /* we popped 3, and pushed 2, so effectively decrement by 1. */
+                    --numregs_pushed;
+                }              
+                else if (numregs_pushed == 3 && obj->obj.field->type == OBJECT_FIELD) {
+                    /* field is a struct member access (a.b) */
+                    m1_reg last   = popreg(comp->regstack);
+                    m1_reg offset = popreg(comp->regstack);
+                    m1_reg parent = popreg(comp->regstack);
+                    m1_reg target = alloc_reg(comp, VAL_INT);
+                    fprintf(OUT, "\tderef\tI%d, I%d, I%d\n", target.no, parent.no, offset.no);   
+                    
+                    pushreg(comp->regstack, target);
+                    pushreg(comp->regstack, last);
+                    --numregs_pushed;
+                }
+            }
             break;
             
         }

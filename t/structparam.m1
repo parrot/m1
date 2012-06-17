@@ -25,11 +25,11 @@ void main() {
     print("ok ", v.n.b, "\n");
     
     //XXX need this temp variable; cant pass v.n, doesnt work.
-    nestedstruct t = v.n;
-    bar(t);
-    
-    print("ok ", t.a, "\n");
-    print("ok ", t.b, "\n");
+//    nestedstruct t = v.n;
+//    bar(t);
+//    bar(v.n);
+//    print("ok ", v.n.a, "\n");
+//    print("ok ", v.n.b, "\n");
 }
 
 void foo(value v) {
