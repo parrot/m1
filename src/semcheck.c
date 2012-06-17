@@ -112,9 +112,9 @@ check_assign(M1_compiler *comp, m1_assignment *a, unsigned line) {
     assert(ltype != NULL);
     assert(rtype != NULL);
     if (ltype != rtype) { /* pointer comparison is fine, since each type is only stored once in the type table. */
-        type_error(comp, line, 
-                   "type of left expression does not match type "
-                   "of right expression in assignment\n");   
+        type_error_extra(comp, line, 
+                   "type of left expression (%s) does not match type "
+                   "of right expression (%s) in assignment\n", ltype->name, rtype->name);   
     }
     return rtype;
 }
@@ -130,7 +130,8 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent) 
             fprintf(stderr, "OBJECT LINK\n");
             *parent = obj;
             
-            (void)check_obj(comp, obj->parent, line, parent);   
+            /* get type from the parent; in "string s[10], the type is of s. */
+            t = check_obj(comp, obj->parent, line, parent);   
             (void)check_obj(comp, obj->obj.field, line, parent);
             
             break;   
@@ -146,12 +147,17 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent) 
             else { /* found symbol, now link it to the object node. */
                 assert(sym != NULL);
                 obj->sym = sym;   
+
                 /* find the type definition for this symbol's type. */
                 obj->sym->typedecl = type_find_def(comp, sym->type_name);
                 if (obj->sym->typedecl == NULL) {
                     type_error_extra(comp, line, "Type '%s' is not defined\n", sym->type_name);   
                 }
+                else {
+                    fprintf(stderr, "[check obj] symbol %s has type: %s\n", sym->name, sym->typedecl->name);
+                }                
                 t = sym->typedecl;
+
                 assert(t != NULL);
             }             
             *parent = obj;              
@@ -183,15 +189,12 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent) 
             fprintf(stderr, "Error (line %d): a->b is not implemented!\n", line);
             assert(0);
             break;
-        case OBJECT_INDEX: {
-            m1_decl *t;
+        case OBJECT_INDEX: 
             t = check_expr(comp, obj->obj.index);
             if (t != INTTYPE) {
                 type_error(comp, line, "result of expression does not yield an integer value!\n");   
             }
-
-            break;          
-        }  
+            break;                    
         default:
             break;
     }      
@@ -200,8 +203,7 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent) 
 }
 
 static void
-check_while(M1_compiler *comp, m1_whileexpr *w, unsigned line) {
-    
+check_while(M1_compiler *comp, m1_whileexpr *w, unsigned line) {    
     m1_decl *condtype = check_expr(comp, w->cond);
     push(comp->breakstack, 1);
     
@@ -232,7 +234,7 @@ check_dowhile(M1_compiler *comp, m1_whileexpr *w, unsigned line) {
 static void
 check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
 
-    push(comp->breakstack, 1);
+    push(comp->breakstack, 1); /* break and continue are allowed in for loops. */
     
     if (i->init)
         check_expr(comp, i->init);
@@ -241,8 +243,7 @@ check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
         m1_decl *t = check_expr(comp, i->cond);
         if (t != BOOLTYPE) {
             warning(comp, line, "condition in for-loop is not a boolean expression\n");   
-        }
-        
+        }        
     }
 
     if (i->step)
@@ -272,15 +273,17 @@ check_if(M1_compiler *comp, m1_ifexpr *i, unsigned line) {
 
 static m1_decl *
 check_deref(M1_compiler *comp, m1_object *o, unsigned line) {
-    m1_object *parent; /* declared here to use the storage space. */
+    m1_object *parent; /* declared here to use the storage space on C runtime stack. */
     m1_decl *t = check_obj(comp, o, line, &parent);
+    /* XXX *obj not implemented yet. */
     return t;
 }
 
 static m1_decl *
 check_address(M1_compiler *comp, m1_object *o, unsigned line) {
-    m1_object *parent;
+    m1_object *parent; /* declared here to use the storage space on C runtime stack. */
     m1_decl *t = check_obj(comp, o, line, &parent);   
+    /* XXX &obj not implemented yet. */
     return t;
 }
 
@@ -392,20 +395,21 @@ check_unary(M1_compiler *comp, m1_unexpr *u, unsigned line) {
 }
 
 static void
-check_break(M1_compiler *comp, unsigned line) {
-    if (top(comp->breakstack) == 0) {
-        type_error(comp, line, "Cannot use 'break' in non-iterating block.");
-    }
-
+check_breakable(M1_compiler *comp, unsigned line, char const * const stattype) {
     assert(comp != NULL);
+    if (top(comp->breakstack) == 0) {
+        type_error_extra(comp, line, "Cannot use '%s' in non-iterating block.", stattype);
+    }    
+}
+
+static void
+check_break(M1_compiler *comp, unsigned line) {
+    check_breakable(comp, line, "break");
 }
 
 static void
 check_continue(M1_compiler *comp, unsigned line) {
-    if (top(comp->breakstack) == 0) {
-        type_error(comp, line, "Cannot use 'continue' in non-iterating block.");
-    }
-    assert(comp != NULL);
+    check_breakable(comp, line, "continue");
 }
 
 static m1_decl *
@@ -490,7 +494,7 @@ check_vardecl(M1_compiler *comp, m1_var *v, unsigned line) {
     v->sym->typedecl = type_find_def(comp, v->type);
 
     if (v->sym->typedecl == NULL) {        
-        type_error_extra(comp, line, "Cannot find type '%s'\n", v->type);   
+        type_error_extra(comp, line, "Cannot find type '%s' for variable '%s'\n", v->type, v->name);   
     }
     else {
         /* now check the type of the initialization expression and check compatibility

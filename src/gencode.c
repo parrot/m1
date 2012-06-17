@@ -1896,6 +1896,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             if (num_regs == 2) { /* gencode_obj() may return 2 registers for array and struct access. */
                 m1_reg index  = popreg(comp->regstack);                
                 m1_reg parent = popreg(comp->regstack);
+                /* string s = stringarray[10]; -> an element of stringarray is therefore a string. */
                 m1_reg target = alloc_reg(comp, parent.type); /* XXX fix type */
                 
                 fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 

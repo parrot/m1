@@ -18,13 +18,18 @@ int main() {
     int numiter = 20;
     while(numiter > 0) {
         i = j % 10;
-//        print("ok ");
-//        print(j + 1);
-//        print(" - "); 
-//        if (j + 1 < 10)
-//            print(" ");
+        print("ok ");
+        print(j + 1);
+        print(" - "); 
+        if (j + 1 < 10)
+            print(" ");
 
-        print(s[i]);
+        // this is hacky:
+        // 1. string t = s[i] results in t always being the same. XXX fix this.
+        // 2. print(s[i]) interprets s as an int type. XXX fix this
+        string t;
+        t = s[i];
+        print(t);
 
         j++;
         numiter--;

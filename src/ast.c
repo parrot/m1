@@ -209,7 +209,6 @@ funcall(M1_compiler *comp, m1_object *fun, m1_expression *args) {
 	
 	
     expr->expr.f->name      = fun->obj.name;
-//	expr->expr.f->name      = name;
     expr->expr.f->arguments = args;	
     
 	/* enter name of function to invoke into constant table. */
@@ -408,7 +407,7 @@ vardecl(M1_compiler *comp, char *type, m1_var *v) {
 
 	assert(type != NULL);
 	assert(v != NULL);
-	
+	/* set the m1_var node in the expression's union. */
 	expr->expr.v  = v;
 
 	return expr;	
