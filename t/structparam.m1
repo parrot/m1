@@ -24,7 +24,7 @@ void main() {
     print("ok ", v.n.a, "\n");
     print("ok ", v.n.b, "\n");
     
-    ### XXX need this temp variable; cant pass v.n, doesnt work.
+    //XXX need this temp variable; cant pass v.n, doesnt work.
     nestedstruct t = v.n;
     bar(t);
     
