@@ -566,7 +566,8 @@ OBJECT_LINK------>     L3
                 
                     pushreg(comp->regstack, updated_parent);       /* push back (x+[2]) */
                     pushreg(comp->regstack, last);         /* push back the latest added one. */
-                
+                    free_reg(comp, size_reg);
+                    free_reg(comp, field);
                     /* we popped 3, and pushed 2, so effectively decrement by 1. */
                     --numregs_pushed;
                 }              
@@ -576,13 +577,12 @@ OBJECT_LINK------>     L3
                     m1_reg offset = popreg(comp->regstack);
                     m1_reg parent = popreg(comp->regstack);
                     m1_reg target = alloc_reg(comp, VAL_INT);
-                    m1_reg newparent = alloc_reg(comp, VAL_INT);
                     
-                    fprintf(OUT, "\tset \tI%d, I%d, x\n", newparent.no, parent.no);
-                    fprintf(OUT, "\tderef\tI%d, I%d, I%d\n", target.no, newparent.no, offset.no);   
+                    fprintf(OUT, "\tderef\tI%d, I%d, I%d\n", target.no, parent.no, offset.no);   
                     
                     pushreg(comp->regstack, target);
                     pushreg(comp->regstack, last);
+                    free_reg(comp, offset);
                     --numregs_pushed;
                 }
             }
