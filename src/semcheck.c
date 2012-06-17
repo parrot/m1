@@ -130,9 +130,12 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
         case OBJECT_LINK: {
             *parent = obj;
             
-            /* get type from the parent; in "string s[10], the type is of s. */
             t = check_obj(comp, obj->parent, line, parent);   
-            (void)check_obj(comp, obj->obj.field, line, parent);
+            /* in case field is a member of a struct, get _that_ type;
+               when it's an index, return the type of obj->parent. 
+             */
+            if (obj->obj.field->type == OBJECT_FIELD) 
+                t = check_obj(comp, obj->obj.field, line, parent);
             
             break;   
         }
