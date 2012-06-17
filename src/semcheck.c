@@ -212,36 +212,43 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
 static void
 check_while(M1_compiler *comp, m1_whileexpr *w, unsigned line) {    
     m1_decl *condtype = check_expr(comp, w->cond);
-    push(comp->breakstack, 1);
-    
+        
     if (condtype != BOOLTYPE) {
         warning(comp, line, "condition in while statement is not a boolean expression");       
     }
 
-    (void)check_expr(comp, w->block);
-    (void)pop(comp->breakstack);
+    push(comp->breakstack, 1);
+    push(comp->continuestack, 1);       
     
+    (void)check_expr(comp, w->block);
+    
+    (void)pop(comp->breakstack);
+    (void)pop(comp->continuestack);    
 }
 
 static void
 check_dowhile(M1_compiler *comp, m1_whileexpr *w, unsigned line) {
     m1_decl *condtype;
-    push(comp->breakstack, 1);
+    
     
     condtype = check_expr(comp, w->cond);
  
     if (condtype != BOOLTYPE) {
         warning(comp, line, "condition in do-while statement is not a boolean expression");   
     }
+
+    push(comp->breakstack, 1);
+    push(comp->continuestack, 1);    
     
-    (void)check_expr(comp, w->block);    
+    (void)check_expr(comp, w->block);  
+      
     (void)pop(comp->breakstack);
+    (void)pop(comp->continuestack);    
 }
 
 static void
 check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
     /* break and continue are allowed in for loops. */
-    push(comp->breakstack, 1); 
     
     if (i->init)
         check_expr(comp, i->init);
@@ -256,10 +263,14 @@ check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
     if (i->step)
         (void)check_expr(comp, i->step);
 
+    push(comp->breakstack, 1); 
+    push(comp->continuestack, 1);
+
     if (i->block)
         (void)check_expr(comp, i->block);
 
     (void)pop(comp->breakstack);
+    (void)pop(comp->continuestack);
 }
 
 static void
@@ -407,22 +418,19 @@ check_unary(M1_compiler *comp, m1_unexpr *u, unsigned line) {
 
 }
 
-static void
-check_breakable(M1_compiler *comp, unsigned line, char const * const type) {
-    assert(comp != NULL);
-    if (top(comp->breakstack) == 0) {
-        type_error(comp, line, "Cannot use '%s' in non-iterating block.", type);
-    }    
-}
 
 static void
 check_break(M1_compiler *comp, unsigned line) {
-    check_breakable(comp, line, "break");
+    if (top(comp->breakstack) == 0) {
+        type_error(comp, line, "Cannot use break in non-iterating block");
+    }
 }
 
 static void
 check_continue(M1_compiler *comp, unsigned line) {
-    check_breakable(comp, line, "continue");
+    if (top(comp->continuestack) == 0) {
+        type_error(comp, line, "Cannot use continue in non-iterating block");
+    }
 }
 
 static m1_decl *
@@ -687,11 +695,13 @@ check_chunk(M1_compiler *comp, m1_chunk *c) {
        to be done on a stack, since iterating statements may be nested.
      */
     push(comp->breakstack, 0); 
+    push(comp->continuestack, 0); /* not allowed in switch-statements. */
     
     check_parameters(comp, c->parameters, c->line);
     check_block(comp, c->block);
     
     (void)pop(comp->breakstack); 
+    (void)pop(comp->continuestack);
 }
 
 /* go through members and assign an offset to them. */

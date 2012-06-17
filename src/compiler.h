@@ -43,15 +43,15 @@ typedef struct M1_compiler {
 	struct m1_regstack    *regstack; /* for storing registers in code generator */		
 	yyscan_t               yyscanner; /* pointer to the lexer structure */
 		
-	struct m1_symboltable *currentsymtab;
+	struct m1_symboltable *currentsymtab; /* a pointer to the current symbol table, if any. */
 	
-	struct m1_symboltable *globalsymtab;
+	struct m1_symboltable *globalsymtab; /* to store function names */
 	
 	int                    enum_const_counter; /* for parsing enums that don't specify values. */
 	
-	char                   registers[REG_TYPE_NUM][REG_NUM];
+	char                   registers[REG_TYPE_NUM][REG_NUM]; /* register allocation system. */
 	
-	int                    no_reg_opt;
+	int                    no_reg_opt; /* command-line option to turn off register allocator. */
 	
 } M1_compiler;
 
