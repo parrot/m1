@@ -575,7 +575,7 @@ static void
 check_print_arg(M1_compiler *comp, m1_expression *e) {
     if (e == NULL)
         return;
-    fprintf(stderr, "check print arg\n");        
+    /* go to end of list recursively; list of arguments is in reversed order. */     
     check_print_arg(comp, e->next);
     
     check_expr(comp, e);
@@ -632,10 +632,8 @@ check_expr(M1_compiler *comp, m1_expression *e) {
         case EXPR_NULL:   
             break;
         case EXPR_OBJECT: {
-            m1_object *parent; /* This decl provides storage on C runtime
-                                  stack to use by check_obj.*/
-            t = check_obj(comp, e->expr.t, e->line, &parent);
-            return t;
+            m1_object *parent; /* Provides storage on C runtime stack to use by check_obj.*/
+            return check_obj(comp, e->expr.t, e->line, &parent);
         }
         case EXPR_PRINT:
             check_print_arg(comp, e->expr.e);

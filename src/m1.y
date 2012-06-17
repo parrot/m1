@@ -17,6 +17,8 @@
 #include "symtab.h"
 
 
+/* Let Bison generate better error messages. */
+#define YYERROR_VERBOSE
 
 extern int yylex(YYSTYPE *yylval, yyscan_t yyscanner);
 
@@ -32,6 +34,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 
     fprintf(stderr, "%s: unexpected token '%s' (line %d)\n", 
             str, yyget_text(yyscanner), yyget_lineno(yyscanner) );
+            
     ++comp->errors;        
     return 0;
 }
