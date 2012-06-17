@@ -138,6 +138,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
         KW_PRIVATE      "private"
         KW_PUBLIC       "public"
         KW_ENUM         "enum"
+        KW_UNION        "union"
 
         
 %type <sval> TK_IDENT
@@ -163,6 +164,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              m0_op
              m0_arg    
              opt_vtable
+             struct_or_union
              
 %type <dim> dimension                   
              
@@ -567,14 +569,19 @@ param   : type TK_IDENT         { $$ = parameter((M1_compiler *)yyget_extra(yysc
 struct_definition   : struct_init '{' struct_members '}' 
                     ;       
                     
-struct_init         : "struct" TK_IDENT
+struct_init         : struct_or_union TK_IDENT
                         {
                           M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
                           $$ = newstruct(comp, $2); /* make AST node for this definition. */
                           type_enter_struct(comp, $2, $$); /* enter into type definitions. */
                           comp->currentsymtab = &$$->sfields; /* make symbol table easily accessible. */
+                          $$->is_union = $1; /* offsets are ignored in unions, as all members overlap. */
                         }
-                    ;                      
+                    ;  
+                    
+struct_or_union     : "struct"  { $$ = 0; }
+                    | "union"   { $$ = 1; }
+                    ;                                        
                     
 struct_members      : struct_member
                         { 

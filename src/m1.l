@@ -145,6 +145,7 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "throw"                 { return KW_THROW; }
 "true"                  { return KW_TRUE; }
 "try"                   { return KW_TRY; }
+"union"                 { return KW_UNION; }
 "unsigned"              { return KW_UNSIGNED; }
 "void"                  { return KW_VOID; }
 "vtable"				{ return KW_VTABLE; }

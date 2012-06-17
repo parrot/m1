@@ -57,6 +57,7 @@ typedef struct m1_struct {
     char    *name;              /* name of this struct. */
     unsigned size;              /* total size of this struct; can calculate from fields but 
                                    better keep a "cached" value */
+    int      is_union;          /* union declarations also use this AST node type. */
     
     struct m1_symboltable sfields; /* a struct is just a very local scope; it's handy to have
                                       a symbol table, as it makes handling x.y.z easier. 
