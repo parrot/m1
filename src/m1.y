@@ -583,17 +583,8 @@ struct_or_union     : "struct"  { $$ = 0; }
                     | "union"   { $$ = 1; }
                     ;                                        
                     
-struct_members      : struct_member
-                        { 
-                          $1->offset = 0; /* first field, no offset */
-                        }
-                    | struct_members struct_member
-                        {                           
-                          /* calculate offset of this field */
-                          $2->offset = $1->offset + field_size($1); 
-                          $$ = $2; /* ensure that next time $1 points to $2. */
-                        }
-                          
+struct_members      : struct_member                        
+                    | struct_members struct_member                          
                     ;
                     
 struct_member       : type TK_IDENT ';'

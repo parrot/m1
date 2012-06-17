@@ -71,6 +71,20 @@ mk_sym(void) {
     return sym;
 }
 
+/* Return an iterator for symbol table <table>. For now that's just the first
+   symbol in the list.
+ */
+m1_symbol *
+sym_get_table_iter(m1_symboltable *table) {
+    return table->syms;    
+}
+
+m1_symbol *
+sym_iter_next(m1_symbol *iterator) {
+    return iterator->next;   
+}
+
+
 m1_symbol *
 sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *type, unsigned num_elems) {
     m1_symbol *sym = NULL;

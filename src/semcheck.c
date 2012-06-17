@@ -316,8 +316,7 @@ check_return(M1_compiler *comp, m1_expression *e, unsigned line) {
     
     if (funtype != rettype) {
         type_error(comp, line, 
-                   "type of return expression does not match "
-                   "function's return type");   
+                   "type of return expression does not match function's return type");   
     }
     return rettype; /* return type of the expression */
 }
@@ -369,18 +368,18 @@ check_binary(M1_compiler *comp, m1_binexpr *b, unsigned line) {
         case OP_OR:
             if (ltype != BOOLTYPE) {
                 warning(comp, line, 
-                   "left-hand expression in boolean expression is not boolean");
+                        "left-hand expression in boolean expression is not boolean");
             }
             if (rtype != BOOLTYPE) {
                 warning(comp, line, 
-                  "right-hand expression in boolean expression is not boolean");    
+                        "right-hand expression in boolean expression is not boolean");    
             }
             break;
         case OP_BAND:
         case OP_BOR:
             if (ltype != INTTYPE) {
                 type_error(comp, line, 
-              "cannot apply binary & or | operator on non-integer expressions");   
+                           "cannot apply binary & or | operator on non-integer expressions");   
             }
             break;
         default:
@@ -401,20 +400,20 @@ check_unary(M1_compiler *comp, m1_unexpr *u, unsigned line) {
         case UNOP_PREINC:
             if (t != INTTYPE) {
                 type_error(comp, line, 
-                        "cannot apply '++' operator on non-integer expression");   
+                           "cannot apply '++' operator on non-integer expression");   
             }                    
             break;        
         case UNOP_POSTDEC:
         case UNOP_PREDEC:   
             if (t != INTTYPE) {
                 type_error(comp, line, 
-                        "cannot apply '--' operator on non-integer expression");   
+                           "cannot apply '--' operator on non-integer expression");   
             }                    
             break;        
         case UNOP_NOT:
             if (t != BOOLTYPE) {
                 type_error(comp, line, 
-                         "cannot apply '!' operator on non-boolean expression");
+                           "cannot apply '!' operator on non-boolean expression");
             }
             break;
         default:
@@ -450,6 +449,7 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
     assert(line != 0);
         
     m1_symbol *funsym = sym_lookup_symbol(comp->globalsymtab, f->name);
+    
     if (funsym == NULL) {
         type_error(comp, line, "function '%s' not defined\n", f->name);
         return NULL;    
@@ -531,8 +531,7 @@ check_vardecl(M1_compiler *comp, m1_var *v, unsigned line) {
 
     if (v->sym->typedecl == NULL) {        
         type_error(comp, line, 
-                   "Cannot find type '%s' for variable '%s'\n", 
-                   v->type, v->name);   
+                   "Cannot find type '%s' for variable '%s'\n", v->type, v->name);   
     }
     else {
         /* now check the type of the initialization expression and check 
@@ -544,8 +543,7 @@ check_vardecl(M1_compiler *comp, m1_var *v, unsigned line) {
                
             if (inittype != v->sym->typedecl) {
                 type_error(comp, line, 
-                        "Incompatible types in initialization of variable %s.", 
-                        v->name);       
+                           "Incompatible types in initialization of variable %s.", v->name);       
             }            
         }
     }
@@ -718,12 +716,71 @@ check_chunk(M1_compiler *comp, m1_chunk *c) {
     (void)pop(comp->breakstack); 
 }
 
+/* go through members and assign an offset to them. */
+static void
+check_struct_decl(M1_compiler *comp, m1_struct *str) {
+    /* members of a struct are stored in a symbol table. */
+    m1_symbol *iter = sym_get_table_iter(&str->sfields);
+    
+    
+    unsigned offset = 0;
+    while (iter != NULL) 
+    {        
+        iter->offset = offset;
+        
+        if (iter->typedecl == NULL) {
+
+            iter->typedecl = type_find_def(comp, iter->type_name);
+            if (iter->typedecl == NULL) {
+                type_error(comp, 0, /* XXX which line? */
+                           "Cannot find type '%s' for struct member '%s'", 
+                           iter->type_name, iter->name);                      
+            }
+        }
+        
+        offset += type_get_size(iter->typedecl);
+        iter = sym_iter_next(iter);
+    }
+            
+}
+
+/* Go through type declarations and do a sanity check. */
+static void
+check_decls(M1_compiler *comp) {
+    m1_decl *iter = comp->declarations;
+    
+    while (iter != NULL) {
+        switch (iter->decltype) {
+            case DECL_STRUCT:
+                check_struct_decl(comp, iter->d.s);
+                break;
+            case DECL_PMC:
+            case DECL_STRING:
+            case DECL_BOOL:
+            case DECL_INT:
+            case DECL_NUM:
+            case DECL_CHAR:
+            case DECL_ENUM:
+            case DECL_VOID:
+                break;
+            default:
+                fprintf(stderr, "unknown declaration type (%d)\n", iter->decltype);
+                assert(0);   
+                break;    
+        }
+        iter = iter->next;   
+    }
+}
+
 
 void 
 check(M1_compiler *comp, m1_chunk *ast) {
     m1_chunk *iter = ast;
     
     init_typechecker(comp);
+    
+    /* check declarations of types first. */
+    check_decls(comp);
     
     while (iter != NULL) {       
         comp->currentchunk = iter;    

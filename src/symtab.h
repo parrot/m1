@@ -67,7 +67,7 @@ typedef struct m1_symbol {
     unsigned          num_elems;    /* 1 for normal symbols; > 1 for arrays. */
     
     union {
-        unsigned          offset;
+        unsigned          offset;       /* offset from base when this symbol is a struct member. */
         int               regno;        /* allocated register */   
     };
     
@@ -111,6 +111,8 @@ extern m1_symbol *sym_lookup_symbol(m1_symboltable *table, char *name);
 
 extern void print_symboltable(m1_symboltable *table);
 
+extern m1_symbol *sym_get_table_iter(m1_symboltable *table);
+extern m1_symbol *sym_iter_next(m1_symbol *iterator);
 
 #endif
 

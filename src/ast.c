@@ -520,27 +520,7 @@ dowhileexpr(M1_compiler *comp, m1_expression *cond, m1_expression *block) {
 	return expr;	
 }
 
-unsigned 
-field_size(struct m1_symbol *field) {
-    assert(field != NULL);
-	/*
-	switch (field->type) {
-		case VAL_INT:
-			return 4;
-		case VAL_FLOAT:
-			return 8;
-		case VAL_STRING: 
-			return 4;
-		case VAL_CHUNK: 
-			return 4;
-        case VAL_ADDRESS:
-            return 4;
-		default: 
-			return 4; 
-	}
-	*/	
-	return 4;
-}
+
 
 static void
 expr_set_switch(m1_expression *node, m1_expression *selector, m1_case *cases, m1_expression *defaultstat) {
