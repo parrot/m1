@@ -17,9 +17,6 @@
 #include "symtab.h"
 
 
-/* Let Bison generate better error messages. */
-#define YYERROR_VERBOSE
-
 extern int yylex(YYSTYPE *yylval, yyscan_t yyscanner);
 
 
@@ -314,6 +311,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 
 %defines
 %expect 0
+%error-verbose
 
 %start TOP
 
@@ -867,12 +865,12 @@ inc_or_dec_stat : inc_or_dec_expr ';'
                 ;
 
 break_stat  : "break" ';'
-                { $$ = expression((M1_compiler *)yyget_extra(yyscanner), EXPR_BREAK); }                
+                { $$ = expression(comp, EXPR_BREAK); }                
 continue_stat  : "continue" ';'
-                { $$ = expression((M1_compiler *)yyget_extra(yyscanner), EXPR_CONTINUE); }                
+                { $$ = expression(comp, EXPR_CONTINUE); }                
                 
 return_stat : "return" opt_ret_expr ';'
-                { $$ = returnexpr((M1_compiler *)yyget_extra(yyscanner), $2); }
+                { $$ = returnexpr(comp, $2); }
             ;   
             
 opt_ret_expr: /* empty */     { $$ = NULL; }
@@ -880,35 +878,35 @@ opt_ret_expr: /* empty */     { $$ = NULL; }
             ;                         
                             
 lvalue  : lhs_obj
-           { $$ = objectexpr((M1_compiler *)yyget_extra(yyscanner), $1, EXPR_OBJECT); }           
+           { $$ = objectexpr(comp, $1, EXPR_OBJECT); }           
         | '*' lhs_obj
-           { $$ = objectexpr((M1_compiler *)yyget_extra(yyscanner), $2, EXPR_DEREF); }
+           { $$ = objectexpr(comp, $2, EXPR_DEREF); }
         | '&' lhs_obj
-           { $$ = objectexpr((M1_compiler *)yyget_extra(yyscanner), $2, EXPR_ADDRESS); }
+           { $$ = objectexpr(comp, $2, EXPR_ADDRESS); }
         ;
         
 lhs_obj : TK_IDENT
             { 
-              $$ = object( (M1_compiler *)yyget_extra(yyscanner), OBJECT_MAIN); 
+              $$ = object( comp, OBJECT_MAIN); 
               obj_set_ident($$, $1);
             }            
         | lhs_obj field_access
             {
               /* make a new node that links $1 and $2. */
-              $$ = lhsobj((M1_compiler *)yyget_extra(yyscanner), $1, $2);                                          
+              $$ = lhsobj(comp, $1, $2);                                          
             }
         | "self"
-        	{ $$ = object((M1_compiler *)yyget_extra(yyscanner), OBJECT_SELF); }
+        	{ $$ = object(comp, OBJECT_SELF); }
         | "super"
-        	{ $$ = object((M1_compiler *)yyget_extra(yyscanner), OBJECT_SUPER); }
+        	{ $$ = object(comp, OBJECT_SUPER); }
         ;        
         
 field_access: '[' expression ']'
-                { $$ = arrayindex((M1_compiler *)yyget_extra(yyscanner), $2); }                
+                { $$ = arrayindex(comp, $2); }                
             | '.' TK_IDENT
-                { $$ = objectfield((M1_compiler *)yyget_extra(yyscanner), $2); }           
+                { $$ = objectfield(comp, $2); }           
             | "->" TK_IDENT
-                { $$ = objectderef((M1_compiler *)yyget_extra(yyscanner), $2); }                
+                { $$ = objectderef(comp, $2); }                
             | "::" TK_IDENT
                 { $$ = NULL; /* do we want this scope operator? */}
             ;        
@@ -917,17 +915,17 @@ rvalue  : expression
         ;
         
 constexpr   : TK_NUMBER    
-                { $$ = number((M1_compiler *)yyget_extra(yyscanner), $1); }    
+                { $$ = number(comp, $1); }    
             | TK_INT
-                { $$ = integer((M1_compiler *)yyget_extra(yyscanner), $1); }  
+                { $$ = integer(comp, $1); }  
             | TK_STRING_CONST
-                { $$ = string((M1_compiler *)yyget_extra(yyscanner), $1); }
+                { $$ = string(comp, $1); }
             | "true"
-                { $$ = expression((M1_compiler *)yyget_extra(yyscanner), EXPR_TRUE); }
+                { $$ = expression(comp, EXPR_TRUE); }
             | "false"
-                { $$ = expression((M1_compiler *)yyget_extra(yyscanner), EXPR_FALSE); }
+                { $$ = expression(comp, EXPR_FALSE); }
             | TK_CHAR
-                { $$ = character((M1_compiler *)yyget_extra(yyscanner), $1); } 
+                { $$ = character(comp, $1); } 
             ;
             
 expression  : constexpr 
@@ -948,11 +946,11 @@ subexpr     : '(' expression ')'
             
             
 newexpr     : "new" TK_USERTYPE '(' arguments ')'
-                { $$ = newexpr((M1_compiler *)yyget_extra(yyscanner), $2, $4); }
+                { $$ = newexpr(comp, $2, $4); }
             ;         
             
 nullexpr    : "null"
-                { $$ = expression((M1_compiler *)yyget_extra(yyscanner), EXPR_NULL); }            
+                { $$ = expression(comp, EXPR_NULL); }            
             ;
             
 arrayconstructor: '{' const_list '}' 
@@ -974,22 +972,18 @@ const_list    : constexpr
               ;
             
 unexpr  : '-' expression
-               { 
-                 M1_compiler *comp = (M1_compiler *)yyget_extra(yyscanner);
-                 $$ = binexpr(comp, $2, OP_MUL, integer(comp, -1)); 
-               }                                          
+               { $$ = binexpr(comp, $2, OP_MUL, integer(comp, -1)); }                                          
         | '(' return_type ')' expression %prec LOWER_THAN_ELSE
-                { $$ = castexpr((M1_compiler *)yyget_extra(yyscanner), $2, $4); }
+                { $$ = castexpr(comp, $2, $4); }
         | "!" expression 
-                { $$ = unaryexpr((M1_compiler *)yyget_extra(yyscanner), UNOP_NOT, $2); }                        
+                { $$ = unaryexpr(comp, UNOP_NOT, $2); }                        
         | '~' expression 
         
         /* bitwise NOT:  ~x == -x -1. See http://en.wikipedia.org/wiki/Bitwise_operation#NOT. 
          * -x is implemented as x * -1. Implement this in the parser, as we need access to 
          * the constants segment. 
          */        
-                { /*$$ = unaryexpr((M1_compiler *)yyget_extra(yyscanner), UNOP_BNOT, $2);*/                 
-                   M1_compiler   *comp   = (M1_compiler *)yyget_extra(yyscanner);                    
+                { /*$$ = unaryexpr(comp, UNOP_BNOT, $2);*/                                  
                    /* create a node for "-x" => "x * -1" */
                    m1_expression *minusX = binexpr(comp, $2, OP_MUL, integer(comp, -1));
                    /* create a node for (-x) - (1). Note it's not - (-1), as that results in +1.*/
@@ -998,31 +992,31 @@ unexpr  : '-' expression
         ;            
        
 tertexpr    : expression "?" expression ':' expression
-                { $$ = ifexpr((M1_compiler *)yyget_extra(yyscanner), $1, $3, $5); }
+                { $$ = ifexpr(comp, $1, $3, $5); }
             ;
                    
 binexpr     : expression '+' expression
-                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_PLUS, $3); }
+                { $$ = binexpr(comp, $1, OP_PLUS, $3); }
             | expression '-' expression
-                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_MINUS, $3); }
+                { $$ = binexpr(comp, $1, OP_MINUS, $3); }
             | expression '*' expression
-                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_MUL, $3); }
+                { $$ = binexpr(comp, $1, OP_MUL, $3); }
             | expression '/' expression
-                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_DIV, $3); }
+                { $$ = binexpr(comp, $1, OP_DIV, $3); }
             | expression '%' expression
-                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_MOD, $3); }
+                { $$ = binexpr(comp, $1, OP_MOD, $3); }
             | expression '^' expression
-                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_XOR, $3); }
+                { $$ = binexpr(comp, $1, OP_XOR, $3); }
             | expression '&' expression
-                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_BAND, $3); }
+                { $$ = binexpr(comp, $1, OP_BAND, $3); }
             | expression '|' expression
-                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_BOR, $3); }   
+                { $$ = binexpr(comp, $1, OP_BOR, $3); }   
             | expression "==" expression
-                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_EQ, $3); }
+                { $$ = binexpr(comp, $1, OP_EQ, $3); }
             | expression "!=" expression
-                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_NE, $3); }
+                { $$ = binexpr(comp, $1, OP_NE, $3); }
             | expression ">" expression
-                { $$ = binexpr((M1_compiler *)yyget_extra(yyscanner), $1, OP_GT, $3); }
+                { $$ = binexpr(comp, $1, OP_GT, $3); }
             | expression "<" expression
                 { $$ = binexpr(comp, $1, OP_LT, $3); }
             | expression "<=" expression
