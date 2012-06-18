@@ -146,22 +146,18 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
         case OBJECT_MAIN: {
 
             /* look up identifier's declaration. */
-            m1_symbol *sym = sym_lookup_symbol(comp->currentsymtab, obj->obj.name);            
+            obj->sym = sym_lookup_symbol(comp->currentsymtab, obj->obj.name);            
 
-            if (sym == NULL) {
+            if (obj->sym == NULL) {
                 type_error(comp, line, "Undeclared variable '%s'", obj->obj.name);
             }
             else { /* found symbol, now link it to the object node. */
-                assert(sym != NULL);
-
-                obj->sym = sym;   
-
                 /* find the type definition for this symbol's type. */
-                obj->sym->typedecl = type_find_def(comp, sym->type_name);
+                obj->sym->typedecl = type_find_def(comp, obj->sym->type_name);
                 if (obj->sym->typedecl == NULL) {
-                    type_error(comp, line, "Type '%s' is not defined", sym->type_name);   
+                    type_error(comp, line, "Type '%s' is not defined", obj->sym->type_name);   
                 }
-                t = sym->typedecl;
+                t = obj->sym->typedecl;
 
                 assert(t != NULL);
             }             
@@ -173,21 +169,19 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
             assert((*parent)->sym != NULL);
             assert((*parent)->sym->typedecl != NULL);
 
-            m1_symbol *sym = sym_lookup_symbol(
-                                          &(*parent)->sym->typedecl->d.s->sfields, obj->obj.name);
+            obj->sym = sym_lookup_symbol( &(*parent)->sym->typedecl->d.s->sfields, obj->obj.name);
 
-            if (sym == NULL) {
+            if (obj->sym == NULL) {
                 type_error(comp, line, "Struct %s has no member %s", 
                            (*parent)->obj.name, obj->obj.name);
             }
             else {
-                obj->sym = sym; 
                 /* find the type declaration for this field's type. */
-                obj->sym->typedecl = type_find_def(comp, sym->type_name);
+                obj->sym->typedecl = type_find_def(comp, obj->sym->type_name);
                 if (obj->sym->typedecl == NULL) {
-                    type_error(comp, line, "Type '%s' is not defined", sym->type_name);   
+                    type_error(comp, line, "Type '%s' is not defined", obj->sym->type_name);   
                 }
-                t = sym->typedecl;    
+                t = obj->sym->typedecl;    
             }
             *parent = obj;
             break;

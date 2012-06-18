@@ -1,0 +1,37 @@
+struct object {
+    int val[10];   
+}
+void main() {
+    
+    object my_array[2];
+    
+    int i, j;
+    
+    for (i = 0; i < 2; i++) {
+        my_array[i] = new object();
+    }
+    
+    for (j = 0; j < 2; j++) {
+        for (i = 0; i < 10; i++) {
+            int k = 1;
+            my_array[j].val[i] = i * j;
+        }
+    }
+    
+
+    int results[50] = {0, 0,  0,  0,   0,  0,  0,  0, 0,   0, 
+                       0, 1,  2,  3,   4,  5,  6,  7, 8,   9 };
+    print("1..20\n");
+    int k = 0;
+    for (j = 0; j < 2; j++) {
+        for (i = 0; i < 10; i++) {
+
+           if (results[k] == i * j) 
+                print("ok ", k + 1, "\n");           
+           else 
+                print("not ok ", k + 1, "\n");
+           
+           k++; 
+        }   
+    }
+}

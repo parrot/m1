@@ -598,7 +598,7 @@ OBJECT_LINK------>     L3
                      
                     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", size_reg.no, current_dimension->num_elems);
                     fprintf(OUT, "\tmult_i\tI%d, I%d, I%d\n", field.no, field.no, size_reg.no);
-                    /* Need to have the following instruction (set X, Y), otherwise M0 segfaults. */
+                    /* Need to have the following instruction (set X, Y), otherwise it doesn't work. */
                     fprintf(OUT, "\tset \tI%d, I%d, x\n", updated_parent.no, parentreg.no); 
                     fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", updated_parent.no, updated_parent.no, field.no);
                 
