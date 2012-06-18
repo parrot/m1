@@ -556,7 +556,7 @@ OBJECT_LINK------>     L3
                In x.y.z, after returning from x, we're visiting y. After that, we'll visit z.
                As we do this, keep track of how many registers were used to store the result.
              */
-            (*dimension)++; 
+            
             numregs_pushed += gencode_obj(comp, obj->obj.field, parent, dimension, is_target);   
                                    
             if (numregs_pushed == 3) {
@@ -567,17 +567,17 @@ OBJECT_LINK------>     L3
                     m1_reg parentreg      = popreg(comp->regstack);   /* x in x[2][3]. */                
                     m1_reg size_reg       = alloc_reg(comp, VAL_INT); /* to hold amount to add. */
                     m1_reg updated_parent = alloc_reg(comp, VAL_INT); /* need to copy base address from parent. */
-                                
+                       
+                    fprintf(stderr, "DIMENSION: %d\n", *dimension);                                
                     /* 3 registers only the case when 2 dimensions are parsed, e.g., x[10][20].
                        Find the size of the first dimension, since that's the one that's 
                        added to the parent's base address, i.e., adding 10 * sizeof(type).
-                     */   
-                    fprintf(stderr, "DIMENSION: %d\n", *dimension);                             
 
-                    /* get a pointer to the m1_var node for the parent; this is accessible
+                       Get a pointer to the m1_var node for the parent; this is accessible
                        through the <sym> field of the parent; m1_var and m1_symbol nodes
                        have pointers to each other.
                      */
+                    fprintf(stderr, "Parent: %s\n", (*parent)->obj.name);
                     assert((*parent)->sym != NULL);
                     assert((*parent)->sym->var != NULL);
                     m1_var       *parent_var        = (*parent)->sym->var; 
@@ -588,11 +588,12 @@ OBJECT_LINK------>     L3
                        linked list, so set the pointer <num_get_next> times to the dimension 
                        node's next.
                      */
-                    unsigned num_get_next;
-                    for (num_get_next = *dimension - 1; num_get_next != 0; num_get_next--) {
-                        assert(current_dimension->next != NULL);
-                        current_dimension = current_dimension->next;
-
+                    { /* local scope to limit num_get_text. */
+                        unsigned num_get_next;
+                        for (num_get_next = *dimension - 1; num_get_next != 0; num_get_next--) {
+                            assert(current_dimension->next != NULL);
+                            current_dimension = current_dimension->next;
+                        }
                     }
                      
                     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", size_reg.no, current_dimension->num_elems);
@@ -603,6 +604,7 @@ OBJECT_LINK------>     L3
                 
                     pushreg(comp->regstack, updated_parent);   /* push back (x+[2]) */
                     pushreg(comp->regstack, last);             /* push back the latest added one. */
+                    
                     free_reg(comp, size_reg);
                     free_reg(comp, field);
                     /* we popped 3, and pushed 2, so effectively decrement by 1. */
@@ -610,8 +612,8 @@ OBJECT_LINK------>     L3
                 }              
                 else if (obj->obj.field->type == OBJECT_FIELD) {
                     /* field is a struct member access (a.b) */
-                    m1_reg last   = popreg(comp->regstack);
-                    m1_reg offset = popreg(comp->regstack);
+                    m1_reg last      = popreg(comp->regstack);
+                    m1_reg offset    = popreg(comp->regstack);
                     m1_reg parentreg = popreg(comp->regstack);
                     m1_reg target = alloc_reg(comp, VAL_INT);
                     
@@ -619,8 +621,10 @@ OBJECT_LINK------>     L3
                     
                     pushreg(comp->regstack, target);
                     pushreg(comp->regstack, last);
+                    /* popped 3 regs; pushed 2, so decrement numregs_pushed. */
                     free_reg(comp, offset);
                     --numregs_pushed;
+                                        
                 }
             }
             break;
@@ -685,6 +689,13 @@ OBJECT_LINK------>     L3
             /* set parent OUT parameter to the current node. */
             *parent = obj;
             
+            /* whenever there's a field, reset dimension;
+               e.g. in x[4].y[5], when handling [5], dimension should be 1 again, 
+               not 2. Since the "chain" is broken by the field y in the middle,
+               dimension needs to be reset.
+            */ 
+            (*dimension) = 0;
+            
             break;
         }
         case OBJECT_DEREF: /* b in a->b */
@@ -695,6 +706,7 @@ OBJECT_LINK------>     L3
         }
         case OBJECT_INDEX: /* b in a[b] */        
         {
+            (*dimension)++; /* increment dimension whenever we handle an index. */
             numregs_pushed += gencode_expr(comp, obj->obj.index);                                                              
             break;            
         }

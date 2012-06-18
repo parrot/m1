@@ -192,14 +192,14 @@ typedef struct m1_castexpr {
 
 /* object types. */
 typedef enum m1_object_type {
-    OBJECT_LINK,  /* node linking a and b in a.b */
-    OBJECT_MAIN,  /* a in a.b  */
-    OBJECT_FIELD, /* b in a.b  */
-    OBJECT_INDEX, /* b in a[b] */
-    OBJECT_DEREF, /* b in a->b */
-    OBJECT_SCOPE, /* b in a::b */
-    OBJECT_SELF,  /* "self"    */
-    OBJECT_SUPER  /* "super"   */
+    OBJECT_LINK,  /* node linking a and b in a.b; uses <field> field in obj union. */
+    OBJECT_MAIN,  /* a in a.b  uses <name> field in obj union. */
+    OBJECT_FIELD, /* b in a.b; uses <name> field in obj union. */
+    OBJECT_INDEX, /* b in a[b]; uses <index> field in obj union */
+    OBJECT_DEREF, /* b in a->b; NOT IMPLEMENTED */
+    OBJECT_SCOPE, /* b in a::b; NOT IMPLEMENTED */
+    OBJECT_SELF,  /* "self"     NOT IMPLEMENTED */
+    OBJECT_SUPER  /* "super"    NOT IMPLEMENTED */
     
 } m1_object_type;
 

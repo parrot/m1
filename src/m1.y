@@ -237,7 +237,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
              param_list
              parameters              
               
-%type <ival>  struct_members 
+%type <var>  struct_members 
              struct_member
 
              
@@ -546,7 +546,7 @@ struct_definition   : struct_init '{' struct_members '}'
                         { 
                           comp->currentsymtab = NULL; /* otherwise it might be linked as a 
                                                          parent symtab for a chunk. */
-                          $$->size = $3;
+
                         }
                     ;       
                     
@@ -564,22 +564,26 @@ struct_or_union     : "struct"  { $$ = 0; }
                     ;                                        
                     
 struct_members      : struct_member   
-                        { $$ = $1; }                     
                     | struct_members struct_member                          
-                        { $$ = $1 + $2; }
+                        { 
+                            
+                        }
                     ;
-                    
-struct_member       : type TK_IDENT opt_dimension ';'
-                        {                            
-                          /* add this member as a field to the current struct's symbol table. */
-                          sym_new_symbol(comp, comp->currentsymtab, $2, $1, 1);   
-                          $$ = 4; /* XXX fix size. */                       
+
+/* struct_members are handled in a similar way as vars, but the grammar rules are slightly. */
+
+struct_member       : type TK_IDENT ';'
+                        {  
+                          comp->parsingtype = $1;                            
+                          $$ = var(comp, $2, NULL); 
+                        }
+                    | type TK_IDENT dimension ';'
+                        { 
+                          comp->parsingtype = $1;                            
+                          $$ = array(comp, $2, $3, NULL); 
                         }
                     ;                                        
 
-opt_dimension       : /* empty */
-                    | dimension
-                    ;                    
         
 block   : open_block statements close_block
             {  
