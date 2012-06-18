@@ -160,8 +160,10 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
                            yylval->cval = yytext[0];
                            return TK_CHAR;
                         }
-                        
-"0b"[0-1]+              {  /* skip the "0b" prefix. */
+          
+{HEX}                   { yylval->ival = strtoul(yytext + 2, NULL, 16); return TK_INT; }
+{OCT}                   { yylval->ival = strtoul(yytext + 2, NULL, 8); return TK_INT; }
+{BIN}                   {  /* skip the "0b" prefix. */
                            yylval->ival = strtoul(yytext + 2, NULL, 2);
                            return TK_INT;
                         }                        
