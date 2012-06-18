@@ -1620,6 +1620,15 @@ gencode_new(M1_compiler *comp, m1_newexpr *expr) {
 }
 
 static void
+gencode_exprlist(M1_compiler *comp, m1_expression *expr) {
+    m1_expression *iter = expr;
+    while (iter != NULL) {
+        gencode_expr(comp, iter);
+        iter = iter->next;   
+    }    
+}
+
+static void
 gencode_switch(M1_compiler *comp, m1_switch *expr) {
     /*
     switch (selector) {
@@ -1677,7 +1686,7 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
         testlabel = gen_label(comp);
         fprintf(OUT, "\tgoto_if L%d, I%d\n", testlabel, test.no);
         /* generate code for this case's block. */
-        gencode_expr(comp, caseiter->block);
+        gencode_exprlist(comp, caseiter->block);
         /* next test label. */
         fprintf(OUT, "L%d:\n", testlabel);
         

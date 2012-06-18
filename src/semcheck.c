@@ -476,6 +476,15 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
 }
 
 static void
+check_exprlist(M1_compiler *comp, m1_expression *expr) {
+    m1_expression *iter = expr;
+    while (iter != NULL) {
+        check_expr(comp, iter);
+        iter = iter->next;   
+    }   
+}
+
+static void
 check_switch(M1_compiler *comp, m1_switch *s, unsigned line) {
     push(comp->breakstack, 1);
     
@@ -487,7 +496,7 @@ check_switch(M1_compiler *comp, m1_switch *s, unsigned line) {
     if (s->cases) {
         m1_case *iter = s->cases;
         while (iter != NULL) {
-            (void)check_expr(comp, iter->block);
+            (void)check_exprlist(comp, iter->block);
             iter = iter->next;   
         }   
     }
