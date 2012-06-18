@@ -2,61 +2,48 @@ int main() {
     print("1..10\n");
     int i;
     for (i = 1; i <= 10; i++) {
-        
-    
         switch (i) {
             case 1:
                 print("ok ");
                 print(i);               
                 break;
-
             case 2:
                 print("ok ");
                 print(i);               
                 break;
-
             case 3:
                 print("ok ");
                 print(i);               
                 break;
-
             case 4:
                 print("ok ");
                 print(i);               
                 break;
-
             case 5:
                 print("ok ");
                 print(i);               
                 break;
-
             case 6:
                 print("ok ");
                 print(i);               
                 break;
-
             case 7:
                 print("ok ");
                 print(i);               
                 break;
-
             case 8:
                 print("ok ");
                 print(i);               
                 break;
-
             case 9:
                 print("ok ");
                 print(i);               
                 break;
             case 10:
-                print("ok ");
-                print(i);               
+                print("ok ", i);
                 break;
-            
             default:
-                print("not ok ");
-                print(i);                
+                print("\nnot ok ", i);
                 break;   
         }
         print("\n");
