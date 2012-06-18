@@ -441,6 +441,7 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
     assert(line != 0);
         
     f->funsym = sym_lookup_symbol(comp->globalsymtab, f->name);
+    //f->funsym = sym_find_chunk(comp->globalsymtab, f->name);
     
     if (f->funsym == NULL) {
         type_error(comp, line, "function '%s' not defined", f->name);

@@ -511,8 +511,9 @@ function_init   : return_type TK_IDENT
 
                           /* enter name of function declaration in table 
                           XXX is this still needed? Dont think so but leave it for now.
-                          sym_enter_chunk(comp, &comp->currentchunk->constants, $2);
                           */
+                          //sym_enter_chunk(comp, &comp->currentchunk->constants, $2);
+                          
                           
                           /* enter name of function in global symbol table. */
                           sym_new_symbol(comp, comp->globalsymtab, $2, $1, 1);

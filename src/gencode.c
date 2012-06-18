@@ -1336,7 +1336,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     */
 
     fun = sym_find_chunk(&comp->currentchunk->constants, f->name);
-    
+//    assert(fun == f->funsym);    
     /* XXX enable this as soon as it's resolved. */
     //assert(fun->constindex == f->funsym->constindex);
         
