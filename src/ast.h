@@ -153,6 +153,7 @@ typedef enum m1_binop {
     OP_BAND,
     OP_BOR,
     OP_RSH,
+    OP_LRSH,
     OP_LSH
 } m1_binop;
 

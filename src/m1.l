@@ -83,7 +83,8 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 ">"                     { return TK_GT; }
 
 "<<"                    { return TK_LSH; }
-">>"                    { return TK_RSH; }
+">>"                    { return TK_RSH; /* arithmetic right shift. */}
+">>>"                   { return TK_LRSH; /* logical right shift. */}
 
 "::"                    { return TK_SCOPE; }
 

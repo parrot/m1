@@ -102,6 +102,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
         TK_SCOPE        "::"
         TK_LSH          "<<"
         TK_RSH          ">>"
+        TK_LRSH         ">>>"
         TK_STRING_CONST
         TK_INC_ASSIGN   "+="
         TK_DEC_ASSIGN   "-="
@@ -320,7 +321,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
 %right TK_INC_ASSIGN '='
 %left TK_AND TK_OR 
 %left TK_LE TK_GE TK_LT TK_GT TK_EQ TK_NE
-%left TK_LSH TK_RSH
+%left TK_LSH TK_RSH TK_LRSH
 %left '+' '-' 
 %left '*' '/' '&' '|' '%'  '^' '~'
 %left TK_INC TK_DEC 
@@ -1015,6 +1016,8 @@ binexpr     : expression '+' expression
                 { $$ = binexpr(comp, $1, OP_LSH, $3); }
             | expression ">>" expression
                 { $$ = binexpr(comp, $1, OP_RSH, $3); }                                                                             
+            | expression ">>>" expression
+                { $$ = binexpr(comp, $1, OP_LRSH, $3); }                                                                                             
             ;
            
 return_type : type    { $$ = $1; }

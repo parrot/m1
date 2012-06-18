@@ -1180,7 +1180,17 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
         case OP_XOR:
             gencode_binary_bitwise(comp, b, "xor");
             break;                        
+        case OP_LRSH:
+            gencode_binary_bitwise(comp, b, "lshr");
+            break;
+        case OP_RSH:
+            gencode_binary_bitwise(comp, b, "ashr");
+            break;
+        case OP_LSH:
+            gencode_binary_bitwise(comp, b, "shl");
+            break;
         default:
+            fprintf(stderr, "unknown operator\n");
             assert(0); /* should never happen. */
             break;   
     }                                
