@@ -161,6 +161,11 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
                            return TK_CHAR;
                         }
                         
+"0b"[0-1]+              {  /* skip the "0b" prefix. */
+                           yylval->ival = strtoul(yytext + 2, NULL, 2);
+                           return TK_INT;
+                        }                        
+                        
 [1-9]{DIGIT}*|"0"       { 
                            yylval->ival = atoi(yytext); 
                            return TK_INT; 
