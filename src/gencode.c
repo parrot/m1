@@ -1670,7 +1670,9 @@ gencode_new(M1_compiler *comp, m1_newexpr *expr) {
 	m1_reg sizereg    = alloc_reg(comp, VAL_INT); /* reg holding the num. of bytes to alloc. */
 
 	unsigned size     = type_get_size(expr->typedecl);
-		
+
+    assert(size != NULL); /* this should never happen. */
+    		
 	fprintf(OUT, "\tset_imm I%d, 0, %d\n", sizereg.no, size);
 	fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", pointerreg.no, sizereg.no);
 	

@@ -718,6 +718,7 @@ check_struct_decl(M1_compiler *comp, m1_struct *str) {
     
     
     unsigned offset = 0;
+    unsigned size   = 0;
     while (iter != NULL) 
     {        
         iter->offset = offset;
@@ -735,6 +736,9 @@ check_struct_decl(M1_compiler *comp, m1_struct *str) {
         offset += type_get_size(iter->typedecl);
         iter = sym_iter_next(iter);
     }
+    /* XXX calculate total size here. for each field, consider arrays size as well. */
+    
+    str->size = offset; // + size of last field. 
             
 }
 

@@ -13,20 +13,28 @@ void main() {
     
     for (j = 0; j < 2; j++) {
         for (i = 0; i < 10; i++) {
-            int k = 1;
             my_array[j].val[i] = i * j;
+//            print("[", my_array[j].val[i], "]\n");
         }
     }
     
-
-    int results[50] = {0, 0,  0,  0,   0,  0,  0,  0, 0,   0, 
-                       0, 1,  2,  3,   4,  5,  6,  7, 8,   9 };
-    print("1..20\n");
     int k = 0;
+    int results[20];
     for (j = 0; j < 2; j++) {
         for (i = 0; i < 10; i++) {
-
-           if (results[k] == i * j) 
+            results[k] = i * j;
+//            print(i * j);
+        }
+        k++;
+    } 
+    print("1..20\n");
+    
+    k = 0;
+    for (j = 0; j < 2; j++) {
+        for (i = 0; i < 10; i++) {
+//            print("[", i*j, "]\n");
+            print(my_array[j].val[i]);
+           if (results[k] == my_array[j].val[i]) 
                 print("ok ", k + 1, "\n");           
            else 
                 print("not ok ", k + 1, "\n");
