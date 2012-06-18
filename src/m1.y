@@ -108,6 +108,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
         TK_DEC_ASSIGN   "-="
         TK_MUL_ASSIGN   "*="
         TK_DIV_ASSIGN   "/="
+        TK_XOR_ASSIGN   "^="
         TK_MOD_ASSIGN   "%="
         TK_SHL_ASSIGN   ">>="
         TK_SHR_ASSIGN   "<<="
@@ -745,6 +746,7 @@ assignop    : "+="  { $$ = OP_PLUS; }
             | "<<=" { $$ = OP_LSH; }
             | "|="  { $$ = OP_BOR; }
             | "&="  { $$ = OP_BAND; }
+            | "^="  { $$ = OP_XOR; }
             ;            
             
            
@@ -829,6 +831,7 @@ for_cond    : /* empty */
 for_step    : /* empty */
                 { $$ = NULL; }
             | expression
+            | assign_expr
             ;                                                                      
             
 
