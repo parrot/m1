@@ -606,6 +606,8 @@ check_expr(M1_compiler *comp, m1_expression *e) {
             break;            
         case EXPR_CAST:
             return check_cast(comp, e->expr.cast, e->line);
+        case EXPR_CHAR:
+            return INTTYPE;
         case EXPR_DEREF:
             return check_deref(comp, e->expr.t, e->line);        
         case EXPR_DOWHILE:

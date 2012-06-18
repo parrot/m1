@@ -158,7 +158,7 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
                         }
 
 \'.\'                   { /* match chars. */
-                           yylval->cval = yytext[0];
+                           yylval->cval = yytext[1];
                            return TK_CHAR;
                         }
           
