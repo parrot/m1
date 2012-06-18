@@ -49,7 +49,7 @@ This happens in gencode_number().
 
 static unsigned gencode_expr(M1_compiler *comp, m1_expression *e);
 static void gencode_block(M1_compiler *comp, m1_block *block);
-static unsigned gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target);
+static unsigned gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, unsigned *dimension, int is_target);
 
 static const char type_chars[REG_TYPE_NUM] = {'i', 'n', 's', 'p'};
 static const char reg_chars[REG_TYPE_NUM] = {'I', 'N', 'S', 'P'};
@@ -300,10 +300,11 @@ gencode_string(M1_compiler *comp, m1_literal *lit) {
 /* Generate code for assignments. */
 static void
 gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
-    m1_object *parent;        /* pointer storage needed for code generation of LHS. */
+    m1_object *parent_dummy;  /* pointer storage needed for code generation of LHS. */
     unsigned   lhs_reg_count; /* number of regs holding result of LHS (can be aggregate/indexed) */
 	unsigned   rhs_reg_count; /* number of regs holding result of RHS (can be aggregate/indexed) */
-		
+    unsigned   dimension_dummy = 0;
+    		
     assert(a != NULL);
 	
 	/* generate code for RHS and get number of registers that hold the result */
@@ -313,7 +314,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
        Note the "1" argument; this is to indicate we want to generate code for LHS
        as an l-value.
      */
-    lhs_reg_count = gencode_obj(comp, a->lhs, &parent, 1);    
+    lhs_reg_count = gencode_obj(comp, a->lhs, &parent_dummy, &dimension_dummy, 1);    
     
 
     if (rhs_reg_count == 2) { /* deref; ... = x[42] */
@@ -369,9 +370,14 @@ an object can be of arbitrary complexity, this is always reduced to 2 registers
 (possibly emitting instructions in this function; as soon as 3 registers are needed,
 an instruction is emitted, and one register is removed. See the comments inside.)
 
+The dimension parameter is also an OUT parameter, and is used in particular for arrays.
+When handling x[1][2][3], and we're calculating the offset from the base address (x),
+we need to know which dimension we're in (1, 2 or 3 in the example of x[1][2][3]).
+
 */
 static unsigned
-gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, int is_target) {
+gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, unsigned *dimension, int is_target) 
+{
 
     unsigned numregs_pushed = 0;
 
@@ -544,26 +550,55 @@ OBJECT_LINK------>     L3
             *parent = obj;   	
 
             /* count the number of regs pushed by the parent, which is 1. */
-            numregs_pushed += gencode_obj(comp, obj->parent, parent, is_target);
+            numregs_pushed += gencode_obj(comp, obj->parent, parent, dimension, is_target);
             
             /* At this point, we're done visiting parents, so now visit the "fields".
                In x.y.z, after returning from x, we're visiting y. After that, we'll visit z.
                As we do this, keep track of how many registers were used to store the result.
              */
-            numregs_pushed += gencode_obj(comp, obj->obj.field, parent, is_target);   
+            (*dimension)++; 
+            numregs_pushed += gencode_obj(comp, obj->obj.field, parent, dimension, is_target);   
                                    
             if (numregs_pushed == 3) {
                 /* if the field was an index. (a[b]) */
                 if (obj->obj.field->type == OBJECT_INDEX) {
                     m1_reg last           = popreg(comp->regstack);   /* latest added; store here for now. */
                     m1_reg field          = popreg(comp->regstack);   /* 2nd latest, this one needs to be removed. */
-                    m1_reg parent         = popreg(comp->regstack);   /* x in x[2][3]. */                
+                    m1_reg parentreg      = popreg(comp->regstack);   /* x in x[2][3]. */                
                     m1_reg size_reg       = alloc_reg(comp, VAL_INT); /* to hold amount to add. */
                     m1_reg updated_parent = alloc_reg(comp, VAL_INT); /* need to copy base address from parent. */
                                 
-                    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", size_reg.no, 3 /* XXX fix size. HACK ALERT */);
+                    /* 3 registers only the case when 2 dimensions are parsed, e.g., x[10][20].
+                       Find the size of the first dimension, since that's the one that's 
+                       added to the parent's base address, i.e., adding 10 * sizeof(type).
+                     */   
+                    fprintf(stderr, "DIMENSION: %d\n", *dimension);                             
+
+                    /* get a pointer to the m1_var node for the parent; this is accessible
+                       through the <sym> field of the parent; m1_var and m1_symbol nodes
+                       have pointers to each other.
+                     */
+                    assert((*parent)->sym != NULL);
+                    assert((*parent)->sym->var != NULL);
+                    m1_var       *parent_var        = (*parent)->sym->var; 
+                    m1_dimension *current_dimension = parent_var->dims;
+
+                    /* now find right dimension. The number in dimension keeps track of
+                       which dimension we're currently visiting. Dimensions are stored in a
+                       linked list, so set the pointer <num_get_next> times to the dimension 
+                       node's next.
+                     */
+                    unsigned num_get_next;
+                    for (num_get_next = *dimension - 1; num_get_next != 0; num_get_next--) {
+                        assert(current_dimension->next != NULL);
+                        current_dimension = current_dimension->next;
+
+                    }
+                     
+                    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", size_reg.no, current_dimension->num_elems);
                     fprintf(OUT, "\tmult_i\tI%d, I%d, I%d\n", field.no, field.no, size_reg.no);
-                    fprintf(OUT, "\tset \tI%d, I%d, x\n", updated_parent.no, parent.no); /* XXX need this otherwise segfault.*/
+                    /* Need to have the following instruction (set X, Y), otherwise M0 segfaults. */
+                    fprintf(OUT, "\tset \tI%d, I%d, x\n", updated_parent.no, parentreg.no); 
                     fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", updated_parent.no, updated_parent.no, field.no);
                 
                     pushreg(comp->regstack, updated_parent);   /* push back (x+[2]) */
@@ -577,10 +612,10 @@ OBJECT_LINK------>     L3
                     /* field is a struct member access (a.b) */
                     m1_reg last   = popreg(comp->regstack);
                     m1_reg offset = popreg(comp->regstack);
-                    m1_reg parent = popreg(comp->regstack);
+                    m1_reg parentreg = popreg(comp->regstack);
                     m1_reg target = alloc_reg(comp, VAL_INT);
                     
-                    fprintf(OUT, "\tderef\tI%d, I%d, I%d\n", target.no, parent.no, offset.no);   
+                    fprintf(OUT, "\tderef\tI%d, I%d, I%d\n", target.no, parentreg.no, offset.no);   
                     
                     pushreg(comp->regstack, target);
                     pushreg(comp->regstack, last);
@@ -847,14 +882,16 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
 
 static void
 gencode_deref(M1_compiler *comp, m1_object *o) {
+    unsigned dimension_dummy = 0;
     /* XXX need equivalent of C's *obj operator. */
-    gencode_obj(comp, o, NULL, 0);   
+    gencode_obj(comp, o, NULL, &dimension_dummy, 0);   
 }
 
 static void
 gencode_address(M1_compiler *comp, m1_object *o) {
+    unsigned dimension_dummy = 0;
     /* XXX need equivalent of C's &obj operator. */
-    gencode_obj(comp, o, NULL, 0);       
+    gencode_obj(comp, o, NULL, &dimension_dummy, 0);       
 }
 
 static void
@@ -1928,8 +1965,8 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
                                we're not using the value of <obj>, 
                                only its space on the C runtime stack. 
                              */
-
-            num_regs = gencode_obj(comp, e->expr.t, &obj, 0);            
+            unsigned dimension_dummy = 0;
+            num_regs = gencode_obj(comp, e->expr.t, &obj, &dimension_dummy, 0);            
             //fprintf(stderr, "generated code for object: %s\n", obj->obj.name);
             //fprintf(stderr, "symbol of %s is: %s\n", obj->obj.name, obj->sym->name);
             

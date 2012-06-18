@@ -17,8 +17,9 @@ typedef struct m1_ident {
 
 /* for array dimensions. */
 typedef struct m1_dimension {
-    int                  intval;
-    struct m1_dimension *next;  
+    unsigned             num_elems;  /* number of elements in this dimension. */
+    struct m1_dimension *next;       /* x[1][2][3] has 3 dimensions, which are 
+                                        linked through next pointer. */
       
 } m1_dimension;
 

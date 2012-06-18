@@ -569,13 +569,17 @@ struct_members      : struct_member
                         { $$ = $1 + $2; }
                     ;
                     
-struct_member       : type TK_IDENT ';'
+struct_member       : type TK_IDENT opt_dimension ';'
                         {                            
                           /* add this member as a field to the current struct's symbol table. */
                           sym_new_symbol(comp, comp->currentsymtab, $2, $1, 1);   
                           $$ = 4; /* XXX fix size. */                       
                         }
                     ;                                        
+
+opt_dimension       : /* empty */
+                    | dimension
+                    ;                    
         
 block   : open_block statements close_block
             {  

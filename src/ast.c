@@ -413,6 +413,13 @@ vardecl(M1_compiler *comp, char *type, m1_var *v) {
 	return expr;	
 }
 
+/*
+
+Constructor for a m1_var node. All fields are initialized, and an entry is added
+to the currently active symbol table. The m1_var node gets a pointer to this
+symbol entry; the symbol entry gets a pointer to this AST node. 
+
+*/
 static m1_var *
 make_var(M1_compiler *comp, char *varname, m1_expression *init, unsigned num_elems) {
     m1_var *v    = (m1_var *)m1_malloc(sizeof(m1_var));
@@ -490,7 +497,7 @@ array(M1_compiler *comp, char *varname, m1_dimension *dimension, m1_expression *
         /* for each dimension, the number of elements is multiplied 
            with what we had already. int x[4][5] means 4*5 elements.
          */
-        num_elems *= iter->intval;
+        num_elems *= iter->num_elems;
         iter       = iter->next;    
     }   
     
@@ -625,7 +632,7 @@ close_scope(M1_compiler *comp) {
 m1_dimension *
 array_dimension(int ival) {
     m1_dimension *d = (m1_dimension *)m1_malloc(sizeof(m1_dimension));
-    d->intval       = ival;
+    d->num_elems    = ival;
     d->next         = NULL;
     return d;    
 }

@@ -25,18 +25,21 @@ function delay() -- NOTE: SYSTEM-DEPENDENT, adjust as necessary
 end
 */
 
-/*
-function ARRAY2D(w,h)
-  local t = {w=w,h=h}
-  for y=1,h do
-    t[y] = {}
-    for x=1,w do
-      t[y][x]=0
-    end
-  end
-  return t
-end
-*/
+
+
+struct matrix {
+    int data[10][20];   
+}
+
+void spawn(matrix m) {
+    int i;
+    for (i = 0; i < 10; i++) {
+        int j;
+        for(j = 0; j < 20; j++) {
+          m.data[i] = 1;      
+        } 
+    }          
+}
 
 /*
 _CELLS = {}
