@@ -190,17 +190,13 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
                                m1_decl     *decl = type_find_def(comp, yytext);
                        
                                if (decl == NULL) { /* not found, so must be an identifier */
-                                //  fprintf(stderr, "%s is a TK_IDENT\n", yytext);
                                   return TK_IDENT; 
                                }                            
                                else {
-                                  fprintf(stderr, "%s is a TK_USERTYPE\n", yytext);
-                                 // comp->is_parsing_usertype = 0;
                                   return TK_USERTYPE;
                                }
                            }
                            else {
-                               // fprintf(stderr, "%s is a TK_IDENT\n", yytext);
                                return TK_IDENT;
                            }
                            
