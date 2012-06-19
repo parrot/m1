@@ -137,7 +137,9 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
             /* in case field is a member of a struct, get _that_ type;
                when it's an index, return the type of obj->parent. 
              */
-            fieldtype = check_obj(comp, obj->obj.field, line, parent); 
+            if (t != VOIDTYPE) /* only check fields if main object was found. */
+                fieldtype = check_obj(comp, obj->obj.field, line, parent); 
+                
             if (obj->obj.field->type == OBJECT_FIELD) 
                 t = fieldtype;
             
@@ -149,13 +151,13 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
             obj->sym = sym_lookup_symbol(comp->currentsymtab, obj->obj.name);            
 
             if (obj->sym == NULL) {
-                type_error(comp, line, "Undeclared variable '%s'", obj->obj.name);
+                type_error(comp, line, "undeclared variable '%s'", obj->obj.name);
             }
             else { /* found symbol, now link it to the object node. */
                 /* find the type definition for this symbol's type. */
                 obj->sym->typedecl = type_find_def(comp, obj->sym->type_name);
                 if (obj->sym->typedecl == NULL) {
-                    type_error(comp, line, "Type '%s' is not defined", obj->sym->type_name);   
+                    type_error(comp, line, "type '%s' is not defined", obj->sym->type_name);   
                 }
                 t = obj->sym->typedecl;
 
@@ -168,22 +170,25 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
 
             assert((*parent)->sym != NULL);
             assert((*parent)->sym->typedecl != NULL);
-
+            /* look up symbol for this field in parent's symbol table (which is a struct/PMC). */
             obj->sym = sym_lookup_symbol( &(*parent)->sym->typedecl->d.s->sfields, obj->obj.name);
 
             if (obj->sym == NULL) {
-                type_error(comp, line, "Struct %s has no member %s", 
+                type_error(comp, line, "struct %s has no member %s", 
                            (*parent)->obj.name, obj->obj.name);
             }
             else {
                 /* find the type declaration for this field's type. */
                 obj->sym->typedecl = type_find_def(comp, obj->sym->type_name);
+                
                 if (obj->sym->typedecl == NULL) {
-                    type_error(comp, line, "Type '%s' is not defined", obj->sym->type_name);   
+                    type_error(comp, line, "type '%s' is not defined", obj->sym->type_name);   
                 }
                 t = obj->sym->typedecl;    
+                /* only update parent with this field if obj->sym was found, otherwise segfaults will result. */
+                *parent = obj;  
             }
-            *parent = obj;
+            
             break;
         }
         case OBJECT_DEREF:
@@ -374,7 +379,17 @@ check_binary(M1_compiler *comp, m1_binexpr *b, unsigned line) {
                            "cannot apply binary & or | operator on non-integer expressions");   
             }
             break;
+        case OP_RSH:
+        case OP_LSH:
+        case OP_LRSH: 
+            if (ltype != INTTYPE) {
+                type_error(comp, line, 
+                           "cannot apply shift <<, >> or >>> operator on non-integer expressions");   
+            }
+            break;
         default:
+            fprintf(stderr, "Unhandled binary operator in type checker\n");
+            assert(0); /* should never happen. */
             break;   
     }
 
@@ -433,9 +448,12 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
     assert(comp != NULL);
     assert(f != NULL);    
     assert(line != 0);
-        
+      
+    /* look up declaration of function in compiler's global symbol table. 
+       XXX if not found, it must be handled by the linker, which is yet to be written.
+       */    
     f->funsym = sym_lookup_symbol(comp->globalsymtab, f->name);
-    //f->funsym = sym_find_chunk(comp->globalsymtab, f->name);
+
     
     if (f->funsym == NULL) {
         type_error(comp, line, "function '%s' not defined", f->name);
