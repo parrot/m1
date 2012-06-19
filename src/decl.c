@@ -83,6 +83,8 @@ type_enter_pmc(M1_compiler *comp, char *pmcname, struct m1_pmc *pmcdef) {
     decl->name    = pmcname;
     decl->d.p     = pmcdef;
 
+    pmcdef->size = 4; /* XXX fix size */
+    
     /* link in list of declarations. */
     decl->next = comp->declarations;
     comp->declarations = decl;
