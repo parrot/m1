@@ -79,6 +79,8 @@ Compared to C, M1 has:
 
 =item * no pointers; instead, structs and PMCs are treated as references (similar to Java).
 
+=item * variables with the same name in a nested block (hiding the one in the outer blok) are not allowed.
+
 =back
 
 
@@ -128,6 +130,8 @@ Incomplete milestones:
 
 =item * optimization phase
 
+=item * register spiller
+
 =back
 
 =head2 Architecture overview
@@ -146,7 +150,7 @@ Each phase of the compiler is one "filter". The M1 compiler has the following ph
 
 =item 2. Semantic analysis/type checking.
 
-=item 3. Instruction generation. 
+=item 3. Instruction generation. (currently emitted to stdout).
 
 =item 4. Optimization and register optimization. (not implemented)
 
@@ -164,7 +168,8 @@ After the parse, the AST is passed on to the semantic analysis phase. In this ph
 the compiler performs a number of type checks. Also, the semantic analysis phase
 visits all nodes and finds the right type information for variables. In this 
 process, pointers are set to type definitions. In the parsing phase, a variable
-may be declared of a type that has not been parsed itself yet. 
+may be declared of a type that has not been parsed itself yet, therefore, the semantic
+check phase is essential. 
 
 After the type checking phase, the code generation phase traverses the AST, and
 generates appropriate instructions for each node. 
@@ -179,7 +184,7 @@ more modern implementations of the well-known Lex and Yacc tools, respectively.
 The choice for these tools is grounded in the fact that the precise definition 
 of M1 was expected to be in flux in this early stage, and the need for maintainability.
 
-The current implementation consists currently of about 8,000 lines of code, using 
+The current implementation consists currently of about 9,300 lines of code, using 
 SLOCcount [3], though it is expected this will go up to 10,000 when the implementation 
 is finished.
 
@@ -270,10 +275,11 @@ will allocate 10 * sizeof(int) bytes on the heap.
 Structs and PMCs are very similar. Structs are similar to C's structures. 
 PMCs are like structs, but may have methods. In that sense, they are
 somewhat similar to C++ classes. Within PMC methods, the C<self> handle
-refers to the current object.
+refers to the current object. C<self> is a parameter that is automatically 
+available within PMC methods.
 
 Structs and PMCs can be allocated with the C<new> keyword; they are allocated
-on the heap.
+on the heap. Unlike arrays, they are B<not> auto-vivivied.
 
 =head2 Subsystems
 
@@ -288,16 +294,16 @@ to the C<m1_symbol> structure.
 
 =head3 Type definitions
 
-Types are represented by a C<m1_decl> struct instance. For each built-in type,
-the compiler inserts a new C<m1_decl> into the type declaration table. For each
-user-defined type (structs, unions, PMCs and enums), a new C<m1_decl> is created.
+Types are represented by a C<m1_type> struct instance. For each built-in type,
+the compiler inserts a new C<m1_type> into the type declaration table. For each
+user-defined type (structs, unions, PMCs and enums), a new C<m1_type> is created.
 
-The typechecker (in semcheck.c) works mostly with these C<m1_decl> nodes. Since
+The typechecker (in semcheck.c) works mostly with these C<m1_type> nodes. Since
 there is exactly one C<m1_decl> node for each type, the typechecker compares
 types by doing pointer-comparisons. That is:
 
- m1_decl *ltype;
- m1_decl *rtype; 
+ m1_type *ltype;
+ m1_type *rtype; 
  
  ... // assign ltype and rtype
  
@@ -397,13 +403,12 @@ First, the AST node representing the rvalue (42) is visited; a new register
 is allocated, and an instruction is generated to load the constant into that
 register:
 
- set_imm I0, 0, 42
+ set_imm I0, 0, 42 #load constant 42 in register I0.
  
-The register is pushed onto the regstack.
- 
-Then, the C<assignment> node is visited, which will allocate a new register
-for C<x> if it hasn't been assigned one before. The assignment node can
-pop off the register that was assigned to keep the value 42. 
+The register I0 is pushed onto the regstack. Then, the C<assignment> node is 
+visited, which will allocate a new register for C<x> if it hasn't been assigned 
+one before. The assignment node can pop off the register that was assigned to 
+keep the value 42. 
 
 A stack is used rather than the code generator functions' return values,
 since some nodes may be represented by two nodes, in particular for generating

@@ -327,6 +327,8 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
             fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
                                                         reg_chars[(int)parent.type], parent.no,
                                                         reg_chars[(int)index.type], index.no);
+            free_reg(comp, index);
+            free_reg(comp, parent);                                                        
         }
         else {
             assert(0); /* should never happen. */          
@@ -340,6 +342,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
             fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
                                                     reg_chars[(int)rhs.type], rhs.no);
             pushreg(comp->regstack, rhs);
+            free_reg(comp, lhs); /* to free regs for constants; for symbols they should be frozen. */
         }
         else if (lhs_reg_count == 2) { /* complex lvalue; x[10] = 42 */
             assert(rhs_reg_count == 1); /* lhs_reg_count+rhs_reg_count == 3, so pop 3 regs. */
@@ -578,8 +581,10 @@ OBJECT_LINK------>     L3
                        have pointers to each other.
                      */
                     fprintf(stderr, "Parent: %s\n", (*parent)->obj.name);
+                    
                     assert((*parent)->sym != NULL);
                     assert((*parent)->sym->var != NULL);
+                    
                     m1_var       *parent_var        = (*parent)->sym->var; 
                     m1_dimension *current_dimension = parent_var->dims;
 
@@ -607,6 +612,7 @@ OBJECT_LINK------>     L3
                     
                     free_reg(comp, size_reg);
                     free_reg(comp, field);
+                    free_reg(comp, parentreg);
                     /* we popped 3, and pushed 2, so effectively decrement by 1. */
                     --numregs_pushed;
                 }              
@@ -623,6 +629,7 @@ OBJECT_LINK------>     L3
                     pushreg(comp->regstack, last);
                     /* popped 3 regs; pushed 2, so decrement numregs_pushed. */
                     free_reg(comp, offset);
+                    free_reg(comp, parentreg);
                     --numregs_pushed;
                                         
                 }
@@ -1356,6 +1363,7 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     }
     else { /* prefix; give back the register containing the NEW value. */
         pushreg(comp->regstack, reg);
+
     }
 
     /* release the register that was holding the constant "1". */
@@ -1386,21 +1394,11 @@ gencode_break(M1_compiler *comp) {
  * XXX this function needs a bit of refactoring, cleaning up and comments.
  */
 static void
-gencode_funcall(M1_compiler *comp, m1_funcall *f) {
-    m1_symbol *fun = f->funsym;
-    
-    assert(f->funsym != NULL);
-    /* XXX figure out why this lookup is still needed. 
-    has to do with fun->constindex
-    */
-
-    fun = sym_find_chunk(&comp->currentchunk->constants, f->name);
-//    assert(fun == f->funsym);    
-    /* XXX enable this as soon as it's resolved. */
-    //assert(fun->constindex == f->funsym->constindex);
+gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {    
+    assert(funcall->funsym != NULL);
         
-    m1_reg pc_reg, cont_offset;
-
+    m1_reg  pc_reg, 
+           cont_offset;
      
     m1_reg cf_reg   = alloc_reg(comp, VAL_CHUNK);
     m1_reg sizereg  = alloc_reg(comp, VAL_INT);
@@ -1419,7 +1417,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     /* store arguments in registers of new callframe.
        XXX this still needs to be specced for M0's calling conventions. */
        
-    m1_expression *argiter = f->arguments;
+    m1_expression *argiter = funcall->arguments;
 
  
     int regindexes[4] = { M0_REG_I0, 
@@ -1521,7 +1519,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     goto_chunk P0, I0, x
 */
 
-    int calledfun_index = fun->constindex;
+    int calledfun_index = funcall->constindex;
     fprintf(OUT, "\tset_imm    P%d, 0, %d\n", cf_reg.no, calledfun_index);
     fprintf(OUT, "\tderef      P%d, CONSTS, P%d\n", cf_reg.no, cf_reg.no);
     
@@ -1609,7 +1607,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *f) {
     */
     /* retrieve the return value. */
     m1_reg idxreg           = alloc_reg(comp, VAL_INT);
-    m1_reg retvaltarget_reg = alloc_reg(comp, f->typedecl->valtype);
+    m1_reg retvaltarget_reg = alloc_reg(comp, funcall->typedecl->valtype);
     /* load the number of register I0. */
     fprintf(OUT, "\tset_imm\tI%d, 0, %c0\n", idxreg.no, reg_chars[(int)retvaltarget_reg.type]);   
     

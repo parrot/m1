@@ -8,8 +8,9 @@
 
 #include "ann.h"
 
+/* for lists of identifiers. */
 typedef struct m1_ident {
-    char            *name;
+    char            *name;      
     struct m1_ident *next;    
     
 } m1_ident;
@@ -24,14 +25,15 @@ typedef struct m1_dimension {
 } m1_dimension;
 
 typedef struct m1_block {
-    struct m1_expression *stats;
-    struct m1_symboltable locals;
+    struct m1_expression *stats;        /* list of statements in this block. */
+    struct m1_symboltable locals;       /* variables declared in this block. */
     
 } m1_block;
 
 typedef enum chunk_flag {
-    CHUNK_ISVTABLE = 0x001,
-    CHUNK_ISMETHOD = 0x002
+    CHUNK_ISFUNCTION = 0x000,
+    CHUNK_ISVTABLE   = 0x001,
+    CHUNK_ISMETHOD   = 0x002
     
 } chunk_flag;
 
@@ -89,7 +91,8 @@ typedef struct m1_funcall {
     char                 *name;
     struct m1_expression *arguments;
     struct m1_type       *typedecl;  /* type declaration for return type; needed for type checking */
-    struct m1_symbol     *funsym; /* entry in symbol table. */
+    struct m1_symbol     *funsym; /* entry in symbol table for this function definition. */
+    unsigned              constindex; /* index into CONSTS segment of the chunk from which this function is called. */
     
 } m1_funcall;
 
@@ -250,7 +253,7 @@ typedef struct m1_forexpr {
     struct m1_expression *block;    
 } m1_forexpr;
 
-/* const declarations */
+/* AST node for const declarations */
 typedef struct m1_const {
     char                 *type;
     char                 *name;
@@ -308,7 +311,7 @@ typedef struct m1_enumconst {
 
 typedef struct m1_enum {
     char         *enumname;
-    m1_enumconst *enums;
+    m1_enumconst *enums;            /* list of enum constants. */
     
 } m1_enum;
 

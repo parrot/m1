@@ -493,7 +493,7 @@ function_definition : function_init '(' parameters ')' open_block statements '}'
                           
                           $$ = $1;
 
-                          add_chunk_parameters(comp, $$, $3, 0); /* 0 for not a method. */
+                          add_chunk_parameters(comp, $$, $3, CHUNK_ISFUNCTION);
                                                                                                                                   
                           /* now close the scope. */
                           close_scope(comp);                      
@@ -517,7 +517,9 @@ function_init   : return_type TK_IDENT
                           //sym_enter_chunk(comp, &comp->currentchunk->constants, $2);
                           
                           
-                          /* enter name of function in global symbol table. */
+                          /* enter name of this function in global symbol table, so
+                             compiler can find it whenever another function calls this one.
+                           */
                           sym_new_symbol(comp, comp->globalsymtab, $2, $1, 1);
                         }
                 ;

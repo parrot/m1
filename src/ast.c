@@ -202,19 +202,25 @@ expr_set_unexpr(M1_compiler *comp, m1_expression *node, m1_expression *exp, m1_u
     node->expr.u = unexpr(comp, exp, op);
 }
 
+/* funcall(). Creates an AST node for a function call; it stores the name of t
+   the function to call, the arguments to pass, and the name of the function is 
+   stored in the current chunk's constants segment. This is needed, because
+   its constant index needs to be loaded when code is generated.
+ */
 m1_expression *
 funcall(M1_compiler *comp, m1_object *fun, m1_expression *args) {
-	m1_expression *expr     = expression(comp, EXPR_FUNCALL);
-	expr->expr.f            = (m1_funcall *)m1_malloc(sizeof(m1_funcall));
+	m1_expression *expr      = expression(comp, EXPR_FUNCALL);
+	expr->expr.f             = (m1_funcall *)m1_malloc(sizeof(m1_funcall));
 	
     /* XXX need to handle method calls. */	
-    expr->expr.f->name      = fun->obj.name;
-    expr->expr.f->arguments = args;	
+    expr->expr.f->name       = fun->obj.name;
+    expr->expr.f->arguments  = args;	
     
 	/* enter name of function to invoke into constant table. */
 	// replace this somehow. Get access to the vtable of the object and copy the
 	// method reference from that into this chunk's const segment.
-	sym_enter_chunk(comp, &comp->currentchunk->constants, fun->obj.name);
+    m1_symbol *chunk_entry   = sym_enter_chunk(comp, &comp->currentchunk->constants, fun->obj.name);
+	expr->expr.f->constindex = chunk_entry->constindex; 
     return expr;   
 }
 
