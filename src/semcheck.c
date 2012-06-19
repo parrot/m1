@@ -732,10 +732,13 @@ check_struct_decl(M1_compiler *comp, m1_struct *str) {
                            "Cannot find type '%s' for struct member '%s'", 
                            iter->type_name, iter->name);                      
             }
+            else {
+                fprintf(stderr, "check struct decl: type of member %s is %s and size is %d\n", iter->name, iter->typedecl->name, type_get_size(iter->typedecl));   
+            }
         }
         
         /* add current field's size to offset, which will be next field's offset. */
-        size_of_current = type_get_size(iter->typedecl);
+        size_of_current = type_get_size(iter->typedecl) * iter->var->num_elems;
         offset += size_of_current; 
         
         iter = sym_iter_next(iter);

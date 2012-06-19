@@ -1,5 +1,5 @@
 struct object {
-    int val[10];   
+    int val[5];   
 }
 void main() {
     
@@ -12,33 +12,31 @@ void main() {
     }
     
     for (j = 0; j < 2; j++) {
-        for (i = 0; i < 10; i++) {
+        for (i = 0; i < 5; i++) {
             my_array[j].val[i] = i * j;
-//            print("[", my_array[j].val[i], "]\n");
         }
     }
-    
+
+
     int k = 0;
-    int results[20];
+    int results[10];
     for (j = 0; j < 2; j++) {
-        for (i = 0; i < 10; i++) {
+        for (i = 0; i < 5; i++) {
             results[k] = i * j;
-//            print(i * j);
+            k++;
         }
-        k++;
     } 
-    print("1..20\n");
+    print("1..10\n");
     
     k = 0;
     for (j = 0; j < 2; j++) {
-        for (i = 0; i < 10; i++) {
-//            print("[", i*j, "]\n");
-            print("my array[j].val[i] = ", my_array[j].val[i], "...");
-           if (results[k] == my_array[j].val[i]) 
-                print("ok ", k + 1, "\n");           
-           else 
-                print("not ok ", k + 1, "\n");
-           
+        for (i = 0; i < 5; i++) {
+           if (results[k] == my_array[j].val[i])  {
+                print("ok ", k + 1, "\n");         
+           }  
+           else {
+                print("not ok ", k + 1, " (", results[k], " != ", my_array[j].val[i], ")\n");
+           }
            k++; 
         }   
     }

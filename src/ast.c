@@ -233,13 +233,12 @@ const_decl(char *type, char *name, m1_expression *expr) {
 m1_expression *
 constdecl(M1_compiler *comp, char *type, char *name, m1_expression *e) {
 	m1_expression *expr = expression(comp, EXPR_CONSTDECL);
-	expr->expr.c = const_decl(type, name, e);
+	expr->expr.c        = const_decl(type, name, e);
 	return expr;	
 }
 
 static void 
-expr_set_for(m1_expression *node, m1_expression *init,
-             m1_expression *cond, m1_expression *step,
+expr_set_for(m1_expression *node, m1_expression *init, m1_expression *cond, m1_expression *step,
              m1_expression *stat) 
 {
     node->expr.o = (m1_forexpr *)m1_malloc(sizeof(m1_forexpr));
@@ -326,18 +325,20 @@ expr_set_if(M1_compiler *comp, m1_expression *node, m1_expression *cond,
     node->expr.i->elseblock = elseblock;
 }
 
+/* store <expr> in an m1_expression node. */
 static void 
 expr_set_expr(m1_expression *node, m1_expression *expr) {
     node->expr.e = expr;   
 }
 
+/* store <obj> in an m1_expression node. */
 static void 
 expr_set_obj(m1_expression *node, m1_object *obj) {
     node->expr.t = obj;    
 }
 
 
-
+/* Set the <name> field of the union in the m1_object node. */
 void 
 obj_set_ident(m1_object *node, char *ident) {
     node->obj.name = ident;    
@@ -446,6 +447,7 @@ var(M1_compiler *comp, char *varname, m1_expression *init) {
     /* a single var is just size 1. */
 	m1_var *v = make_var(comp, varname, init, 1);
    		
+    /* XXX Can we do this in semcheck so that all types are parsed? */   		
 	/* get a pointer to the type declaration */	
 	v->sym->typedecl = type_find_def(comp, comp->parsingtype);
 
@@ -613,7 +615,7 @@ open_scope(M1_compiler *comp) {
     
     /* link to current symbol table, which is the parent scope. */    
     bl->locals.parentscope = comp->currentsymtab;
-    comp->currentsymtab = &bl->locals;
+    comp->currentsymtab    = &bl->locals;
 
     return bl;
 }
@@ -630,9 +632,9 @@ close_scope(M1_compiler *comp) {
 }
 
 m1_dimension *
-array_dimension(int ival) {
+array_dimension(int num_elems) {
     m1_dimension *d = (m1_dimension *)m1_malloc(sizeof(m1_dimension));
-    d->num_elems    = ival;
+    d->num_elems    = num_elems;
     d->next         = NULL;
     return d;    
 }
