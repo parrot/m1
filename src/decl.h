@@ -34,6 +34,10 @@ typedef enum m1_decl_type {
 typedef struct m1_decl {
     char *name;    /* name of declared type. */
     
+    /* The information stored for a type definition differs per type. 
+       For built-ins, it's just the size; if that changes that should become a struct
+       as well. 
+     */
     union { 
         struct m1_struct *s;    /* struct declaration. */
         struct m1_pmc    *p;    /* PMC declaration */
