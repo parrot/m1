@@ -13,18 +13,18 @@
 
 
 
-static m1_decl *check_expr(M1_compiler *comp, m1_expression *e);
+static m1_type *check_expr(M1_compiler *comp, m1_expression *e);
 
 static void check_block(M1_compiler *comp, m1_block *expr);
 
-static m1_decl *check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent);
+static m1_type *check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent);
 
 /* Cache these built-in types. Read-only. */
-static m1_decl *BOOLTYPE;
-static m1_decl *INTTYPE;
-static m1_decl *NUMTYPE;
-static m1_decl *STRINGTYPE;
-static m1_decl *VOIDTYPE;
+static m1_type *BOOLTYPE;
+static m1_type *INTTYPE;
+static m1_type *NUMTYPE;
+static m1_type *STRINGTYPE;
+static m1_type *VOIDTYPE;
 
 /* XXX is this init routine thread-safe? */
 static void
@@ -100,11 +100,11 @@ that is assigned to the target (rhs). They don't need to
 be exactly the same, but they need to be compatible.
 
 */
-static m1_decl *
+static m1_type *
 check_assign(M1_compiler *comp, m1_assignment *a, unsigned line) {
     m1_object *parent; /* storage on the C runtime stack for check_obj. */
-    m1_decl *ltype = check_obj(comp, a->lhs, line, &parent);
-    m1_decl *rtype = check_expr(comp, a->rhs);
+    m1_type *ltype = check_obj(comp, a->lhs, line, &parent);
+    m1_type *rtype = check_expr(comp, a->rhs);
     
     assert(ltype != NULL);
     assert(rtype != NULL);
@@ -121,15 +121,15 @@ check_assign(M1_compiler *comp, m1_assignment *a, unsigned line) {
 }
 
 
-static m1_decl *
+static m1_type *
 check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent) 
 {
-    m1_decl *t = VOIDTYPE;
+    m1_type *t = VOIDTYPE;
 
     switch (obj->type) 
     {        
         case OBJECT_LINK: {
-            m1_decl *fieldtype;
+            m1_type *fieldtype;
             
             *parent = obj;
             
@@ -205,7 +205,7 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
 
 static void
 check_while(M1_compiler *comp, m1_whileexpr *w, unsigned line) {    
-    m1_decl *condtype = check_expr(comp, w->cond);
+    m1_type *condtype = check_expr(comp, w->cond);
         
     if (condtype != BOOLTYPE) {
         warning(comp, line, "condition in while statement is not a boolean expression");       
@@ -222,7 +222,7 @@ check_while(M1_compiler *comp, m1_whileexpr *w, unsigned line) {
 
 static void
 check_dowhile(M1_compiler *comp, m1_whileexpr *w, unsigned line) {
-    m1_decl *condtype;
+    m1_type *condtype;
     
     
     condtype = check_expr(comp, w->cond);
@@ -248,7 +248,7 @@ check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
         check_expr(comp, i->init);
 
     if (i->cond) {
-        m1_decl *t = check_expr(comp, i->cond);
+        m1_type *t = check_expr(comp, i->cond);
         if (t != BOOLTYPE) {
             warning(comp, line, "condition in for-loop is not a boolean expression");   
         }        
@@ -270,7 +270,7 @@ check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
 static void
 check_if(M1_compiler *comp, m1_ifexpr *i, unsigned line) {
 
-    m1_decl *condtype = check_expr(comp, i->cond);
+    m1_type *condtype = check_expr(comp, i->cond);
     if (condtype != BOOLTYPE) {
         warning(comp, line, "condition in if-statement does not yield boolean value");   
     }
@@ -283,29 +283,29 @@ check_if(M1_compiler *comp, m1_ifexpr *i, unsigned line) {
            
 }
 
-static m1_decl *
+static m1_type *
 check_deref(M1_compiler *comp, m1_object *o, unsigned line) {
     /* declared here to use the storage space on C runtime stack. */
     m1_object *parent; 
-    m1_decl *t = check_obj(comp, o, line, &parent);
+    m1_type *t = check_obj(comp, o, line, &parent);
     /* XXX *obj not implemented yet. */
     return t;
 }
 
-static m1_decl *
+static m1_type *
 check_address(M1_compiler *comp, m1_object *o, unsigned line) {
     /* declared here to use the storage space on C runtime stack. */
     m1_object *parent; 
-    m1_decl *t = check_obj(comp, o, line, &parent);   
+    m1_type *t = check_obj(comp, o, line, &parent);   
     /* XXX &obj not implemented yet. */
     return t;
 }
 
-static m1_decl *
+static m1_type *
 check_return(M1_compiler *comp, m1_expression *e, unsigned line) {
     /* find type of current chunk */
-    m1_decl *funtype = type_find_def(comp, comp->currentchunk->rettype);    
-    m1_decl *rettype = VOIDTYPE;
+    m1_type *funtype = type_find_def(comp, comp->currentchunk->rettype);    
+    m1_type *rettype = VOIDTYPE;
     
     if (e != NULL) {
         rettype = check_expr(comp, e);
@@ -317,9 +317,9 @@ check_return(M1_compiler *comp, m1_expression *e, unsigned line) {
     return rettype; /* return type of the expression */
 }
 
-static m1_decl *
+static m1_type *
 check_binary(M1_compiler *comp, m1_binexpr *b, unsigned line) {
-    m1_decl *ltype, 
+    m1_type *ltype, 
             *rtype;
     
     ltype = check_expr(comp, b->left);
@@ -382,9 +382,9 @@ check_binary(M1_compiler *comp, m1_binexpr *b, unsigned line) {
     return ltype;
 }
 
-static m1_decl *
+static m1_type *
 check_unary(M1_compiler *comp, m1_unexpr *u, unsigned line) {
-    m1_decl *t = VOIDTYPE;
+    m1_type *t = VOIDTYPE;
 
     t = check_expr(comp, u->expr);     
     switch (u->op) {
@@ -427,7 +427,7 @@ check_continue(M1_compiler *comp, unsigned line) {
     }
 }
 
-static m1_decl *
+static m1_type *
 check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
     
     assert(comp != NULL);
@@ -500,7 +500,7 @@ check_switch(M1_compiler *comp, m1_switch *s, unsigned line) {
     (void)pop(comp->breakstack);
 }
 
-static m1_decl *
+static m1_type *
 check_newexpr(M1_compiler *comp, m1_newexpr *n, unsigned line) {
     assert(comp != NULL);
     assert(n != NULL);
@@ -531,7 +531,7 @@ check_vardecl(M1_compiler *comp, m1_var *v, unsigned line) {
            v->sym->typedecl was found.
         */
         if (v->init) {
-            m1_decl *inittype = check_expr(comp, v->init);   
+            m1_type *inittype = check_expr(comp, v->init);   
                
             if (inittype != v->sym->typedecl) {
                 type_error(comp, line, 
@@ -545,9 +545,9 @@ check_vardecl(M1_compiler *comp, m1_var *v, unsigned line) {
     }
 }
 
-static m1_decl *
+static m1_type *
 check_cast(M1_compiler *comp, m1_castexpr *expr, unsigned line) {
-    m1_decl *type = check_expr(comp, expr->expr);
+    m1_type *type = check_expr(comp, expr->expr);
     if (strcmp(expr->type, "int") == 0) {
         expr->targettype = VAL_INT;
         type = INTTYPE;
@@ -574,9 +574,9 @@ check_print_arg(M1_compiler *comp, m1_expression *e) {
     (void)check_expr(comp, e);       
 }
 
-static m1_decl *
+static m1_type *
 check_expr(M1_compiler *comp, m1_expression *e) {
-    m1_decl *t = VOIDTYPE;
+    m1_type *t = VOIDTYPE;
        
     assert (e != NULL);
                 
@@ -787,7 +787,7 @@ check_pmc_decl(M1_compiler *comp, m1_pmc *pmc) {
 /* Go through type declarations and do a sanity check. */
 static void
 check_decls(M1_compiler *comp) {
-    m1_decl *iter = comp->declarations;
+    m1_type *iter = comp->declarations;
     
     while (iter != NULL) {
         switch (iter->decltype) {

@@ -7,7 +7,7 @@
 
 
 void
-print_type(m1_decl *type) {
+print_type(m1_type *type) {
     fprintf(stderr, "TYPE: [%s]\n", type->name);   
 }
 
@@ -16,9 +16,9 @@ print_type(m1_decl *type) {
 Find the declaration for type <typename>.
 
 */
-m1_decl *
+m1_type *
 type_find_def(M1_compiler *comp, char *type) {
-    m1_decl *iter;
+    m1_type *iter;
     
     assert(comp != NULL);
 
@@ -38,9 +38,9 @@ type_find_def(M1_compiler *comp, char *type) {
 }
 
 
-static m1_decl *
+static m1_type *
 make_decl(M1_compiler *comp, int type) {
-    m1_decl *decl = (m1_decl *)calloc(1, sizeof(m1_decl));    
+    m1_type *decl = (m1_type *)calloc(1, sizeof(m1_type));    
     
     assert(comp != NULL);
     
@@ -57,9 +57,9 @@ make_decl(M1_compiler *comp, int type) {
 Enter a new struct declaration that goes by name <structname>.
 
 */
-m1_decl *
+m1_type *
 type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structdef) {
-    m1_decl *decl   = make_decl(comp, DECL_STRUCT);    
+    m1_type *decl   = make_decl(comp, DECL_STRUCT);    
     decl->name      = structname;
     decl->d.s       = structdef;
     
@@ -77,9 +77,9 @@ type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structd
 Enter a new PMC declaration that goes by name <pmcname>.
 
 */
-m1_decl *
+m1_type *
 type_enter_pmc(M1_compiler *comp, char *pmcname, struct m1_pmc *pmcdef) {
-    m1_decl *decl = make_decl(comp, DECL_PMC);
+    m1_type *decl = make_decl(comp, DECL_PMC);
     decl->name    = pmcname;
     decl->d.p     = pmcdef;
 
@@ -97,9 +97,9 @@ type_enter_pmc(M1_compiler *comp, char *pmcname, struct m1_pmc *pmcdef) {
 Enter a new enumeration declaration that goes by <enumname>.
 
 */
-m1_decl *
+m1_type *
 type_enter_enum(M1_compiler *comp, char *enumname, struct m1_enum *enumdef) {
-    m1_decl *decl = make_decl(comp, DECL_ENUM);
+    m1_type *decl = make_decl(comp, DECL_ENUM);
     decl->name    = enumname;
     decl->d.e     = enumdef;
     
@@ -114,9 +114,9 @@ type_enter_enum(M1_compiler *comp, char *enumname, struct m1_enum *enumdef) {
 Interface for declaring basic types. 
 
 */
-m1_decl *
-type_enter_type(M1_compiler *comp, char *type, m1_decl_type decltype, unsigned size) {
-    m1_decl *decl  = (m1_decl *)calloc(1, sizeof(m1_decl));    
+m1_type *
+type_enter_type(M1_compiler *comp, char *type, m1_type_type decltype, unsigned size) {
+    m1_type *decl  = (m1_type *)calloc(1, sizeof(m1_type));    
     decl->name     = type;
     decl->decltype = decltype;    
     decl->d.size   = size;
@@ -151,7 +151,7 @@ Get the size of the type in <decl>.
 
 */
 unsigned
-type_get_size(m1_decl *decl) {
+type_get_size(m1_type *decl) {
     int size;
     assert(decl != NULL);
     switch (decl->decltype) {

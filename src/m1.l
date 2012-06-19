@@ -189,7 +189,7 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
                               a user-defined type. Otherwise just return TK_IDENT.
                             */
                            if (comp->is_parsing_usertype == 1) {
-                               m1_decl     *decl = type_find_def(comp, yytext);
+                               m1_type     *decl = type_find_def(comp, yytext);
                        
                                if (decl == NULL) { /* not found, so must be an identifier */
                                   return TK_IDENT; 

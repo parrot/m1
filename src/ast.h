@@ -88,7 +88,7 @@ typedef struct m1_assignment {
 typedef struct m1_funcall {
     char                 *name;
     struct m1_expression *arguments;
-    struct m1_decl       *typedecl;  /* type declaration for return type; needed for type checking */
+    struct m1_type       *typedecl;  /* type declaration for return type; needed for type checking */
     struct m1_symbol     *funsym; /* entry in symbol table. */
     
 } m1_funcall;
@@ -96,7 +96,7 @@ typedef struct m1_funcall {
 /* To represent new expressions (new Object(x, y, z) ). */
 typedef struct m1_newexpr {
 	char                 *type;            /* name of new type to instantiate. */
-	struct m1_decl       *typedecl;        /* pointer to declaration of type. */
+	struct m1_type       *typedecl;        /* pointer to declaration of type. */
 	struct m1_expression *args;            /* arguments passed on to type's constructor. */    
 	
 } m1_newexpr;

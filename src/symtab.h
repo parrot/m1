@@ -52,7 +52,7 @@ typedef union m1_value {
    Not all fields are always used. Only constants use the <constindex> field.
    Only variables get an allocated register in <regno>.
    
-   The field <typedecl> is a pointer to the m1_decl node that represents
+   The field <typedecl> is a pointer to the m1_type node that represents
    the type of this symbol. Since symbols are stored by name (in a symboltable)
    these are easier to locate than m1_var nodes, which are just nodes in the
    abstract syntax tree (and therefore cannot easily be located).
@@ -73,7 +73,7 @@ typedef struct m1_symbol {
     
     int               constindex;   /* index in const segment that holds this symbol's value. */
     struct m1_var    *var;          /* pointer to declaration AST node for var */
-    struct m1_decl   *typedecl;     /* pointer to declaration of type. */
+    struct m1_type   *typedecl;     /* pointer to declaration of type. */
     
     struct m1_symbol *next;         /* symbols are stored in a list. */
     

@@ -1994,7 +1994,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
                 assert(obj->sym != NULL);
                 assert(obj->sym->typedecl != NULL);
                 
-                m1_decl *target_type = obj->sym->typedecl;
+                m1_type *target_type = obj->sym->typedecl;
                 m1_reg target = alloc_reg(comp, target_type->valtype); 
                 
                 fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
@@ -2283,7 +2283,7 @@ Iterate over the list of chunks, and generate code for each.
 void 
 gencode(M1_compiler *comp, m1_chunk *ast) {
     m1_chunk *iter = ast;
-    m1_decl *decliter;
+    m1_type *decliter;
                             
     fprintf(OUT, ".version 0\n");
     

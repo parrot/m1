@@ -36,7 +36,7 @@ typedef struct M1_compiler {
 	struct m1_intstack    *continuestack; /* for handling continue statements */
 	
     struct m1_chunk       *currentchunk; /* current chunk being parsed, if any. */
-	struct m1_decl        *declarations;  /* list of declarations (eg structs) */
+	struct m1_type        *declarations;  /* list of declarations (eg structs) */
 	
 	int                    is_parsing_usertype; /* boolean to indicate whether a type is parsed. */
 

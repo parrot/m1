@@ -38,7 +38,7 @@ init_compiler(M1_compiler *comp) {
     type_enter_type(comp, "string", DECL_STRING, 4);  /* strings are pointers, so size is 4. */
     type_enter_type(comp, "char", DECL_CHAR, 4); /* XXX can this be 1? what about padding in structs? */
     
-    /* global symbol table for functions, as they need a return type m1_decl pointer. */
+    /* global symbol table for functions, as they need a return type m1_type pointer. */
     comp->globalsymtab = new_symtab();
 }
 
