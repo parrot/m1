@@ -717,8 +717,9 @@ check_struct_decl(M1_compiler *comp, m1_struct *str) {
     m1_symbol *iter = sym_get_table_iter(&str->sfields);
     
     
-    unsigned offset = 0;
-    unsigned size   = 0;
+    unsigned offset          = 0;
+    unsigned size_of_current = 0;
+
     while (iter != NULL) 
     {        
         iter->offset = offset;
@@ -733,12 +734,15 @@ check_struct_decl(M1_compiler *comp, m1_struct *str) {
             }
         }
         
-        offset += type_get_size(iter->typedecl);
+        /* add current field's size to offset, which will be next field's offset. */
+        size_of_current = type_get_size(iter->typedecl);
+        offset += size_of_current; 
+        
         iter = sym_iter_next(iter);
     }
-    /* XXX calculate total size here. for each field, consider arrays size as well. */
     
-    str->size = offset; // + size of last field. 
+    str->size = offset;
+//    fprintf(stderr, "Size of struct %s is %d\n", str->name, offset);
             
 }
 

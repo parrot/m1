@@ -59,10 +59,11 @@ Enter a new struct declaration that goes by name <structname>.
 */
 m1_decl *
 type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structdef) {
-    m1_decl *decl = make_decl(comp, DECL_STRUCT);    
-    decl->name    = structname;
-    decl->d.s     = structdef;
+    m1_decl *decl   = make_decl(comp, DECL_STRUCT);    
+    decl->name      = structname;
+    decl->d.s       = structdef;
     
+    structdef->size = 4; /* XXX The size of a struct or PMC is always 4 bytes, as it's stored as a pointer. */
     
     /* link in list of declarations */
     decl->next = comp->declarations;
