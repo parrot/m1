@@ -56,13 +56,14 @@ typedef struct m1_chunk {
 /* structure that holds an M1 struct definition */
 typedef struct m1_struct {
     char    *name;              /* name of this struct. */
+    int      is_union;          /* union declarations also use this AST node type. */
     unsigned size;              /* total size of this struct; can calculate from fields but 
                                    better keep a "cached" value */
-    int      is_union;          /* union declarations also use this AST node type. */
     
     struct m1_symboltable sfields; /* a struct is just a very local scope; it's handy to have
                                       a symbol table, as it makes handling x.y.z easier. 
                                     */
+    unsigned line_defined;
       
 } m1_struct;
 
@@ -72,6 +73,7 @@ typedef struct m1_pmc {
     struct m1_ident       *parents;
     struct m1_chunk       *methods;    
     struct m1_symboltable  sfields;
+    unsigned               line_defined;
     
 } m1_pmc;
 

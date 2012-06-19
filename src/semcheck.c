@@ -728,7 +728,7 @@ check_struct_decl(M1_compiler *comp, m1_struct *str) {
 
             iter->typedecl = type_find_def(comp, iter->type_name);
             if (iter->typedecl == NULL) {
-                type_error(comp, 0, /* XXX which line? */
+                type_error(comp, str->line_defined,
                            "Cannot find type '%s' for struct member '%s'", 
                            iter->type_name, iter->name);                      
             }
@@ -742,8 +742,43 @@ check_struct_decl(M1_compiler *comp, m1_struct *str) {
     }
     
     str->size = offset;
-//    fprintf(stderr, "Size of struct %s is %d\n", str->name, offset);
             
+}
+
+static void
+check_pmc_decl(M1_compiler *comp, m1_pmc *pmc) {
+    m1_symbol *iter = sym_get_table_iter(&pmc->sfields);
+    
+    
+    unsigned offset          = 0;
+    unsigned size_of_current = 0;
+
+    fprintf(stderr, "[semcheck] checking PMC %s\n", pmc->name);
+    
+    while (iter != NULL) 
+    {        
+        iter->offset = offset;
+        
+        if (iter->typedecl == NULL) {
+
+            iter->typedecl = type_find_def(comp, iter->type_name);
+            if (iter->typedecl == NULL) {
+                type_error(comp, pmc->line_defined,
+                           "Cannot find type '%s' for PMC member '%s'", 
+                           iter->type_name, iter->name);                      
+            }
+        }
+        
+        /* add current field's size to offset, which will be next field's offset. */
+        size_of_current = type_get_size(iter->typedecl);
+        offset += size_of_current; 
+        
+        iter = sym_iter_next(iter);
+    }
+    
+    pmc->size = offset;
+    fprintf(stderr, "[semcheck] Size of PMC %s is %d\n", pmc->name, offset);
+
 }
 
 /* Go through type declarations and do a sanity check. */
@@ -757,17 +792,9 @@ check_decls(M1_compiler *comp) {
                 check_struct_decl(comp, iter->d.s);
                 break;
             case DECL_PMC:
-            case DECL_STRING:
-            case DECL_BOOL:
-            case DECL_INT:
-            case DECL_NUM:
-            case DECL_CHAR:
-            case DECL_ENUM:
-            case DECL_VOID:
+                check_pmc_decl(comp, iter->d.p);
                 break;
-            default:
-                fprintf(stderr, "unknown declaration type (%d)\n", iter->decltype);
-                assert(0);   
+            default: /* ignore all other types. */
                 break;    
         }
         iter = iter->next;   

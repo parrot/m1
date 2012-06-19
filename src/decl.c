@@ -156,8 +156,10 @@ type_get_size(m1_decl *decl) {
     assert(decl != NULL);
     switch (decl->decltype) {
         case DECL_STRUCT:
-        case DECL_PMC:
             size = decl->d.s->size;
+            break;
+        case DECL_PMC:
+            size = decl->d.p->size;
             break;
         case DECL_ENUM:
             fprintf(stderr, "Why do you need to know the size of an enum?\n");

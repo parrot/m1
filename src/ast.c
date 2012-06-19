@@ -368,25 +368,25 @@ lhsobj(M1_compiler *comp, m1_object *parent, m1_object *field) {
 m1_struct *
 newstruct(M1_compiler *comp, char *name) 
 {
-    m1_struct *str = (m1_struct *)m1_malloc(sizeof(m1_struct));    
-    str->name      = name;
-        
-    init_symtab(&str->sfields);
+    m1_struct *str    = (m1_struct *)m1_malloc(sizeof(m1_struct));    
+    str->name         = name;
+    str->line_defined = yyget_lineno(comp->yyscanner);    
     
-    assert(comp != NULL);
+    init_symtab(&str->sfields);
+        
     return str;   
 }
 
 m1_pmc *
 newpmc(M1_compiler *comp, char *name, m1_ident *idlist) 
 {
-    m1_pmc *pmc  = (m1_pmc *)m1_malloc(sizeof(m1_pmc));    
-    pmc->name    = name; 
-    pmc->parents = idlist;
+    m1_pmc *pmc       = (m1_pmc *)m1_malloc(sizeof(m1_pmc));    
+    pmc->name         = name; 
+    pmc->parents      = idlist;
+    pmc->line_defined = yyget_lineno(comp->yyscanner);
     
     init_symtab(&pmc->sfields);
     
-    assert(comp != NULL);
     return pmc;    
 }
 
