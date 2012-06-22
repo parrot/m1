@@ -327,6 +327,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
             fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
                                                         reg_chars[(int)parent.type], parent.no,
                                                         reg_chars[(int)index.type], index.no);
+            free_reg(comp, target);
             free_reg(comp, index);
             free_reg(comp, parent);                                                        
         }
@@ -1618,7 +1619,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     
     /* we're accessing the callee's CF, so only free its register now.*/
     free_reg(comp, cf_reg);
-          
+    free_reg(comp, idxreg);
 }
 
 
