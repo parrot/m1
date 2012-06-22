@@ -27,7 +27,7 @@ Increase the global (stored in comp) error count.
 
 */
 int 
-yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str) {
+yyerror(yyscan_t yyscanner, M1_compiler *comp, const char *str) {
 
     fprintf(stderr, "%s: unexpected token '%s' (line %d)\n", 
             str, yyget_text(yyscanner), yyget_lineno(yyscanner) );

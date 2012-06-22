@@ -917,8 +917,7 @@ static void
 gencode_return(M1_compiler *comp, m1_expression *e) {
         
     m1_reg chunk_index,
-           retpc_reg,
-           retpc_index;
+           retpc_reg;
     
     if (e != NULL) {
         /* returning a value:
@@ -948,25 +947,22 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
     /* instructions to return:
      
        set_imm    IX, 0, RETPC
-       deref      IY, PCF, IX
-       set_imm    IZ, 0, CHUNK
-       deref      IZ, PCF, IZ
-       goto_chunk IZ, IY
+       deref      IX, PCF, IX
+       set_imm    IY, 0, CHUNK
+       deref      IY, PCF, IY
+       goto_chunk IY, IX
     */
 
     chunk_index = alloc_reg(comp, VAL_INT);
     retpc_reg   = alloc_reg(comp, VAL_INT);
-    retpc_index = alloc_reg(comp, VAL_INT);
 
-    fprintf(OUT, "\tset_imm    I%d, 0, RETPC\n", retpc_index.no);
-    fprintf(OUT, "\tderef      I%d, PCF, I%d\n", retpc_reg.no, retpc_index.no);
+    fprintf(OUT, "\tset_imm    I%d, 0, RETPC\n", retpc_reg.no);
+    fprintf(OUT, "\tderef      I%d, PCF, I%d\n", retpc_reg.no, retpc_reg.no);
     fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
     fprintf(OUT, "\tderef      I%d, PCF, I%d\n", chunk_index.no, chunk_index.no);
     fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", chunk_index.no, retpc_reg.no);        
     free_reg(comp, chunk_index);    
     free_reg(comp, retpc_reg);
-    free_reg(comp, retpc_index);
-
 }
 
 static void
