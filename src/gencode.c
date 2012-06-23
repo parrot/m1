@@ -952,6 +952,7 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
 
     condreg = popreg(comp->regstack);
 
+    INS (M0_GOTO_IF, "%L, %R", iflabel, condreg);
     fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", iflabel, reg_chars[(int)condreg.type], condreg.no);
 
     free_reg(comp, condreg);
@@ -960,12 +961,15 @@ gencode_if(M1_compiler *comp, m1_ifexpr *i) {
     if (i->elseblock) {            	
         gencode_expr(comp, i->elseblock);     
     }
+    INS (M0_GOTO, "%L", endlabel);
     fprintf(OUT, "\tgoto L%d\n", endlabel);
     
     /* if block */
+    LABEL (iflabel);
     fprintf(OUT, "L%d:\n", iflabel);
     gencode_expr(comp, i->ifblock);
 			
+    LABEL (endlabel);
     fprintf(OUT, "L%d:\n", endlabel);
          
 }
@@ -1004,8 +1008,11 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
         m1_reg indexreg  = alloc_reg(comp, VAL_INT);
         
         /* load the number of register R0 */
+//        INS (M0_SET_IMM, "%I, %d, %R", indexreg.no, retvalreg);
         fprintf(OUT, "\tset_imm\tI%d, 0, %c0\n", indexreg.no, reg_chars[(int)retvalreg.type]);
+  
         /* index the current callframe, and set in its R0 register the value from the return expression. */
+        INS (M0_SET_REF, "%d, %I, %R", CF, indexreg.no, retvalreg);
         fprintf(OUT, "\tset_ref\tCF, I%d, %c%d\n", indexreg.no, reg_chars[(int)retvalreg.type], retvalreg.no);
 
         free_reg(comp, indexreg);
@@ -1027,11 +1034,21 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
     chunk_index = alloc_reg(comp, VAL_INT);
     retpc_reg   = alloc_reg(comp, VAL_INT);
 
+    INS (M0_SET_IMM, "%I, %d, %d", retpc_reg.no, 0, RETPC);
     fprintf(OUT, "\tset_imm    I%d, 0, RETPC\n", retpc_reg.no);
+    
+    INS (M0_DEREF,   "%I, %d, %I", retpc_reg.no, PCF, retpc_reg.no);    
     fprintf(OUT, "\tderef      I%d, PCF, I%d\n", retpc_reg.no, retpc_reg.no);
+    
+    INS (M0_SET_IMM, "%I, %d, %d", chunk_index.no, 0, CHUNK);
     fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
+    
+    INS (M0_DEREF,   "%I, %d, %I", chunk_index.no, PCF, chunk_index.no);
     fprintf(OUT, "\tderef      I%d, PCF, I%d\n", chunk_index.no, chunk_index.no);
+    
+    INS (M0_GOTO_CHUNK, "%I, %I, %d", chunk_index.no, retpc_reg.no, 0);
     fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", chunk_index.no, retpc_reg.no);        
+    
     free_reg(comp, chunk_index);    
     free_reg(comp, retpc_reg);
 }
@@ -1058,6 +1075,7 @@ gencode_or(M1_compiler *comp, m1_binexpr *b) {
 	left = popreg(comp->regstack);
 	
 	/* if left was not true, then need to evaluate right, otherwise short-cut. */
+	INS (M0_GOTO_IF, "%L, %R", endlabel, left);
 	fprintf(OUT, "\tgoto_if L%d, %c%d\n", endlabel, reg_chars[(int)left.type], left.no);
 	
 	/* generate code for right, and get the register holding the result. */
@@ -1065,11 +1083,13 @@ gencode_or(M1_compiler *comp, m1_binexpr *b) {
 	right = popreg(comp->regstack);
 	
 	/* copy the result from evaluating <right> into the reg. for left, and make it available on stack. */
+	INS (M0_SET, "%R, %R", left, right);
 	fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[(int)left.type], left.no, 
 	                                       reg_chars[(int)right.type], right.no);
 	pushreg(comp->regstack, left);
 	free_reg(comp, right);
 	
+	LABEL (endlabel);
 	fprintf(OUT, "L%d:\n", endlabel);
 		
 }
@@ -1150,15 +1170,22 @@ ne_eq_common(M1_compiler *comp, m1_binexpr *b, int is_eq_op) {
     
     reg = alloc_reg(comp, VAL_INT);
     
+    INS (M0_SUB_I, "%I, %R, %R", reg.no, left, right);
     fprintf(OUT, "\tsub_i\tI%d, %c%d, %c%d\n", reg.no, reg_chars[(int)left.type], left.no,
                                                       reg_chars[(int)right.type], right.no);
                                                       
+    INS (M0_GOTO_IF, "%L, %R", eq_ne_label, reg);
     fprintf(OUT, "\tgoto_if L%d, %c%d\n", eq_ne_label, reg_chars[(int)reg.type], reg.no);
+    INS (M0_SET_IMM, "%R, %d, %d", reg, is_eq_op);
     fprintf(OUT, "\tset_imm\t%c%d, 0, %d\n", reg_chars[(int)reg.type], reg.no, is_eq_op);
+    INS (M0_GOTO, "%L", endlabel);
     fprintf(OUT, "\tgoto L%d\n", endlabel);                                                      
     
+    LABEL (eq_ne_label);
     fprintf(OUT, "L%d:\n", eq_ne_label);
+    INS (M0_SET_IMM, "%R, %d, %d", reg, 0, !is_eq_op);
     fprintf(OUT, "\tset_imm\t%c%d, 0, %d\n", reg_chars[(int)reg.type], reg.no, !is_eq_op);
+    LABEL (endlabel);
     fprintf(OUT, "L%d:\n", endlabel);
     
     free_reg(comp, left);
@@ -1188,6 +1215,7 @@ lt_le_common(M1_compiler *comp, m1_binexpr *b, char const * const op) {
     right = popreg(comp->regstack);
     
     /* using isgt or isge ops, but swap arguments; hence, right first, then left. */
+    //INS (??, "%I, %R, %R", result.no, right, left);
     fprintf(OUT, "\t%s_%c I%d, %c%d, %c%d\n", op, type_chars[(int)left.type], result.no, 
                                                   reg_chars[(int)right.type], right.no,
                                                   reg_chars[(int)left.type], left.no);
@@ -1209,6 +1237,7 @@ gencode_binary_bitwise(M1_compiler *comp, m1_binexpr *b, char const * const op) 
     right  = popreg(comp->regstack);
     
     target = alloc_reg(comp, (m1_valuetype)left.type);    
+    // INS (op, "%R, %R, %R", target, left, right);
     fprintf(OUT, "\t%s \t%c%d, %c%d, %c%d\n", op, reg_chars[(int)target.type], target.no, 
                                                   reg_chars[(int)left.type], left.no, 
                                                   reg_chars[(int)right.type], right.no);
@@ -1241,6 +1270,9 @@ gencode_binary_math(M1_compiler *comp, m1_binexpr *b, char const * const op) {
     right  = popreg(comp->regstack);
     
     target = alloc_reg(comp, (m1_valuetype)left.type);    
+    
+    //INS (??, "%R, %R, %R", target, left, right);
+    
     fprintf(OUT, "\t%s_%c\t%c%d, %c%d, %c%d\n", op, type_chars[(int)left.type],
                                                 reg_chars[(int)target.type], target.no, 
                                                 reg_chars[(int)left.type], left.no, 
@@ -1756,7 +1788,10 @@ gencode_new(M1_compiler *comp, m1_newexpr *expr) {
 	unsigned size     = type_get_size(expr->typedecl);
 
     assert(size != 0); /* this should never happen. */
-    		
+
+    INS (M0_SET_IMM,  "%I, %d, %d", sizereg.no, 0, size);
+    INS (M0_GC_ALLOC, "%I, %I, %d", pointerreg.no, sizereg.no, 0);    		
+    
 	fprintf(OUT, "\tset_imm I%d, 0, %d\n", sizereg.no, size);
 	fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", pointerreg.no, sizereg.no);
 	

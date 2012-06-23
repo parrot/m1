@@ -82,20 +82,20 @@ write_instr(M1_compiler *comp, m0_instr *i) {
     
     switch (i->numops) {
         case 0:
-            fprintf(comp->outfile, "   %s\n", m0_instr_names[(int)i->opcode]); 
+            fprintf(OUT, "   %s\n", m0_instr_names[(int)i->opcode]); 
             break;
         case 1:                                                          
-            fprintf(comp->outfile, "   %s\t%c%d, x, x\n", m0_instr_names[(int)i->opcode], 
+            fprintf(OUT, "   %s\t%c%d, x, x\n", m0_instr_names[(int)i->opcode], 
                                               regs[i->operands[0].type], i->operands[0].value);
  
             break;
         case 2:                                                             
-            fprintf(comp->outfile, "   %s\t%c%d, %c%d, x\n", m0_instr_names[(int)i->opcode], 
+            fprintf(OUT, "   %s\t%c%d, %c%d, x\n", m0_instr_names[(int)i->opcode], 
                                               regs[i->operands[0].type], i->operands[0].value,
                                               regs[i->operands[1].type], i->operands[1].value);                                              
             break;
         case 3:
-            fprintf(comp->outfile, "   %s\t%c%d, %c%d, %c%d\n", m0_instr_names[(int)i->opcode], 
+            fprintf(OUT, "   %s\t%c%d, %c%d, %c%d\n", m0_instr_names[(int)i->opcode], 
                                               regs[i->operands[0].type], i->operands[0].value,
                                               regs[i->operands[1].type], i->operands[1].value,
                                               regs[i->operands[2].type], i->operands[2].value);
@@ -199,13 +199,14 @@ mk_instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
     
     va_end(argp);
 
+//    write_instr(comp, ins);
     return ins;
     
 }
 
 void 
 mk_label(M1_compiler *comp, unsigned labelno) {
-    
+    fprintf(OUT, "L%d:\n", labelno);       
 }
 
 m0_chunk *
