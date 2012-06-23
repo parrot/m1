@@ -55,7 +55,7 @@ static const char type_chars[REG_TYPE_NUM] = {'i', 'n', 's', 'p'};
 static const char reg_chars[REG_TYPE_NUM] = {'I', 'N', 'S', 'P'};
 
 #define INS(opcode, format, ...)    mk_instr(comp, opcode, format, ##__VA_ARGS__)
-#define CHUNK()                     mk_chunk(comp)
+#define CHUNK(name)                 mk_chunk(comp, name)
 
 
 static void
@@ -198,7 +198,10 @@ gencode_char(M1_compiler *comp, m1_literal *lit) {
     assert(lit->sym != NULL);
        
     reg = alloc_reg(comp, VAL_INT);
-        
+
+    INS (M0_SET_IMM, "%I, %d, %d", reg.no, 0, lit->sym->constindex);
+    INS (M0_DEREF,   "%I, %d, %I", reg.no, CONSTS, reg.no);
+    
     /* reuse the reg, first for the index, then for the result. */        
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", reg.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", reg.no, reg.no);
@@ -235,10 +238,16 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
         /* use set_imm X, N*256, remainder)   */
         int remainder = lit->sym->value.ival % 256;
         int num256    = (lit->sym->value.ival - remainder) / 256; 
+        
+        INS (M0_SET_IMM, "%I, %d, %d", reg.no, num256, remainder);
+        
         fprintf(OUT, "\tset_imm\tI%d, %d, %d\n", reg.no, num256, remainder);
     } 
     else { /* too big enough for set_imm, so load it from constants segment. */
         /* XXX this will fail if constindex > 255. */
+        INS (M0_SET_IMM, "%I, %d, %d", reg.no, 0, lit->sym->constindex);
+        INS (M0_DEREF,   "%I, %d, %d", reg.no, CONSTS, reg.no);
+        
         fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", reg.no, lit->sym->constindex);
         fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", reg.no, reg.no);
 
@@ -253,6 +262,8 @@ gencode_null(M1_compiler *comp) {
     m1_reg reg;
     reg = alloc_reg(comp, VAL_INT);
 	/* "null" is just 0, but then in a "pointer" context. */
+	
+	INS (M0_SET_IMM, "%I, %d, %d", reg.no, 0, 0);
     fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", reg.no);
     
     pushreg(comp->regstack, reg);
@@ -266,7 +277,9 @@ gencode_bool(M1_compiler *comp, int boolval) {
        set_imm Ix, 0, 0 # for false
     */
     m1_reg reg = alloc_reg(comp, VAL_INT);
-    fprintf(OUT, "\tset_imm\t%d, 0, %d\n", reg.no, boolval);
+        
+    INS (M0_SET_IMM, "%I, %d, %d", reg.no, 0, boolval);
+    fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", reg.no, boolval);
     pushreg(comp->regstack, reg);   
 }
 
@@ -283,6 +296,9 @@ gencode_string(M1_compiler *comp, m1_literal *lit) {
     stringreg   = alloc_reg(comp, VAL_STRING);
     constidxreg = alloc_reg(comp, VAL_INT);
       
+    INS (M0_SET_IMM, "%I, %d, %d", constidxreg.no, 0, lit->sym->constindex);
+    INS (M0_DEREF,   "%S, %d, %I", stringreg.no, CONSTS, constidxreg.no);
+          
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constidxreg.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", stringreg.no, constidxreg.no);
        
@@ -320,6 +336,8 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
             m1_reg index  = popreg(comp->regstack);
             m1_reg parent = popreg(comp->regstack);
 
+            INS (M0_DEREF, "%R, %R, %R", target, parent, index);
+            
             fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
                                                         reg_chars[(int)parent.type], parent.no,
                                                         reg_chars[(int)index.type], index.no);
@@ -336,6 +354,9 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
         if (lhs_reg_count == 1) { /* just a simple lvalue; a = b; */    
             m1_reg lhs = popreg(comp->regstack);    
             m1_reg rhs = popreg(comp->regstack);
+            
+            INS (M0_SET, "%R, %R", lhs, rhs);
+            
             fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
                                                     reg_chars[(int)rhs.type], rhs.no);
             pushreg(comp->regstack, rhs);
@@ -348,6 +369,8 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
             m1_reg parent = popreg(comp->regstack);
             m1_reg rhs    = popreg(comp->regstack);
         
+            INS (M0_SET_REF, "%R, %R, %R", parent, index, rhs);
+            
             fprintf(OUT, "\tset_ref\t%c%d, %c%d, %c%d\n", reg_chars[(int)parent.type], parent.no, 
                                                           reg_chars[(int)index.type], index.no,
                                                           reg_chars[(int)rhs.type], rhs.no);
@@ -620,9 +643,16 @@ OBJECT_LINK------>     L3
                      x[0]  x[1]  x[2]  x[3]  
                      
                      */ 
+                    INS (M0_SET_IMM, "%I, %d, %d", size_reg.no, 0, current_dimension->num_elems);
+                    INS (M0_MULT_I,  "%I, %I, %I", field.no, field.no, size_reg.no);
+                     
                     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", size_reg.no, current_dimension->num_elems);
                     fprintf(OUT, "\tmult_i\tI%d, I%d, I%d\n", field.no, field.no, size_reg.no);
+                    
                     /* Need to have the following instruction (set X, Y), otherwise it doesn't work. */
+                    INS (M0_SET,   "%I, %I",     updated_parent.no, parentreg.no);
+                    INS (M0_ADD_I, "%I, %I, %I", updated_parent.no, updated_parent.no, field.no);
+                    
                     fprintf(OUT, "\tset \tI%d, I%d, x\n", updated_parent.no, parentreg.no); 
                     fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", updated_parent.no, updated_parent.no, field.no);
                 
@@ -2184,6 +2214,8 @@ static void
 gencode_chunk(M1_compiler *comp, m1_chunk *c) {
 #define PRELOAD_0_AND_1     0
 
+    CHUNK (c->name);
+    
     fprintf(OUT, ".chunk \"%s\"\n", c->name);    
 
     /* for each chunk, reset the register allocator */

@@ -81,13 +81,14 @@ typedef enum M0_alias {
     
 } M0_alias;
 
+/* struct for a single M0 operand. */
 typedef struct m0_operand {
     unsigned char value;
     unsigned char type;   
      
 } m0_operand;
 
-
+/* struct for a single instruction. */
 typedef struct m0_instr {
     unsigned char     opcode;
     unsigned          numops;
@@ -98,6 +99,7 @@ typedef struct m0_instr {
     struct m0_instr *next;
 } m0_instr;
 
+/* struct representing an M0 chunk. */
 typedef struct m0_chunk {
     
     m0_instr *instructions;    
@@ -106,7 +108,16 @@ typedef struct m0_chunk {
     
 } m0_chunk;
 
-extern m0_chunk *mk_chunk(M1_compiler *comp);
+/* struct to represent an M0 file. */
+typedef struct m0_file {
+    unsigned int version;
+    
+    m0_chunk *chunks;
+    
+} m0_file;
+
+extern m0_chunk *mk_chunk(M1_compiler *comp, char *name);
+
 extern m0_instr *mk_instr(M1_compiler *comp, m0_opcode, char const * const format, ...);
 
 

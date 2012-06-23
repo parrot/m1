@@ -1,10 +1,26 @@
-#include "instr.h"
-#include "compiler.h"
-#include "gencode.h"
+/* 
+
+This file contains functions to construct and write instructions.
+The constructor for m0_instr is a variadic function, which means
+the number of arguments that is passed is encoded in a format string.
+The format string specifiers are adapted from printf()'s and friends.
+The following specifiers may be used:
+
+ %R     to pass a m1_reg node, which holds both register type and number.
+ %I     to pass an integer holding an I register number.
+ %N     like %I, but for N registers.
+ %S     like %I, but for S registers.
+ %P     like %I, but for P registers.
+ %d     to pass a integer literal.
+
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 #include <stdarg.h>
+#include "instr.h"
+#include "compiler.h"
+#include "gencode.h"
 
 char const * const m0_instr_names[] = {
     "noop",
@@ -147,6 +163,11 @@ mk_instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
                 ins->operands[index].type  = VAL_CHUNK;                                
                 ins->operands[index].value = va_arg(argp, int);                
                 break;
+            case 'R': {
+                m1_reg r = va_arg(argp, m1_reg);
+                ins->operands[index].type  = r.type;
+                ins->operands[index].value = r.no;
+            }
             case 'd':
                 ins->operands[index].type  = VAL_VOID;
                 ins->operands[index].value = va_arg(argp, int);
@@ -178,7 +199,7 @@ mk_instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
 
 
 m0_chunk *
-mk_chunk(M1_compiler *comp) {
+mk_chunk(M1_compiler *comp, char *name) {
     m0_chunk *ch = NULL;
     return ch;   
 }
