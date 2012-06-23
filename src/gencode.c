@@ -320,7 +320,18 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
     		
     assert(a != NULL);
 	
-	/* generate code for RHS and get number of registers that hold the result */
+	/* Generate code for RHS and get number of registers that hold the result 
+	   Note that since the AST for an assignment was right-recursive, for a = b = c,
+	   it looks like this:
+	   
+	     =
+	    / \
+	   a   =
+	      / \
+	     b   c 
+	     
+	   Since RHS is evaluated first, code for b=c is generated first.   
+	*/
     rhs_reg_count = gencode_expr(comp, a->rhs);
     
     /* Generate code for LHS and get number of registers that hold the result 
@@ -362,8 +373,8 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
             
             fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
                                                     reg_chars[(int)rhs.type], rhs.no);
-            pushreg(comp->regstack, rhs);
-            free_reg(comp, lhs); /* to free regs for constants; for symbols they should be frozen. */
+            pushreg(comp->regstack, lhs);
+            free_reg(comp, rhs); /* to free regs for constants; for symbols they should be frozen. */
         }
         else if (lhs_reg_count == 2) { /* complex lvalue; x[10] = 42 */
             assert(rhs_reg_count == 1); /* lhs_reg_count+rhs_reg_count == 3, so pop 3 regs. */
@@ -382,8 +393,9 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
             
             /* make result available for next in "chain" of assignments, if any (e.g, a = b = c = 42;). */              
             pushreg(comp->regstack, rhs);
+
         }
-    }    
+    }        
 }
 
 /*
@@ -2118,6 +2130,7 @@ gencode_cast(M1_compiler *comp, m1_castexpr *expr) {
   
 }
 
+
 static unsigned
 gencode_expr(M1_compiler *comp, m1_expression *e) {
     unsigned num_regs = 1;
@@ -2246,6 +2259,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             assert(0);
     }  
 
+    print_stack(comp->regstack, "EXPR");
     return num_regs; 
 
 }
@@ -2313,6 +2327,13 @@ gencode_block(M1_compiler *comp, m1_block *block) {
     
     /* restore parent scope. */
     comp->currentsymtab = block->locals.parentscope;
+    
+    /* pop all registers from the reg stack and free them. frozen regs will be unaffected. */
+    while (!regstack_isempty(comp->regstack)) {
+        m1_reg r = popreg(comp->regstack);
+        free_reg(comp, r);
+    }
+
 }
 
 static void

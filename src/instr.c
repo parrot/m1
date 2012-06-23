@@ -38,8 +38,8 @@ char const * const m0_instr_names[] = {
     "div_n",
     "mod_i",
     "mod_n",
-    "iton",
-    "ntoi",
+    "convert_n_i",
+    "convert_i_n",
     "ashr",
     "lshr",
     "shl",
@@ -225,7 +225,7 @@ mk_instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
     
     comp->lastgenerated = ins;
     
-  //  write_instr(comp, ins);
+    //write_instr(comp, ins);
     return ins;
     
 }
