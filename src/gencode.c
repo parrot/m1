@@ -319,7 +319,9 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
 
     if (rhs_reg_count == 2) { /* deref; ... = x[42] */
         if (lhs_reg_count == 1) { /* lhs_reg_count + rhs_reg_count == 3, so pop 3 regs. */
-        
+
+            /* XXX check whether this code ever gets executed! */        
+            
             m1_reg target = popreg(comp->regstack);
             m1_reg index  = popreg(comp->regstack);
             m1_reg parent = popreg(comp->regstack);
@@ -377,6 +379,15 @@ an instruction is emitted, and one register is removed. See the comments inside.
 The dimension parameter is also an OUT parameter, and is used in particular for arrays.
 When handling x[1][2][3], and we're calculating the offset from the base address (x),
 we need to know which dimension we're in (1, 2 or 3 in the example of x[1][2][3]).
+
+The <parent> parameter always points to the last identifier; in case of x.y.z, when
+handling y, <parent> points to x; when handling z, <parent> points to y.
+
+The <dimension> parameter always counts the array dimension that we're handling. It is
+ONLY needed for multi-dimensional arrays. In x[10][11][12], when handling [10], 
+<dimension> is 1, when handling [11], it's 2, when handling [12], it's 3. 
+In x[10].y[11].z[12], it's always 1, because the dimensions are separated; that is, 
+none of the arrays is multi-dimensional.
 
 */
 static unsigned
@@ -564,6 +575,7 @@ OBJECT_LINK------>     L3
             numregs_pushed += gencode_obj(comp, obj->obj.field, parent, dimension, is_target);   
                                    
             if (numregs_pushed == 3) {
+                
                 /* if the field was an index. (a[b]) */
                 if (obj->obj.field->type == OBJECT_INDEX) {
                     m1_reg last           = popreg(comp->regstack);   /* latest added; store here for now. */
@@ -572,7 +584,6 @@ OBJECT_LINK------>     L3
                     m1_reg size_reg       = alloc_reg(comp, VAL_INT); /* to hold amount to add. */
                     m1_reg updated_parent = alloc_reg(comp, VAL_INT); /* need to copy base address from parent. */
                        
-                    fprintf(stderr, "DIMENSION: %d\n", *dimension);                                
                     /* 3 registers only the case when 2 dimensions are parsed, e.g., x[10][20].
                        Find the size of the first dimension, since that's the one that's 
                        added to the parent's base address, i.e., adding 10 * sizeof(type).
@@ -581,15 +592,15 @@ OBJECT_LINK------>     L3
                        through the <sym> field of the parent; m1_var and m1_symbol nodes
                        have pointers to each other.
                      */
-                    fprintf(stderr, "Parent: %s\n", (*parent)->obj.name);
                     
                     assert((*parent)->sym != NULL);
                     assert((*parent)->sym->var != NULL);
                     
+                    /* get pointer to AST node for parent's m1_var node. */
                     m1_var       *parent_var        = (*parent)->sym->var; 
                     m1_dimension *current_dimension = parent_var->dims;
 
-                    /* now find right dimension. The number in dimension keeps track of
+                    /* Now find right dimension. The number in dimension keeps track of
                        which dimension we're currently visiting. Dimensions are stored in a
                        linked list, so set the pointer <num_get_next> times to the dimension 
                        node's next.
@@ -602,13 +613,26 @@ OBJECT_LINK------>     L3
                         }
                     }
                      
+                    /* Calculate the offset; load the number of elements in the current dimension,
+                       and multiply by the index of this dimension. In other words, x[2] in the
+                       array declared as x[4][5] means 2 * 4 is added to base address of x.
+                       The added offset is indicated by the <---> line below:
+                       
+                       <----------->
+                                   ^ 
+                                   V 
+                       |-----|-----|-----|-----|                        
+                       ^     ^     ^     ^     
+                     x[0]  x[1]  x[2]  x[3]  
+                     
+                     */ 
                     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", size_reg.no, current_dimension->num_elems);
                     fprintf(OUT, "\tmult_i\tI%d, I%d, I%d\n", field.no, field.no, size_reg.no);
                     /* Need to have the following instruction (set X, Y), otherwise it doesn't work. */
                     fprintf(OUT, "\tset \tI%d, I%d, x\n", updated_parent.no, parentreg.no); 
                     fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", updated_parent.no, updated_parent.no, field.no);
                 
-                    pushreg(comp->regstack, updated_parent);   /* push back (x+[2]) */
+                    pushreg(comp->regstack, updated_parent);   /* push back address of "x+[2]" */
                     pushreg(comp->regstack, last);             /* push back the latest added one. */
                     
                     free_reg(comp, size_reg);
@@ -622,7 +646,7 @@ OBJECT_LINK------>     L3
                     m1_reg last      = popreg(comp->regstack);
                     m1_reg offset    = popreg(comp->regstack);
                     m1_reg parentreg = popreg(comp->regstack);
-                    m1_reg target = alloc_reg(comp, VAL_INT);
+                    m1_reg target    = alloc_reg(comp, VAL_INT);
                     
                     fprintf(OUT, "\tderef\tI%d, I%d, I%d\n", target.no, parentreg.no, offset.no);   
                     
@@ -630,7 +654,7 @@ OBJECT_LINK------>     L3
                     pushreg(comp->regstack, last);
                     /* popped 3 regs; pushed 2, so decrement numregs_pushed. */
                     free_reg(comp, offset);
-                    free_reg(comp, parentreg);
+                    free_reg(comp, parentreg); /* root parent (x in x.y.z) won't be freed, but y in x.y.z would. */
                     --numregs_pushed;
                                         
                 }
@@ -641,7 +665,7 @@ OBJECT_LINK------>     L3
         case OBJECT_MAIN: 
         {   
             m1_reg reg;              
-            fprintf(stderr, "OBJECT MAIN: %s\n", obj->obj.name);
+
         	assert(obj->obj.field != NULL);
         	assert(obj->sym != NULL);
         	assert(obj->sym->typedecl != NULL);
@@ -653,7 +677,8 @@ OBJECT_LINK------>     L3
                 freeze_reg(comp, r);                
         	}  
             
-            /* get the storage type. */
+            /* Decide what type of register to use; for arrays it's always INT 
+               as pointers are stored as integers. */
             if (obj->sym->num_elems > 1) { /* it's an array! store it in an int register. */
                 reg.type = VAL_INT;                
             }
@@ -700,7 +725,7 @@ OBJECT_LINK------>     L3
             /* whenever there's a field, reset dimension;
                e.g. in x[4].y[5], when handling [5], dimension should be 1 again, 
                not 2. Since the "chain" is broken by the field y in the middle,
-               dimension needs to be reset.
+               dimension needs to be reset. (both x and y are single-dimension arrays).
             */ 
             (*dimension) = 0;
             
