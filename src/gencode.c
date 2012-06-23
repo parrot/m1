@@ -54,7 +54,9 @@ static unsigned gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **paren
 static const char type_chars[REG_TYPE_NUM] = {'i', 'n', 's', 'p'};
 static const char reg_chars[REG_TYPE_NUM] = {'I', 'N', 'S', 'P'};
 
-#define INS(opcode, format, ...)    instr(comp, opcode, format, ##__VA_ARGS__)
+#define INS(opcode, format, ...)    mk_instr(comp, opcode, format, ##__VA_ARGS__)
+#define CHUNK()                     mk_chunk(comp)
+
 
 static void
 reset_reg(M1_compiler *comp) {

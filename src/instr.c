@@ -52,213 +52,10 @@ char const * const m0_instr_names[] = {
     
 };
 
-static const char types[REG_TYPE_NUM] = {'i', 'n', 's', 'p'};
 static const char regs[REG_TYPE_NUM + 1] = {'I', 'N', 'S', 'P', ' '};
 
 
 #define OUT stdout
-
-/*
-static void
-write_noop(m0_instr *i) {
-    fprintf(OUT, "noop");    
-}
-
-static void
-write_goto(m0_instr *i) {
-    fprintf(OUT, "goto");   
-}
-
-static void
-write_goto_if(m0_instr *i) {
-    fprintf(OUT, "goto_if");   
-}
-
-static void
-write_goto_chunk(m0_instr *i) {
-    fprintf(OUT, "goto_chunk");   
-}
-
-static void
-write_add_i(m0_instr *i) {
-    fprintf(OUT, "add_i");    
-}
-
-static void
-write_add_n(m0_instr *i) {
-    fprintf(OUT, "add_n");    
-}
-
-static void
-write_sub_i(m0_instr *i) {
-    fprintf(OUT, "sub_i");    
-}
-
-static void
-write_sub_n(m0_instr *i) {
-    fprintf(OUT, "sub_n");    
-}
-
-static void
-write_mult_i(m0_instr *i) {
-    fprintf(OUT, "mult_i");    
-}
-
-static void
-write_mult_n(m0_instr *i) {
-    fprintf(OUT, "mult_n");    
-}
-
-static void
-write_div_i(m0_instr *i) {
-    fprintf(OUT, "div_i");    
-}
-
-static void
-write_div_n(m0_instr *i) {
-    fprintf(OUT, "div_n");    
-}
-
-static void
-write_mod_i(m0_instr *i) {
-    fprintf(OUT, "mod_i");    
-}
-
-static void
-write_mod_n(m0_instr *i) {
-    fprintf(OUT, "mod_n");    
-}
-
-static void
-write_iton(m0_instr *i) {
-    fprintf(OUT, "iton");    
-}
-static void
-write_ntoi(m0_instr *i) {
-    fprintf(OUT, "ntoi");    
-}
-static void
-write_ashr(m0_instr *i) {
-    fprintf(OUT, "ashr");    
-}
-static void
-write_lshr(m0_instr *i) {
-    fprintf(OUT, "lshr");    
-}
-static void
-write_shl(m0_instr *i) {
-    fprintf(OUT, "shl");    
-}
-
-static void
-write_and(m0_instr *i) {
-    fprintf(OUT, "and");    
-}
-
-static void
-write_or(m0_instr *i) {
-    fprintf(OUT, "or");    
-}
-
-static void
-write_xor(m0_instr *i) {
-    fprintf(OUT, "xor");    
-}
-
-static void
-write_gc_alloc(m0_instr *i) {
-    fprintf(OUT, "gc_alloc");    
-}
-
-static void
-write_sys_alloc(m0_instr *i) {
-    fprintf(OUT, "sys_alloc");    
-}
-static void
-write_sys_free(m0_instr *i) {
-    fprintf(OUT, "sys_free");    
-}
-
-static void
-write_copy_mem(m0_instr *i) {
-    fprintf(OUT, "copy_mem");    
-}
-
-static void
-write_set(m0_instr *i) {
-    fprintf(OUT, "set");    
-}
-
-static void
-write_set_imm(m0_instr *i) {
-    fprintf(OUT, "set_imm");    
-}
-
-static void
-write_deref(m0_instr *i) {
-    fprintf(OUT, "deref");    
-}
-
-static void
-write_set_ref(m0_instr *i) {
-    fprintf(OUT, "set_ref");    
-}
-
-static void
-write_set_byte(m0_instr *i) {
-    fprintf(OUT, "set_byte");    
-}
-static void
-write_get_byte(m0_instr *i) {
-    fprintf(OUT, "get_byte");    
-}
-static void
-write_set_word(m0_instr *i) {
-    fprintf(OUT, "set_word");    
-}
-static void
-write_get_word(m0_instr *i) {
-    fprintf(OUT, "get_word");    
-}
-static void
-write_csym(m0_instr *i) {
-    fprintf(OUT, "csym");    
-}
-
-static void
-write_ccall_arg(m0_instr *i) {
-    fprintf(OUT, "ccall_arg");    
-}
-
-static void
-write_ccall_ret(m0_instr *i) {
-    fprintf(OUT, "ccall_ret");    
-}
-
-static void
-write_ccall(m0_instr *i) {
-    fprintf(OUT, "ccall");    
-}
-
-static void
-write_print_s(m0_instr *i) {
-    fprintf(OUT, "print_s");    
-}
-static void
-write_print_i(m0_instr *i) {
-    fprintf(OUT, "print_i");   
-}
-
-static void
-write_print_n(m0_instr *i) {
-    fprintf(OUT, "print_n");    
-}
-
-static void
-write_exit(m0_instr *i) {
-    fprintf(OUT, "exit");    
-}
-*/
 
 
 
@@ -311,7 +108,7 @@ write_instructions(M1_compiler *comp, m0_instr *i) {
 }
 
 m0_instr *
-instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
+mk_instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
     va_list argp;
     char const *p;
     int index = 0;
@@ -330,9 +127,8 @@ instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
            
     for (p = format; *p != '\0'; p++) {
 
-        if (*p != '%') {
-            continue;
-        }
+        if (*p != '%') 
+            continue;        
 
         switch (*++p) {
             case 'N':
@@ -367,6 +163,13 @@ instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
     
     ins->numops = index;
     ins->next   = NULL;
+    
+    /* if not first generated instruction, then set that item's next to the new instr. */
+    if (comp->lastgenerated != NULL)
+        comp->lastgenerated->next = ins;
+    /* update last generated instruction for fast access. */        
+    comp->lastgenerated = ins;
+    
     va_end(argp);
 
     return ins;
@@ -374,32 +177,10 @@ instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
 }
 
 
-
-
-/*
-void
-ins_label(M1_compiler *comp, unsigned labelno) {
-    
+m0_chunk *
+mk_chunk(M1_compiler *comp) {
+    m0_chunk *ch = NULL;
+    return ch;   
 }
 
-void
-ins_goto_if(M1_compiler *comp, unsigned labelno, char regtype, char regno) {
-    
-}
-
-void
-ins_goto(M1_compiler *comp, unsigned labelno) {
-    
-}
-
-void
-ins_set_imm(M1_compiler *comp, m1_reg *target, unsigned num256, unsigned numlt256) {
-       
-}
-
-void
-ins_deref(M1_compiler *comp, m1_reg *target, M0_alias obj, m1_reg *index) {
-    
-}
-*/
 

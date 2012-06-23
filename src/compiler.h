@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 
+
 /* needed for declaring yyscan_t as a member of compiler struct below. */
 #ifndef YY_TYPEDEF_YY_SCANNER_T
 #  define YY_TYPEDEF_YY_SCANNER_T
@@ -25,9 +26,9 @@ typedef struct M1_compiler {
 	unsigned int           warnings;
 	
 	struct m1_chunk       *ast;	    /* root of the AST */
-	int				       constindex; /* constant table index counter */
-	int                    label;      /* label generator */
-	int          	       regs[NUM_TYPES]; /* for the register allocator */
+	unsigned int           constindex; /* constant table index counter */
+	unsigned int           label;      /* label generator */
+	unsigned int  	       regs[NUM_TYPES]; /* for the register allocator */
 	int                    expect_usertype; /* identifiers can be types or identifiers. 
 	                       Keep track what the lexer should return (TK_IDENT or TK_USERTYPE) */
 	                       
@@ -48,13 +49,15 @@ typedef struct M1_compiler {
 	
 	struct m1_symboltable *globalsymtab; /* to store function names */
 	
-	int                    enum_const_counter; /* for parsing enums that don't specify values. */
+	unsigned int           enum_const_counter; /* for parsing enums that don't specify values. */
 	
 	char                   registers[REG_TYPE_NUM][REG_NUM]; /* register allocation system. */
 	
 	int                    no_reg_opt; /* command-line option to turn off register allocator. */
 	
+	/* code generator fields. */
 	FILE                  *outfile;
+	struct m0_instr       *lastgenerated;
 	
 } M1_compiler;
 

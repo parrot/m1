@@ -98,7 +98,16 @@ typedef struct m0_instr {
     struct m0_instr *next;
 } m0_instr;
 
-extern m0_instr *instr(M1_compiler *comp, m0_opcode, char const * const format, ...);
+typedef struct m0_chunk {
+    
+    m0_instr *instructions;    
+    
+    struct m0_chunk *next;
+    
+} m0_chunk;
+
+extern m0_chunk *mk_chunk(M1_compiler *comp);
+extern m0_instr *mk_instr(M1_compiler *comp, m0_opcode, char const * const format, ...);
 
 
 #endif
