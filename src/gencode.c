@@ -157,7 +157,7 @@ Generate label identifiers.
 static int
 gen_label(M1_compiler *comp) {
     assert(comp != NULL);
-	return comp->label++;	
+	return ++comp->label;	
 }
 
 

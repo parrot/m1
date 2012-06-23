@@ -79,7 +79,9 @@ static const char regs[REG_TYPE_NUM + 2] = {'I', 'N', 'S', 'P', ' ', 'L'};
 static void
 write_instr(M1_compiler *comp, m0_instr *i) {
     
-    
+    if (i->label != 0)
+        fprintf(OUT, "L%d:\n", i->label);
+        
     switch (i->numops) {
         case 0:
             fprintf(OUT, "   %s\n", m0_instr_names[(int)i->opcode]); 
@@ -213,7 +215,7 @@ mk_instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
     
     comp->lastgenerated = ins;
     
-//    write_instr(comp, ins);
+  //  write_instr(comp, ins);
     return ins;
     
 }
