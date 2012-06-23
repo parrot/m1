@@ -87,6 +87,7 @@ typedef struct m0_instr {
 
 /* struct representing an M0 chunk. */
 typedef struct m0_chunk {
+    char        *name;
     unsigned int num_instr; /* number of instructions in this chunk. */
     m0_instr *instructions; /* list of instructions. */
     
