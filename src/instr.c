@@ -53,7 +53,7 @@ char const * const m0_instr_names[] = {
 };
 
 static const char types[REG_TYPE_NUM] = {'i', 'n', 's', 'p'};
-static const char regs[REG_TYPE_NUM + 2] = {'I', 'N', 'S', 'P', 'P', ' '};
+static const char regs[REG_TYPE_NUM + 1] = {'I', 'N', 'S', 'P', ' '};
 
 
 #define OUT stdout
@@ -266,14 +266,35 @@ static void
 write_instr(M1_compiler *comp, m0_instr *i) {
     
     
-    fprintf(comp->outfile, "   %s\t%c%d, %c%d, %c%d\n", m0_instr_names[(int)i->opcode], 
+    switch (i->numops) {
+        case 0:
+            fprintf(comp->outfile, "   %s\n", m0_instr_names[(int)i->opcode]); 
+            break;
+        case 1:                                                          
+            fprintf(comp->outfile, "   %s\t%c%d, x, x\n", m0_instr_names[(int)i->opcode], 
+                                              regs[i->operands[0].type], i->operands[0].value);
+ 
+            break;
+        case 2:                                                             
+            fprintf(comp->outfile, "   %s\t%c%d, %c%d, x\n", m0_instr_names[(int)i->opcode], 
+                                              regs[i->operands[0].type], i->operands[0].value,
+                                              regs[i->operands[1].type], i->operands[1].value);                                              
+            break;
+        case 3:
+            fprintf(comp->outfile, "   %s\t%c%d, %c%d, %c%d\n", m0_instr_names[(int)i->opcode], 
                                               regs[i->operands[0].type], i->operands[0].value,
                                               regs[i->operands[1].type], i->operands[1].value,
                                               regs[i->operands[2].type], i->operands[2].value);
+            break;
+        default:
+            fprintf(stderr, "too many operands for instruction");
+            assert(0);
+        }                                                                                                        
 }
 
 void
 write_instructions(M1_compiler *comp, m0_instr *i) {
+
     comp->outfile = fopen("a.m1", "w");
     
     if (comp->outfile == NULL) {
@@ -288,64 +309,6 @@ write_instructions(M1_compiler *comp, m0_instr *i) {
     fclose(comp->outfile);
        
 }
-/*
-void
-write_instructions(m0_instr *i) {
-    while (i != NULL) {
-        fprintf(OUT, "\t");
-        switch (i->opcode) {
-            case M0_NOOP: write_noop(i); break;
-            case M0_GOTO: write_goto(i); break;
-            case M0_GOTO_IF: write_goto_if(i); break;
-            case M0_GOTO_CHUNK: write_goto_chunk(i); break;
-            case M0_ADD_I: write_add_i(i); break;
-            case M0_ADD_N: write_add_n(i); break;
-            case M0_SUB_I: write_sub_i(i); break;            
-            case M0_SUB_N: write_sub_n(i); break;
-            case M0_MULT_I: write_mult_i(i); break;
-            case M0_MULT_N: write_mult_n(i); break;
-            case M0_DIV_I: write_div_i(i); break;
-            case M0_DIV_N: write_div_n(i); break;
-            case M0_MOD_I: write_mod_i(i); break;
-            case M0_MOD_N: write_mod_n(i); break;
-            case M0_ITON: write_iton(i); break;
-            case M0_NTOI: write_ntoi(i); break;
-            case M0_ASHR: write_ashr(i); break;
-            case M0_LSHR: write_lshr(i); break;
-            case M0_SHL: write_shl(i); break;
-            case M0_AND: write_and(i); break;
-            case M0_OR: write_or(i); break;
-            case M0_XOR: write_xor(i); break;
-            case M0_GC_ALLOC: write_gc_alloc(i); break;
-            case M0_SYS_ALLOC: write_sys_alloc(i); break;
-            case M0_SYS_FREE: write_sys_free(i); break;
-            case M0_COPY_MEM: write_copy_mem(i); break;
-            case M0_SET: write_set(i); break;
-            case M0_SET_IMM: write_set_imm(i); break;
-            case M0_DEREF: write_deref(i); break;
-            case M0_SET_REF: write_set_ref(i); break;
-            case M0_SET_BYTE: write_set_byte(i); break;
-            case M0_GET_BYTE: write_get_byte(i); break;
-            case M0_SET_WORD: write_set_word(i); break;
-            case M0_GET_WORD: write_get_word(i); break;
-            case M0_CSYM: write_csym(i); break;
-            case M0_CCALL_ARG: write_ccall_arg(i); break;
-            case M0_CCALL_RET: write_ccall_ret(i); break;
-            case M0_CCALL: write_ccall(i); break;
-            case M0_PRINT_S: write_print_s(i); break;
-            case M0_PRINT_I: write_print_i(i); break;
-            case M0_PRINT_N: write_print_n(i); break;
-            case M0_EXIT: write_exit(i); break;
-    
-            default:
-                fprintf(OUT, "unknown op!");
-                exit(EXIT_FAILURE);
-        }
-        fprintf(OUT, "\n");
-        i = i->next;   
-    }   
-}
-*/
 
 m0_instr *
 instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
@@ -366,10 +329,11 @@ instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
     va_start(argp, format);
            
     for (p = format; *p != '\0'; p++) {
-        /* skip all % markers. */
+
         if (*p != '%') {
             continue;
         }
+
         switch (*++p) {
             case 'N':
                 ins->operands[index].type  = VAL_FLOAT;
@@ -401,8 +365,10 @@ instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
                
     }
     
+    ins->numops = index;
+    ins->next   = NULL;
     va_end(argp);
-    
+
     return ins;
     
 }

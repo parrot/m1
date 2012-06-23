@@ -89,7 +89,8 @@ typedef struct m0_operand {
 
 
 typedef struct m0_instr {
-    char              opcode;
+    unsigned char     opcode;
+    unsigned          numops;
     char              flags;       /* maximum of 8 flags */
     unsigned int      label;       /* most instructions won't have one */
     struct m0_operand operands[3];

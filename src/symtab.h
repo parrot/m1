@@ -20,13 +20,13 @@
  */
 
 typedef enum m1_valuetype {
-	VAL_INT,
-	VAL_FLOAT,
-	VAL_STRING,
-	VAL_CHUNK,   /* uses sval field of m1_value union */
-	VAL_ADDRESS, /* uses ival field of m1_value union */
-	VAL_USERTYPE,
-	VAL_VOID     
+	VAL_INT      = 0,
+	VAL_FLOAT    = 1,
+	VAL_STRING   = 2,
+	VAL_CHUNK    = 3,   /* uses sval field of m1_value union */
+	VAL_ADDRESS  = 0,   /* uses ival field of m1_value union */
+	VAL_USERTYPE = 3,
+	VAL_VOID     = 4 
 	
 } m1_valuetype;
 
