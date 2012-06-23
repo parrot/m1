@@ -1444,6 +1444,7 @@ gencode_continue(M1_compiler *comp) {
     int continuelabel = top(comp->continuestack);
 	
     /* pop label from compiler's label stack (todo!) and jump there. */
+    INS (M0_GOTO, "%L", continuelabel);
     fprintf(OUT, "\tgoto\tL%d\n", continuelabel);
 }
 
@@ -1453,6 +1454,7 @@ gencode_break(M1_compiler *comp) {
     int breaklabel = top(comp->breakstack);
     
     /* pop label from compiler's label stack (todo!) and jump there. */
+    INS (M0_GOTO, "%L", breaklabel);    
     fprintf(OUT, "\tgoto\tL%d\n", breaklabel);
 }
 
@@ -1681,6 +1683,8 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     /* index the callee's frame (Px) with the index _of_ register X0. 
        That's where the callee left any return value. 
      */
+     
+    INS (M0_DEREF, "%R, %P, %I", retvaltarget_reg, cf_reg.no, idxreg.no);     
     fprintf(OUT, "\tderef\t%c%d, P%d, I%d\n", reg_chars[(int)retvaltarget_reg.type], retvaltarget_reg.no, 
                                               cf_reg.no, idxreg.no);
                                                
@@ -1706,6 +1710,20 @@ gencode_print_arg(M1_compiler *comp, m1_expression *expr) {
     m1_reg reg = popreg(comp->regstack);
     m1_reg one = topreg(comp->regstack);
         
+    switch (reg.type) {
+        case VAL_INT:
+            INS (M0_PRINT_I, "%I, %R", one.no, reg);
+            break;
+        case VAL_FLOAT:
+            INS (M0_PRINT_N, "%I, %R", one.no, reg);
+            break;
+        case VAL_STRING:
+            INS (M0_PRINT_S, "%I, %R", one.no, reg);
+            break;
+        default:
+            assert(0);
+            break;   
+    }        
     fprintf(OUT, "\tprint_%c\tI%d, %c%d, x\n", type_chars[(int)reg.type], one.no, 
                                                reg_chars[(int)reg.type], reg.no);
                                                
@@ -1718,6 +1736,7 @@ gencode_print(M1_compiler *comp, m1_expression *expr) {
     m1_reg one;
         
     one = alloc_reg(comp, VAL_INT);    
+    INS (M0_SET_IMM, "%I, %d, %d", one.no, 0, 1);
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n",  one.no);
     
     pushreg(comp->regstack, one); /* make reg holding "1" available to helper routine... */
@@ -1806,14 +1825,20 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
         int testlabel;
         /* XXX TODO handle numbers > 255 */
         /* reuse register "test". */
+        
+        INS (M0_SET_IMM, "%I, %d, %d", test.no, 0, caseiter->selector);
+        INS (M0_SUB_I,   "%I, %I, %I", test.no, reg.no, test.no);
         fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", test.no, caseiter->selector);
         fprintf(OUT, "\tsub_i\tI%d, I%d, I%d\n", test.no, reg.no, test.no);
      
         testlabel = gen_label(comp);
+        INS (M0_GOTO_IF, "%L, %I", testlabel, test.no);
         fprintf(OUT, "\tgoto_if L%d, I%d\n", testlabel, test.no);
         /* generate code for this case's block. */
         gencode_exprlist(comp, caseiter->block);
+        
         /* next test label. */
+        LABEL (testlabel);
         fprintf(OUT, "L%d:\n", testlabel);
         
         caseiter = caseiter->next;   
@@ -1826,6 +1851,7 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
        gencode_expr(comp, expr->defaultstat); 
     }
     
+    LABEL (endlabel); 
     fprintf(OUT, "L%d:\n", endlabel);      
     (void)pop(comp->breakstack);
     
@@ -1881,19 +1907,27 @@ gencode_var(M1_compiler *comp, m1_var *v) {
         if (size < (256*255)) {
             int remainder = size % 256;   
             int num256    = (size - remainder) / 256;
+            INS (M0_SET_IMM, "%I, %d, %d", memsize.no, num256, remainder);
             fprintf(OUT, "\tset_imm\tI%d, %d, %d\n", memsize.no, num256, remainder);
         }
         else {
             m1_symbol *sizesym = sym_find_int(&comp->currentchunk->constants, size);
             m1_reg indexreg = alloc_reg(comp, VAL_INT);
             assert(sizesym != NULL);
+            
             /* XXX this will fail if the const index in the CONSTS segment > 255. */
+            
+            INS (M0_SET_IMM, "%I, %d, %d", indexreg.no, 0, sizesym->constindex);
+            INS (M0_DEREF,   "%I, %d, %I", memsize.no, CONSTS, indexreg.no);
+            
             fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", indexreg.no, sizesym->constindex); 
             fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", memsize.no, indexreg.no);
             free_reg(comp, indexreg);
         }
         
+        INS (M0_GC_ALLOC, "%I, %I, %d", sym->regno, memsize.no, 0);
         fprintf(OUT, "\tgc_alloc\tI%d, I%d, 0\n", sym->regno, memsize.no);
+        
         free_reg(comp, memsize);
         
         if (v->init) { /* initialize arrays. */
@@ -1902,6 +1936,8 @@ gencode_var(M1_compiler *comp, m1_var *v) {
             m1_reg         one   = alloc_reg(comp, VAL_INT);
             unsigned elem_count  = 0;
             
+            INS (M0_SET_IMM, "%I, %d, %d", index.no, 0, 0);
+            INS (M0_SET_IMM, "%I, %d, %d", one.no, 0, 1);
             fprintf(OUT, "\tset_imm\tI%d, 0, 0\n", index.no); /* index register. */
             fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", one.no);   /* to hold constant 1. */
             
@@ -1920,8 +1956,10 @@ gencode_var(M1_compiler *comp, m1_var *v) {
                 m1_reg res = popreg(comp->regstack);
                 
                 /* and assign to array. */
+                INS (M0_SET_REF, "I%d, I%d, %R", sym->regno, index.no, res);
                 fprintf(OUT, "\tset_ref\tI%d, I%d, %c%d\n", sym->regno, index.no, reg_chars[(int)res.type], res.no);
                 /* increment index. */
+                INS (M0_ADD_I, "%I, %I, %I", index.no, index.no, one.no);
                 fprintf(OUT, "\tadd_i\tI%d, I%d, I%d\n", index.no, index.no, one.no); 
                 
                 iter = iter->next;
@@ -1956,9 +1994,11 @@ gencode_cast(M1_compiler *comp, m1_castexpr *expr) {
     
     switch (expr->targettype) {
         case VAL_INT:
+            INS (M0_CONVERT_I_N, "%I, %R", result.no, reg);
             fprintf(OUT, "\tconvert_i_n\tI%d, %c%d, x\n", result.no, reg_chars[(int)reg.type], reg.no);
             break;
         case VAL_FLOAT:
+            INS (M0_CONVERT_N_I, "%N, %R", result.no, reg);
             fprintf(OUT, "\tconvert_n_i\tN%d, %c%d, x\n", result.no, reg_chars[(int)reg.type], reg.no);
             break;
         default:
@@ -2046,8 +2086,6 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
                              */
             unsigned dimension_dummy = 0;
             num_regs = gencode_obj(comp, e->expr.t, &obj, &dimension_dummy, 0);            
-            //fprintf(stderr, "generated code for object: %s\n", obj->obj.name);
-            //fprintf(stderr, "symbol of %s is: %s\n", obj->obj.name, obj->sym->name);
             
             if (num_regs == 2) { /* gencode_obj() may return 2 registers for array and struct access. */
                 m1_reg index  = popreg(comp->regstack);                
@@ -2062,6 +2100,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
                 m1_type *target_type = obj->sym->typedecl;
                 m1_reg target = alloc_reg(comp, target_type->valtype); 
                 
+                INS (M0_DEREF, "%R, %R, %R", target, parent, index);
                 fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
                                                             reg_chars[(int)parent.type], parent.no,
                                                             reg_chars[(int)index.type], index.no);
@@ -2099,7 +2138,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             fprintf(stderr, "unknown expr type (%d)", e->type);   
             assert(0);
     }  
-//    fprintf(stderr, "Returning from gen expr\n");
+
     return num_regs; 
 
 }
@@ -2212,7 +2251,6 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *chunk) {
 static void
 gencode_parameters(M1_compiler *comp, m1_chunk *chunk) {
     m1_var *paramiter = chunk->parameters;
-    fprintf(stderr, "[gencode] parameters for chunk (%d)\n", chunk->num_params);
     
     if (chunk->num_params > 0)
         assert(paramiter != NULL);
@@ -2222,10 +2260,7 @@ gencode_parameters(M1_compiler *comp, m1_chunk *chunk) {
         /* get a new reg for this parameter. */
         m1_reg r = alloc_reg(comp, paramiter->sym->valtype); 
         paramiter->sym->regno = r.no;
-        freeze_reg(comp, r); /* parameters are like local variables; they keep their register. */
-
-//        fprintf(stderr, "Frozen reg %d for parameter %s\n", r.no, paramiter->name);
-        
+        freeze_reg(comp, r); /* parameters are like local variables; they keep their register. */        
         paramiter = paramiter->next;   
     }
 }
