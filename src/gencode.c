@@ -1677,6 +1677,9 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     fprintf(OUT, "\tderef      P%d, CONSTS, P%d\n", cf_reg.no, cf_reg.no);
     
     m1_reg I0 = alloc_reg(comp, VAL_INT);    
+    INS (M0_SET_IMM, "%I, %d, %d", I0.no, 0, 0);
+    INS (M0_GOTO_CHUNK, "%P, %I", cf_reg.no, I0.no);
+    
     fprintf(OUT, "\tset_imm    I%d, 0, 0\n", I0.no);
     fprintf(OUT, "\tgoto_chunk P%d, I%d, x\n", cf_reg.no, I0.no);
     free_reg(comp, I0);
@@ -1708,15 +1711,23 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     set_imm  I9,  0,  BCS
     set_ref  PCF, I9, BCS
 */
+    INS (M0_SET_IMM, "%I, %d, %d", I9.no, 0, CHUNK);
+    INS (M0_SET_REF, "%d, %I, %d", PCF, I9.no, CHUNK);
     fprintf(OUT, "\tset_imm   I%d, 0, CHUNK\n", I9.no);
     fprintf(OUT, "\tset_ref   PCF, I%d, CHUNK\n", I9.no);
-    
+
+    INS (M0_SET_IMM, "%I, %d, %d", I9.no, 0, CONSTS);
+    INS (M0_SET_REF, "%d, %I, %d", PCF, I9.no, CONSTS);    
     fprintf(OUT, "\tset_imm   I%d, 0, CONSTS\n", I9.no);
     fprintf(OUT, "\tset_ref   PCF, I%d, CONSTS\n", I9.no);
-    
+
+    INS (M0_SET_IMM, "%I, %d, %d", I9.no, 0, MDS);
+    INS (M0_SET_REF, "%d, %I, %d", PCF, I9.no, MDS);    
     fprintf(OUT, "\tset_imm   I%d, 0, MDS\n", I9.no);
     fprintf(OUT, "\tset_ref   PCF, I%d, MDS\n", I9.no);
-    
+
+    INS (M0_SET_IMM, "%I, %d, %d", I9.no, 0, BCS);
+    INS (M0_SET_REF, "%d, %I, %d", PCF, I9.no, BCS);    
     fprintf(OUT, "\tset_imm   I%d, 0, BCS\n", I9.no);
     fprintf(OUT, "\tset_ref   PCF, I%d, BCS\n", I9.no);
     
@@ -2328,6 +2339,8 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *chunk) {
         m1_reg retpc_reg   = alloc_reg(comp, VAL_INT);
         m1_reg retpc_index = alloc_reg(comp, VAL_INT);
 
+        INS (M0_SET_IMM, "%I, %d, %d", retpc_index.no, 0, RETPC);
+        INS (M0_DEREF,   "%I, %d, %I", retpc_reg.no, PCF, retpc_index.no);
         fprintf(OUT, "\tset_imm    I%d, 0, RETPC\n", retpc_index.no);
         fprintf(OUT, "\tderef      I%d, PCF, I%d\n", retpc_reg.no, retpc_index.no);
 
@@ -2335,6 +2348,9 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *chunk) {
 
         chunk_index = alloc_reg(comp, VAL_INT);
 
+        INS (M0_SET_IMM, "%I, %d, %d", chunk_index.no, 0, CHUNK);
+        INS (M0_DEREF,   "%I, %d, %I", chunk_index.no, PCF, chunk_index.no);
+        INS (M0_GOTO_CHUNK, "%I, %I", chunk_index.no, retpc_reg.no);
         fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
         fprintf(OUT, "\tderef      I%d, PCF, I%d\n", chunk_index.no, chunk_index.no);
         fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", chunk_index.no, retpc_reg.no);        
