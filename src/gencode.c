@@ -1115,6 +1115,10 @@ gencode_and(M1_compiler *comp, m1_binexpr *b) {
 	left = popreg(comp->regstack);
 	
 	/* if left was false, no need to evaluate right, and go to end. */
+	INS (M0_GOTO_IF, "%L, %R", evalright, left);
+	INS (M0_GOTO,    "%L", endlabel);
+	LABEL (evalright);
+	
 	fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", evalright, reg_chars[(int)left.type], left.no);		
 	fprintf(OUT, "\tgoto L%d\n", endlabel);
 	fprintf(OUT, "L%d:\n", evalright);
@@ -1123,6 +1127,8 @@ gencode_and(M1_compiler *comp, m1_binexpr *b) {
 	right = popreg(comp->regstack);
 	
 	/* copy result from right to left result reg, as that's the reg that will be returned. */
+	INS (M0_SET, "%R, %R", left, right);
+	LABEL (endlabel);
 	fprintf(OUT, "\tset\t%c%d, %c%d, x\n", reg_chars[(int)left.type], left.no, reg_chars[(int)right.type], right.no);	
 	fprintf(OUT, "L%d:\n", endlabel);
 	
@@ -1214,6 +1220,7 @@ lt_le_common(M1_compiler *comp, m1_binexpr *b, char const * const op) {
     gencode_expr(comp, b->right);
     right = popreg(comp->regstack);
     
+
     /* using isgt or isge ops, but swap arguments; hence, right first, then left. */
     //INS (??, "%I, %R, %R", result.no, right, left);
     fprintf(OUT, "\t%s_%c I%d, %c%d, %c%d\n", op, type_chars[(int)left.type], result.no, 
@@ -1380,6 +1387,14 @@ gencode_not(M1_compiler *comp, m1_unexpr *u) {
     label1 = gen_label(comp);
     label2 = gen_label(comp);
     
+    INS (M0_GOTO_IF, "%L, %R", label1, reg);
+    INS (M0_SET_IMM, "%I, %d, %d", temp.no, 0, 1);
+    INS (M0_GOTO, "%L", label2);
+    LABEL (label1);
+    INS (M0_SET_IMM, "%I, %d, %d", temp.no, 0, 0);
+    LABEL (label2);
+    INS (M0_SET, "%R, %I", reg, temp.no);
+    
     fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", label1, reg_chars[(int)reg.type], reg.no);
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", temp.no);
     fprintf(OUT, "\tgoto L%d\n", label2);
@@ -1450,9 +1465,13 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     /* if it's a postfix op, then need to save the old value. */
     if (postfix == 1) {
         oldval = alloc_reg(comp, VAL_INT);
+        INS (M0_SET, "%I, %I", oldval.no, reg.no);
         fprintf(OUT, "\tset\tI%d, I%d, x\n", oldval.no, reg.no);
     }
     
+    INS (M0_SET_IMM, "%I, %d, %d", one.no, 0, 1);
+//    INS (??, "%I, %I, %I", reg.no, reg.no, one.no);
+
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", one.no);
     fprintf(OUT, "\t%s\tI%d, I%d, I%d\n", op, reg.no, reg.no, one.no);    
     
@@ -1537,6 +1556,9 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
         m1_reg indexreg = alloc_reg(comp, VAL_INT);
         gencode_expr(comp, argiter);
         argreg = popreg(comp->regstack);
+        
+        INS (M0_SET_IMM, "%I, %d, %d", indexreg.no, 0, regindexes[argreg.type]);
+        INS (M0_SET_REF, "%P, %I, %R", cf_reg.no, indexreg.no, argreg);
         fprintf(OUT, "\tset_imm   I%d, 0, %d\n", indexreg.no, regindexes[argreg.type]);
         fprintf(OUT, "\tset_ref   P%d, I%d, %c%d\n", cf_reg.no, indexreg.no, 
                                                      reg_chars[(int)argreg.type], argreg.no);
