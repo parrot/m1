@@ -51,19 +51,6 @@ typedef enum m0_opcode {
 
 extern char const * const m0_instr_names[];
 
-
-typedef enum m0_instr_flag {
-    I_TYPE_INT   = 0x0001,
-    I_TYPE_NUM   = 0x0002,
-    I_TYPE_STR   = 0x0004,
-    I_TYPE_PMC   = 0x0008,
-    I_0_OPERANDS = 0x0010,
-    I_1_OPERANDS = 0x0020,
-    I_2_OPERANDS = 0x0040,
-    I_3_OPERANDS = 0x0080
-    
-} m0_instr_flag;
-
     
 typedef enum M0_alias {
     CF       = 0,
@@ -92,7 +79,6 @@ typedef struct m0_operand {
 typedef struct m0_instr {
     unsigned char     opcode;
     unsigned          numops;
-    char              flags;       /* maximum of 8 flags */
     unsigned int      label;       /* most instructions won't have one */
     struct m0_operand operands[3];
     
@@ -101,10 +87,10 @@ typedef struct m0_instr {
 
 /* struct representing an M0 chunk. */
 typedef struct m0_chunk {
+    unsigned int num_instr; /* number of instructions in this chunk. */
+    m0_instr *instructions; /* list of instructions. */
     
-    m0_instr *instructions;    
-    
-    struct m0_chunk *next;
+    struct m0_chunk *next;  /* chunks are stored in a list. */
     
 } m0_chunk;
 
