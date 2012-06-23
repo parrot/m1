@@ -1705,6 +1705,13 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     set_ref PCF, I9, PCF
     */
     m1_reg I1 = alloc_reg(comp, VAL_INT);    
+    INS (M0_SET_IMM, "%I, %d, %d", I1.no, 0, 5);
+    INS (M0_ADD_I,   "%I, %d, %I", I1.no, PC, I1.no);
+    INS (M0_SET_IMM, "%I, %d, %d", I9.no, 0, PC);
+    INS (M0_SET_REF, "%d, %I, %I", PCF, I0.no, I1.no);
+    INS (M0_SET_IMM, "%I, %d, %d", I9.no, 0, CF);
+    INS (M0_SET_REF, "%d, %I, %d", PCF, I9.no, PCF);
+    
     fprintf(OUT, "\tset_imm   I%d, 0,   5\n", I1.no);
     fprintf(OUT, "\tadd_i     I%d, PC,  I%d\n", I1.no, I1.no);
     fprintf(OUT, "\tset_imm   I%d, 0,   PC\n", I9.no);
@@ -1718,6 +1725,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     /*
     set     CF, PCF, x
     */
+    INS (M0_SET, "%d, %d", CF, PCF);
     fprintf(OUT, "\tset       CF, PCF, x\n");
     
 
@@ -1732,6 +1740,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     m1_reg idxreg           = alloc_reg(comp, VAL_INT);
     m1_reg retvaltarget_reg = alloc_reg(comp, funcall->typedecl->valtype);
     /* load the number of register I0. */
+    INS (M0_SET_IMM, "%I, %d, %R", idxreg.no, retvaltarget_reg); // XXX
     fprintf(OUT, "\tset_imm\tI%d, 0, %c0\n", idxreg.no, reg_chars[(int)retvaltarget_reg.type]);   
     
     /* index the callee's frame (Px) with the index _of_ register X0. 
