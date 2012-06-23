@@ -12,6 +12,7 @@ The following specifiers may be used:
  %S     like %I, but for S registers.
  %P     like %I, but for P registers.
  %d     to pass a integer literal.
+ %L     to pass a label number.
 
 */
 #include <stdlib.h>
@@ -68,7 +69,7 @@ char const * const m0_instr_names[] = {
     
 };
 
-static const char regs[REG_TYPE_NUM + 1] = {'I', 'N', 'S', 'P', ' '};
+static const char regs[REG_TYPE_NUM + 2] = {'I', 'N', 'S', 'P', ' ', 'L'};
 
 
 #define OUT stdout
@@ -167,7 +168,12 @@ mk_instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
                 m1_reg r = va_arg(argp, m1_reg);
                 ins->operands[index].type  = r.type;
                 ins->operands[index].value = r.no;
+                break;
             }
+            case 'L': 
+                ins->operands[index].type  = VAL_LABEL;
+                ins->operands[index].value = va_arg(argp, int);
+                break;
             case 'd':
                 ins->operands[index].type  = VAL_VOID;
                 ins->operands[index].value = va_arg(argp, int);
@@ -197,6 +203,10 @@ mk_instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
     
 }
 
+void 
+mk_label(M1_compiler *comp, unsigned labelno) {
+    
+}
 
 m0_chunk *
 mk_chunk(M1_compiler *comp, char *name) {

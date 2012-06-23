@@ -54,8 +54,11 @@ static unsigned gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **paren
 static const char type_chars[REG_TYPE_NUM] = {'i', 'n', 's', 'p'};
 static const char reg_chars[REG_TYPE_NUM] = {'I', 'N', 'S', 'P'};
 
-#define INS(opcode, format, ...)    mk_instr(comp, opcode, format, ##__VA_ARGS__)
-#define CHUNK(name)                 mk_chunk(comp, name)
+#define LABEL(label)                  mk_label(comp, label)
+ 
+#define INS(opcode, format, ...)      mk_instr(comp, opcode, format, ##__VA_ARGS__)
+
+#define CHUNK(name)                   mk_chunk(comp, name)
 
 
 static void
@@ -672,6 +675,7 @@ OBJECT_LINK------>     L3
                     m1_reg parentreg = popreg(comp->regstack);
                     m1_reg target    = alloc_reg(comp, VAL_INT);
                     
+                    INS (M0_DEREF, "%I, %I, %I", target.no, parentreg.no, offset.no);
                     fprintf(OUT, "\tderef\tI%d, I%d, I%d\n", target.no, parentreg.no, offset.no);   
                     
                     pushreg(comp->regstack, target);
@@ -737,6 +741,7 @@ OBJECT_LINK------>     L3
             assert(fieldsym != NULL);
             
             /* load the offset into a reg. and make it available through the regstack. */
+            INS (M0_SET_IMM, "%I, %d, %d", fieldreg.no, 0, fieldsym->offset);
             fprintf(OUT, "\tset_imm  I%d, 0, %d\n", fieldreg.no, fieldsym->offset);             
 
             /* make it available through the regstack */
@@ -800,16 +805,20 @@ gencode_while(M1_compiler *comp, m1_whileexpr *w) {
 	push(comp->breakstack, endlabel);
 	push(comp->continuestack, startlabel);
 	
+	INS (M0_GOTO, "%L", endlabel);	
 	fprintf(OUT, "\tgoto L%d\n", endlabel);
 	
+    LABEL (startlabel);
 	fprintf(OUT, "L%d:\n", startlabel);
 	gencode_expr(comp, w->block);
 	
+	LABEL (endlabel);
 	fprintf(OUT, "L%d:\n", endlabel);
 	
 	gencode_expr(comp, w->cond);
 	reg = popreg(comp->regstack);
 	
+	INS (M0_GOTO_IF, "%L, %R", startlabel, reg);
 	fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", startlabel, reg_chars[(int)reg.type], reg.no);
 	
 	free_reg(comp, reg);
@@ -837,14 +846,18 @@ gencode_dowhile(M1_compiler *comp, m1_whileexpr *w) {
     push(comp->breakstack, endlabel);
     push(comp->continuestack, startlabel);
      
+    LABEL (startlabel);    
     fprintf(OUT, "L%d:\n", startlabel);
+    
     gencode_expr(comp, w->block);
     
     gencode_expr(comp, w->cond);
     reg = popreg(comp->regstack);
     
+    INS (M0_GOTO_IF, "%L, %R", startlabel, reg);
     fprintf(OUT, "\tgoto_if\tL%d, %c%d\n", startlabel, reg_chars[(int)reg.type], reg.no);
 
+    LABEL (endlabel);
     fprintf(OUT, "L%d:\n", endlabel);
     
     free_reg(comp, reg);
@@ -880,29 +893,37 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
     if (i->init)
         gencode_expr(comp, i->init);
 
+    LABEL (startlabel); 
 	fprintf(OUT, "L%d:\n", startlabel);
 	
     if (i->cond) {
         m1_reg reg;
         gencode_expr(comp, i->cond);
         reg = popreg(comp->regstack);
+        
+        INS (M0_GOTO_IF, "%L, %R", blocklabel, reg);        
         fprintf(OUT, "\tgoto_if L%d, %c%d\n", blocklabel, reg_chars[(int)reg.type], reg.no);
 
         free_reg(comp, reg);
     }   
 
+    INS (M0_GOTO, "%L", endlabel);
     fprintf(OUT, "\tgoto L%d\n", endlabel);
     
+    LABEL (blocklabel);
     fprintf(OUT, "L%d:\n", blocklabel);
     
     if (i->block) 
         gencode_expr(comp, i->block);
         
+    LABEL (steplabel);        
     fprintf(OUT, "L%d:\n", steplabel);
     if (i->step)
         gencode_expr(comp, i->step);
     
+    INS (M0_GOTO, "%L", startlabel);
     fprintf(OUT, "\tgoto L%d\n", startlabel);
+    LABEL (endlabel);
     fprintf(OUT, "L%d:\n", endlabel);
     
     (void)pop(comp->breakstack);

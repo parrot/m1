@@ -120,6 +120,7 @@ extern m0_chunk *mk_chunk(M1_compiler *comp, char *name);
 
 extern m0_instr *mk_instr(M1_compiler *comp, m0_opcode, char const * const format, ...);
 
+extern void mk_label(M1_compiler *comp, unsigned labelno);
 
 #endif
 
