@@ -1,7 +1,9 @@
 #ifndef __M1_INSTR_H__
 #define __M1_INSTR_H__
 
-typedef enum m0_instr_code {
+#include "compiler.h"
+
+typedef enum m0_opcode {
     M0_NOOP,
     M0_GOTO,
     M0_GOTO_IF,
@@ -45,14 +47,10 @@ typedef enum m0_instr_code {
     M0_PRINT_N,
     M0_EXIT
 
-} m0_instr_code;
+} m0_opcode;
 
 extern char const * const m0_instr_names[];
 
-typedef struct m0_operand {
-    unsigned char value;
-    unsigned char type;    
-} m0_operand;
 
 typedef enum m0_instr_flag {
     I_TYPE_INT   = 0x0001,
@@ -66,12 +64,29 @@ typedef enum m0_instr_flag {
     
 } m0_instr_flag;
 
+    
 typedef enum M0_alias {
-    CONSTS = 5,
-    CHUNK,
-    PCF,
-    CF
+    CF       = 0,
+    PCF      = 1,
+    PC       = 2,
+    RETPC    = 3,
+    EH       = 4,
+    CHUNK    = 5,
+    CONSTS   = 6,
+    MDS      = 7,
+    BCS      = 8,
+    INTERP   = 9,
+    SPC4RENT = 10,
+    SPILLCF  = 11
+    
 } M0_alias;
+
+typedef struct m0_operand {
+    unsigned char value;
+    unsigned char type;   
+     
+} m0_operand;
+
 
 typedef struct m0_instr {
     char              opcode;
@@ -82,9 +97,7 @@ typedef struct m0_instr {
     struct m0_instr *next;
 } m0_instr;
 
-extern m0_instr *instr(char op, unsigned char arg1, unsigned char type1, 
-               unsigned char arg2, unsigned char type2, 
-               unsigned char arg3, unsigned char type3);
+extern m0_instr *instr(M1_compiler *comp, m0_opcode, char const * const format, ...);
 
 
 #endif

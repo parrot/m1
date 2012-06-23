@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <stdarg.h>
 
 char const * const m0_instr_names[] = {
     "noop",
@@ -50,6 +51,10 @@ char const * const m0_instr_names[] = {
     "exit"
     
 };
+
+static const char types[REG_TYPE_NUM] = {'i', 'n', 's', 'p'};
+static const char regs[REG_TYPE_NUM + 2] = {'I', 'N', 'S', 'P', 'P', ' '};
+
 
 #define OUT stdout
 
@@ -255,45 +260,32 @@ write_exit(m0_instr *i) {
 }
 */
 
-static int
-numops(m0_instr *i) {
-    assert(i != NULL);
-    return 0;   
-}
 
 
 static void
-write_instr(m0_instr *i) {
-    switch (numops(i)) {
-        case 0:
-            fprintf(OUT, "\t%s\n", m0_instr_names[(int)i->opcode]);
-            break;
-        case 1:        
-            fprintf(OUT, "\t%s\t%c%d, x, x\n", m0_instr_names[(int)i->opcode], 
-                                               i->operands[0].type, i->operands[0].value);   
-            break;            
-        case 2:
-            fprintf(OUT, "\t%s\t%c%d, %c%d, x\n", m0_instr_names[(int)i->opcode], 
-                                                  i->operands[0].type, i->operands[0].value,
-                                                  i->operands[1].type, i->operands[1].value);           
-            break;
-        case 3:
-            fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", m0_instr_names[(int)i->opcode], 
-                                                    i->operands[0].type, i->operands[0].value,
-                                                    i->operands[1].type, i->operands[1].value,
-                                                    i->operands[2].type, i->operands[2].value);   
-            break;
-        default:
-            break;
-    }
+write_instr(M1_compiler *comp, m0_instr *i) {
+    
+    
+    fprintf(comp->outfile, "   %s\t%c%d, %c%d, %c%d\n", m0_instr_names[(int)i->opcode], 
+                                              regs[i->operands[0].type], i->operands[0].value,
+                                              regs[i->operands[1].type], i->operands[1].value,
+                                              regs[i->operands[2].type], i->operands[2].value);
 }
 
 void
-write_instructions(m0_instr *i) {
+write_instructions(M1_compiler *comp, m0_instr *i) {
+    comp->outfile = fopen("a.m1", "w");
+    
+    if (comp->outfile == NULL) {
+        fprintf(stderr, "Failed to open output file\n");
+        exit(EXIT_FAILURE);   
+    }
+    
     while (i != NULL) {
-        write_instr(i);
+        write_instr(comp, i);
         i = i->next;   
     }
+    fclose(comp->outfile);
        
 }
 /*
@@ -356,30 +348,68 @@ write_instructions(m0_instr *i) {
 */
 
 m0_instr *
-instr(char op, unsigned char arg1, unsigned char type1, 
-               unsigned char arg2, unsigned char type2, 
-               unsigned char arg3, unsigned char type3) 
-{
+instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
+    va_list argp;
+    char const *p;
+    int index = 0;
     
-    m0_instr *i = (m0_instr *)calloc(1, sizeof (m0_instr));
-    if (i == NULL) {
+    m0_instr *ins = (m0_instr *)calloc(1, sizeof (m0_instr));
+    
+    if (ins == NULL) {
         fprintf(stderr, "cant alloc mem for instr");
         exit(EXIT_FAILURE);
     }
     
-    i->opcode = op;
-    i->next   = NULL;
+    ins->opcode = opcode;
+        
     
-    i->operands[0].value = arg1;
-    i->operands[0].type  = type1;
-    i->operands[1].value = arg2;
-    i->operands[1].type  = type2;
-    i->operands[2].value = arg3;
-    i->operands[2].type  = type3;
+    va_start(argp, format);
+           
+    for (p = format; *p != '\0'; p++) {
+        /* skip all % markers. */
+        if (*p != '%') {
+            continue;
+        }
+        switch (*++p) {
+            case 'N':
+                ins->operands[index].type  = VAL_FLOAT;
+                ins->operands[index].value = va_arg(argp, int);
+                break;                
+            case 'I':
+                ins->operands[index].type  = VAL_INT;
+                ins->operands[index].value = va_arg(argp, int);                
+                break;
+            case 'S':
+                ins->operands[index].type  = VAL_STRING;
+                ins->operands[index].value = va_arg(argp, int);                
+                break;
+            case 'P':
+                ins->operands[index].type  = VAL_CHUNK;                                
+                ins->operands[index].value = va_arg(argp, int);                
+                break;
+            case 'd':
+                ins->operands[index].type  = VAL_VOID;
+                ins->operands[index].value = va_arg(argp, int);
+    			break;
 
+            default:
+                fprintf(stderr, "unrecognized error reporting format\n");
+                assert(0);
+                
+        }       
+        ++index;
+               
+    }
     
-    return i;    
+    va_end(argp);
+    
+    return ins;
+    
 }
+
+
+
+
 /*
 void
 ins_label(M1_compiler *comp, unsigned labelno) {

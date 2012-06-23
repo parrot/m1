@@ -54,15 +54,7 @@ static unsigned gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **paren
 static const char type_chars[REG_TYPE_NUM] = {'i', 'n', 's', 'p'};
 static const char reg_chars[REG_TYPE_NUM] = {'I', 'N', 'S', 'P'};
 
-/*
-#define M1_GEN_INS(name, cf, ops, pc) { \
-      if (M1_DEBUG) { \
-        fprintf(stderr, "pc = %d, op: " #name "\n", (char)pc);      \
-      } \
-      m1_ins_##name( cf, &ops[4*pc] ); \
-  }
-*/
-
+#define INS(opcode, format, ...)    instr(comp, opcode, format, ##__VA_ARGS__)
 
 static void
 reset_reg(M1_compiler *comp) {
@@ -180,8 +172,8 @@ gencode_number(M1_compiler *comp, m1_literal *lit) {
     reg        = alloc_reg(comp, VAL_FLOAT);
     constindex = alloc_reg(comp, VAL_INT);
         
-    //ins_set_imm(comp, &constindex, 0, lit->sym->constindex);
-    //ins_deref(comp, &reg, CONSTS, &constindex);
+    INS (M0_SET_IMM, "%I, %d, %d", constindex.no, 0, lit->sym->constindex);    
+    INS (M0_DEREF,   "%N, %d, %I", reg.no, CONSTS, constindex.no);      
     
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tN%d, CONSTS, I%d\n", reg.no, constindex.no);

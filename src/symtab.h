@@ -25,7 +25,8 @@ typedef enum m1_valuetype {
 	VAL_STRING,
 	VAL_CHUNK,   /* uses sval field of m1_value union */
 	VAL_ADDRESS, /* uses ival field of m1_value union */
-	VAL_USERTYPE
+	VAL_USERTYPE,
+	VAL_VOID     
 	
 } m1_valuetype;
 

@@ -7,6 +7,7 @@
 #define REG_TYPE_NUM    4
 #define REG_NUM         61
 
+#include <stdio.h>
 
 /* needed for declaring yyscan_t as a member of compiler struct below. */
 #ifndef YY_TYPEDEF_YY_SCANNER_T
@@ -52,6 +53,8 @@ typedef struct M1_compiler {
 	char                   registers[REG_TYPE_NUM][REG_NUM]; /* register allocation system. */
 	
 	int                    no_reg_opt; /* command-line option to turn off register allocator. */
+	
+	FILE                  *outfile;
 	
 } M1_compiler;
 
