@@ -1,0 +1,39 @@
+struct C {
+    int x;
+}
+
+struct B {
+    C c;
+}
+
+struct A {
+    B b;
+}
+
+void main() {
+    A a = new A();
+    a.b = new B();
+    a.b.c = new C();   
+    
+    a.b.c.x = 42;
+    
+    print(a.b.c.x, "\n");
+    
+/* Select one of 3: any other combination fails. */    
+//    foo(a.b.c.x);
+//    baz(a);
+    bar(a.b.c);
+    
+}    
+
+void foo(int a) {    
+    print(a, "\n");   
+}
+
+void bar(C c) {
+    print(c.x, "\n");   
+}
+
+void baz(A a) {
+    print(a.b.c.x, "\n");   
+}

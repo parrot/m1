@@ -145,6 +145,7 @@ write_instructions(M1_compiler *comp, m0_instr *i) {
        
 }
 
+/* Allocate a new m0_instr node in memory. */
 static m0_instr *
 new_instr(M1_compiler *comp) {
     m0_instr *ins = (m0_instr *)calloc(1, sizeof (m0_instr));
@@ -190,6 +191,7 @@ link_instr(M1_compiler *comp) {
     return instr;  
 }
 
+/* Constructor for m0_instr; the format string parameter specifies which operands to expect. */
 m0_instr *
 mk_instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
     va_list     argp;
@@ -262,6 +264,7 @@ mk_instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
     
 }
 
+/* Make an empty m0_instr node and store the specified label. */
 void 
 mk_label(M1_compiler *comp, unsigned labelno) {
     m0_instr *ins = link_instr(comp);
