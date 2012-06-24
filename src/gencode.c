@@ -343,7 +343,6 @@ static void
 gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
     m1_object *parent_dummy;  /* pointer storage needed for code generation of LHS. */
     unsigned   lhs_reg_count; /* number of regs holding result of LHS (can be aggregate/indexed) */
-	unsigned   rhs_reg_count; /* number of regs holding result of RHS (can be aggregate/indexed) */
     unsigned   dimension_dummy = 0;
     		
     assert(a != NULL);
@@ -360,7 +359,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
 	     
 	   Since RHS is evaluated first, code for b=c is generated first.   
 	*/
-    rhs_reg_count = gencode_expr(comp, a->rhs);
+    (void)gencode_expr(comp, a->rhs);
     
     /* Generate code for LHS and get number of registers that hold the result 
        Note the "1" argument; this is to indicate we want to generate code for LHS
@@ -368,61 +367,35 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
      */
     lhs_reg_count = gencode_obj(comp, a->lhs, &parent_dummy, &dimension_dummy, 1);    
     
-
-    if (rhs_reg_count == 2) { /* deref; ... = x[42] */
-        if (lhs_reg_count == 1) { /* lhs_reg_count + rhs_reg_count == 3, so pop 3 regs. */
-
-            /* XXX check whether this code ever gets executed! */        
-            
-            m1_reg target = popreg(comp->regstack);
-            m1_reg index  = popreg(comp->regstack);
-            m1_reg parent = popreg(comp->regstack);
-
-            INS (M0_DEREF, "%R, %R, %R", target, parent, index);
-            
-            fprintf(OUT, "\tderef\t%c%d, %c%d, %c%d\n", reg_chars[(int)target.type], target.no, 
-                                                        reg_chars[(int)parent.type], parent.no,
-                                                        reg_chars[(int)index.type], index.no);
-            free_reg(comp, target);
-            free_reg(comp, index);
-            free_reg(comp, parent);                                                        
-        }
-        else {
-            assert(0); /* should never happen. */          
-        }
-    }
-    else { /* must be set_ref or set */
-    
-        if (lhs_reg_count == 1) { /* just a simple lvalue; a = b; */    
-            m1_reg lhs = popreg(comp->regstack);    
-            m1_reg rhs = popreg(comp->regstack);
-            
-            INS (M0_SET, "%R, %R", lhs, rhs);
-            
-            fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
-                                                    reg_chars[(int)rhs.type], rhs.no);
-            pushreg(comp->regstack, lhs);
-            free_reg(comp, rhs); /* to free regs for constants; for symbols they should be frozen. */
-        }
-        else if (lhs_reg_count == 2) { /* complex lvalue; x[10] = 42 */
-            assert(rhs_reg_count == 1); /* lhs_reg_count+rhs_reg_count == 3, so pop 3 regs. */
-            
-            m1_reg index  = popreg(comp->regstack);
-            m1_reg parent = popreg(comp->regstack);
-            m1_reg rhs    = popreg(comp->regstack);
         
-            INS (M0_SET_REF, "%R, %R, %R", parent, index, rhs);
+    if (lhs_reg_count == 1) { /* just a simple lvalue; a = b; */    
+        m1_reg lhs = popreg(comp->regstack);    
+        m1_reg rhs = popreg(comp->regstack);
             
-            fprintf(OUT, "\tset_ref\t%c%d, %c%d, %c%d\n", reg_chars[(int)parent.type], parent.no, 
-                                                          reg_chars[(int)index.type], index.no,
-                                                          reg_chars[(int)rhs.type], rhs.no);
-            free_reg(comp, index);                                                      
-            free_reg(comp, parent);
+        INS (M0_SET, "%R, %R", lhs, rhs);
             
-            /* make result available for next in "chain" of assignments, if any (e.g, a = b = c = 42;). */              
-            pushreg(comp->regstack, rhs);
-
-        }
+        fprintf(OUT, "\tset \t%c%d, %c%d, x\n", reg_chars[(int)lhs.type], lhs.no, 
+                                                reg_chars[(int)rhs.type], rhs.no);
+        pushreg(comp->regstack, lhs);
+        free_reg(comp, rhs); /* to free regs for constants; for symbols they should be frozen. */
+    }
+    else if (lhs_reg_count == 2) { /* complex lvalue; x[10] = 42 */
+            
+        m1_reg index  = popreg(comp->regstack);
+        m1_reg parent = popreg(comp->regstack);
+        m1_reg rhs    = popreg(comp->regstack);
+                
+        INS (M0_SET_REF, "%R, %R, %R", parent, index, rhs);
+            
+        fprintf(OUT, "\tset_ref\t%c%d, %c%d, %c%d\n", reg_chars[(int)parent.type], parent.no, 
+                                                      reg_chars[(int)index.type], index.no,
+                                                      reg_chars[(int)rhs.type], rhs.no);
+        free_reg(comp, index);                                                      
+        free_reg(comp, parent);
+            
+        /* make result available for next in "chain" of assignments, if any (e.g, a = b = c = 42;). */              
+        pushreg(comp->regstack, rhs);
+    
     }        
 }
 
