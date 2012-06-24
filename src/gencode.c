@@ -2167,12 +2167,15 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             break;
         case EXPR_BLOCK:
             gencode_block(comp, e->expr.blck);
+            num_regs = 0;
             break;
         case EXPR_BREAK:
             gencode_break(comp);
+            num_regs = 0;
             break;
         case EXPR_CONTINUE:
             gencode_continue(comp);
+            num_regs = 0;
             break;
         case EXPR_CAST:
             gencode_cast(comp, e->expr.cast);
@@ -2188,12 +2191,14 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             break;            
         case EXPR_DOWHILE:
             gencode_dowhile(comp, e->expr.w);
+            num_regs = 0;
             break;
         case EXPR_FALSE:
             gencode_bool(comp, 0);
             break;              
         case EXPR_FOR:
             gencode_for(comp, e->expr.o);
+            num_regs = 0;
             break;                      
         case EXPR_FUNCALL:
             gencode_funcall(comp, e->expr.f);
@@ -2247,6 +2252,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
         }
         case EXPR_PRINT:
             gencode_print(comp, e->expr.e);   
+            num_regs = 0;
             break; 
         case EXPR_RETURN:
             gencode_return(comp, e->expr.e);
@@ -2256,6 +2262,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             break;
         case EXPR_SWITCH:
             gencode_switch(comp, e->expr.s);
+            num_regs = 0;
         	break;    
         case EXPR_TRUE:
             gencode_bool(comp, 1);
@@ -2265,9 +2272,11 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             break;
         case EXPR_VARDECL:
             gencode_vardecl(comp, e->expr.v);            
+            num_regs = 0;
             break;
         case EXPR_WHILE:
             gencode_while(comp, e->expr.w);
+            num_regs = 0;
             break;        
          default:
             fprintf(stderr, "unknown expr type (%d)", e->type);   
