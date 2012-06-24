@@ -168,6 +168,12 @@ unfreeze_registers(M1_compiler *comp, m1_symboltable *table) {
             assert(comp->registers[type][regno] == REG_SYMBOL);
             comp->registers[type][regno] = REG_UNUSED;    
         }
+        else { /* if no register is allocated, it's an unused variable. Emit a warning*/
+            
+            fprintf(stderr, "%s:%d: warning: unused variable '%s'\n", 
+                    comp->current_filename, iter->line, iter->name);   
+            ++comp->warnings;   
+        }
 
         iter = sym_iter_next(iter);
     }

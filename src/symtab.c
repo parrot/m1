@@ -110,7 +110,8 @@ sym_new_symbol(M1_compiler *comp, m1_symboltable *table, char *varname, char *ty
     sym->regno     = NO_REG_ALLOCATED_YET; /* need to allocate a register later. */  
     sym->next      = NULL;    /* symbols are stored in a list */
     sym->type_name = type;    /* store the name of the type, as it may not have been defined yet. */
-
+    sym->line      = yyget_lineno(comp->yyscanner);
+    
     link_sym(table, sym);
     
     return sym;   

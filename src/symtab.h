@@ -67,6 +67,7 @@ typedef struct m1_symbol {
     m1_valuetype      valtype;      /* selector of value union. */
     
     unsigned          num_elems;    /* 1 for normal symbols; > 1 for arrays. */
+    unsigned          line;
     
     union {
         unsigned          offset;       /* offset from base when this symbol is a struct member. */
