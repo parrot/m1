@@ -2032,12 +2032,15 @@ gencode_var(M1_compiler *comp, m1_var *v) {
             m1_reg indexreg = alloc_reg(comp, VAL_INT);
             assert(sizesym != NULL);
             
-            /* XXX this will fail if the const index in the CONSTS segment > 255. */
+            /* Split up constindex into 2 operands if it's > 255 */
+            int constindex = sizesym->constindex;
+            int remainder  = constindex % 256;
+            int num256     = (constindex - remainder) / 256;
             
-            INS (M0_SET_IMM, "%I, %d, %d", indexreg.no, 0, sizesym->constindex);
+            INS (M0_SET_IMM, "%I, %d, %d", indexreg.no, num256, remainder);
             INS (M0_DEREF,   "%I, %d, %I", memsize.no, CONSTS, indexreg.no);
             
-            fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", indexreg.no, sizesym->constindex); 
+            fprintf(OUT, "\tset_imm\tI%d, %d, %d\n", indexreg.no, num256, remainder); 
             fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", memsize.no, indexreg.no);
             free_reg(comp, indexreg);
         }
