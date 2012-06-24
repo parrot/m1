@@ -232,8 +232,9 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
 
     reg = alloc_reg(comp, VAL_INT);
       
-    /* If the value is small enough, load it with set_imm; otherwise, take it from the constants table.
-       set_imm X, Y, Z: set X to: 256 * Y + Z. All operands are 8 bit, so maximum value is 255. 
+    /* If the value is small enough, load it with set_imm; otherwise, take it from the constants 
+       table. set_imm X, Y, Z: set X to: 256 * Y + Z. All operands are 8 bit, so maximum value is 
+       255. Numbers must be positive, so negative numbers are loaded from CONSTS segment as well.
      */
     if (lit->sym->value.ival < (256 * 255) && lit->sym->value.ival >= 0) { 
         /* use set_imm X, N*256, remainder)   */
@@ -245,11 +246,15 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
         fprintf(OUT, "\tset_imm\tI%d, %d, %d\n", reg.no, num256, remainder);
     } 
     else { /* too big enough for set_imm, so load it from constants segment. */
-        /* XXX this will fail if constindex > 255. */
-        INS (M0_SET_IMM, "%I, %d, %d", reg.no, 0, lit->sym->constindex);
+        /* split up constindex into 2 operands if > 255. */
+        int constindex = lit->sym->constindex;
+        int remainder  = constindex % 256;
+        int num256     = (constindex - remainder) / 256;
+        
+        INS (M0_SET_IMM, "%I, %d, %d", reg.no, num256, remainder);
         INS (M0_DEREF,   "%I, %d, %d", reg.no, CONSTS, reg.no);
         
-        fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", reg.no, lit->sym->constindex);
+        fprintf(OUT, "\tset_imm\tI%d, %d, %d\n", reg.no, num256, remainder);
         fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", reg.no, reg.no);
 
     }
