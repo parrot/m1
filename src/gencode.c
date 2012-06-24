@@ -1438,6 +1438,7 @@ gencode_bnot(M1_compiler *comp, m1_unexpr *u) {
 static void
 gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     char  *op;
+    int    opcode;
     int    postfix = 0;
     m1_reg reg, 
            oldval; 
@@ -1446,17 +1447,21 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
         case UNOP_POSTINC:
             postfix = 1;
             op = "add_i";
+            opcode = M0_ADD_I;
             break;
         case UNOP_POSTDEC:
             op = "sub_i";
             postfix = 1;
+            opcode = M0_SUB_I;
             break;
         case UNOP_PREINC:
             postfix = 0;
             op = "add_i";
+            opcode = M0_ADD_I;
             break;
         case UNOP_PREDEC:
             op = "sub_i";
+            opcode = M0_SUB_I;
             postfix = 0; 
             break;
         case UNOP_NOT:
@@ -1487,7 +1492,7 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     }
     
     INS (M0_SET_IMM, "%I, %d, %d", one.no, 0, 1);
-//    INS (??, "%I, %I, %I", reg.no, reg.no, one.no);
+    INS (opcode, "%I, %I, %I", reg.no, reg.no, one.no);
 
     fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", one.no);
     fprintf(OUT, "\t%s\tI%d, I%d, I%d\n", op, reg.no, reg.no, one.no);    
@@ -1873,12 +1878,11 @@ gencode_print(M1_compiler *comp, m1_expression *expr) {
 
 static void
 gencode_new(M1_compiler *comp, m1_newexpr *expr) {
-	m1_reg pointerreg = alloc_reg(comp, VAL_INT); /* reg holding the pointer to new memory */
-	m1_reg sizereg    = alloc_reg(comp, VAL_INT); /* reg holding the num. of bytes to alloc. */
+	m1_reg   pointerreg = alloc_reg(comp, VAL_INT); /* reg holding the pointer to new memory */
+	m1_reg   sizereg    = alloc_reg(comp, VAL_INT); /* reg holding the num. of bytes to alloc. */
+	unsigned size       = type_get_size(expr->typedecl); /* find size of type. */
 
-	unsigned size     = type_get_size(expr->typedecl);
-
-    assert(size != 0); /* this should never happen. */
+    assert(size != 0); 
 
     INS (M0_SET_IMM,  "%I, %d, %d", sizereg.no, 0, size);
     INS (M0_GC_ALLOC, "%I, %I, %d", pointerreg.no, sizereg.no, 0);    		
@@ -1991,7 +1995,7 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
 
 static void
 gencode_var(M1_compiler *comp, m1_var *v) {    
-    if (v->num_elems == 1 && v->init) { /* generate code for initializations. */
+    if (v->num_elems == 1 && v->init) { /* generate code for non-array initializations. */
        m1_reg     reg;
        m1_symbol *sym;
        
@@ -2002,6 +2006,7 @@ gencode_var(M1_compiler *comp, m1_var *v) {
        assert(v->sym != NULL);
        sym = v->sym;              
        
+       /* if no reg was given to symbol, do it now. */
        if (sym->regno == NO_REG_ALLOCATED_YET) {
             sym->regno = reg.no;
             freeze_reg(comp, reg);
@@ -2034,7 +2039,8 @@ gencode_var(M1_compiler *comp, m1_var *v) {
         size = v->num_elems * elem_size;
         
         memsize = alloc_reg(comp, VAL_INT);
-              
+        
+        /* store the number of bytes to allocate in memsize register. */              
         if (size < (256*255)) {
             int remainder = size % 256;   
             int num256    = (size - remainder) / 256;
