@@ -776,6 +776,7 @@ check_decls(M1_compiler *comp) {
     while (iter != NULL) {
         switch (iter->decltype) {
             case DECL_STRUCT:
+            case DECL_PMC:
                 check_struct_decl(comp, iter->d.s);
                 break;
             default: /* ignore all other types. */
