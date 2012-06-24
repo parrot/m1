@@ -148,12 +148,6 @@ free_reg(M1_compiler *comp, m1_reg r) {
 }
 
 
-/* Unfreeze a register for a symbol. Don't use except by unfreeze_registers(). */
-static void
-unfreeze_reg(M1_compiler *comp, m1_valuetype type, unsigned regno) {
-    assert(comp->registers[type][regno] == REG_SYMBOL);
-    comp->registers[type][regno] = REG_UNUSED;    
-}
 
 /* Iterate over all symbols in the symboltable <table>. Get each symbol's
    type and register number, and unfreeze them. 
@@ -170,7 +164,9 @@ unfreeze_registers(M1_compiler *comp, m1_symboltable *table) {
         m1_valuetype type  = iter->num_elems == 1 ? iter->typedecl->valtype : VAL_INT;
         unsigned     regno = iter->regno;
     
-        unfreeze_reg(comp, type, regno);  
+        assert(comp->registers[type][regno] == REG_SYMBOL);
+        comp->registers[type][regno] = REG_UNUSED;    
+
         iter = sym_iter_next(iter);
     }
 }
