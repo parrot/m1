@@ -2006,6 +2006,9 @@ gencode_var(M1_compiler *comp, m1_var *v) {
        assert(v->sym != NULL);
        sym = v->sym;              
        
+       /* ensure that type of register holding init value is same as var declaration type. */
+       assert(reg.type == (int)sym->typedecl->valtype);
+       
        /* if no reg was given to symbol, do it now. */
        if (sym->regno == NO_REG_ALLOCATED_YET) {
             sym->regno = reg.no;
@@ -2027,9 +2030,9 @@ gencode_var(M1_compiler *comp, m1_var *v) {
         assert(sym != NULL);
         
         if (sym->regno == NO_REG_ALLOCATED_YET) {
-            m1_reg reg = alloc_reg(comp, sym->valtype);
+            m1_reg reg = alloc_reg(comp, VAL_INT); /* arrays are always stored in I registers. */
             sym->regno = reg.no;
-            freeze_reg(comp, reg);
+            freeze_reg(comp, reg);        
         }
         
         /* calculate total size of array. If smaller than 256*255,
@@ -2340,6 +2343,30 @@ gencode_metadata(m1_chunk *c) {
 	fprintf(OUT, ".metadata\n");	
 }
 
+/* Unfreeze a register for a symbol. Don't use except by unfreeze_registers(). */
+static void
+unfreeze_reg(M1_compiler *comp, m1_valuetype type, unsigned regno, char *name) {
+    assert(comp->registers[type][regno] == REG_SYMBOL);
+//    fprintf(stderr, "Unfreezing reg: %d, %d for symbol %s", type, regno, name);
+    comp->registers[type][regno] = REG_UNUSED;    
+}
+
+/* Iterate over all symbols in the symboltable <table>. Get each symbol's
+   type and register number, and unfreeze them. 
+ */
+static void
+unfreeze_registers(M1_compiler *comp, m1_symboltable *table) {
+    m1_symbol *iter = sym_get_table_iter(table);
+    
+    while (iter != NULL) {
+        /* if num elems == 1 take the typedecl's type, otherwise it's an array. */
+        m1_valuetype type  = iter->num_elems == 1 ? iter->typedecl->valtype : VAL_INT;
+        unsigned     regno = iter->regno;
+    
+        unfreeze_reg(comp, type, regno, iter->name);  
+        iter = sym_iter_next(iter);
+    }
+}
 
 static void
 gencode_block(M1_compiler *comp, m1_block *block) {
@@ -2355,7 +2382,10 @@ gencode_block(M1_compiler *comp, m1_block *block) {
         iter = iter->next;
     }  
     
-    /* restore parent scope. */
+    /* restore parent scope; all symbols in the CURRENT block (that's being closed now) 
+       are no longer accessible; therefore, their registers can be unfrozen.        
+    */
+    unfreeze_registers(comp, comp->currentsymtab);
     comp->currentsymtab = block->locals.parentscope;
     
     /* pop all registers from the reg stack and free them. frozen regs will be unaffected. */
