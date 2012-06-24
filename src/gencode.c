@@ -885,6 +885,8 @@ gencode_dowhile(M1_compiler *comp, m1_whileexpr *w) {
 static void
 gencode_for(M1_compiler *comp, m1_forexpr *i) {
 	/*		
+	for (init ; cond ; step) block 
+	
       <code for init>
 	LSTART:
 	  <code for cond>
@@ -903,7 +905,7 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
         blocklabel = gen_label(comp); /* label where the block starts */
         
     push(comp->breakstack, endlabel);
-    push(comp->continuestack, steplabel); /* XXX check if this is the right label. */
+    push(comp->continuestack, steplabel); /* continue still executes the "step" part in a for loop*/
     
     if (i->init)
         gencode_expr(comp, i->init);
@@ -1795,8 +1797,10 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     /* retrieve the return value. */
     m1_reg idxreg           = alloc_reg(comp, VAL_INT);
     m1_reg retvaltarget_reg = alloc_reg(comp, funcall->typedecl->valtype);
+    
     /* load the number of register I0. */
-    INS (M0_SET_IMM, "%I, %d, %R", idxreg.no, retvaltarget_reg); // XXX
+    INS (M0_SET_IMM, "%I, %d, %R", idxreg.no, retvaltarget_reg); // XXX want index of reg. 0 of requested type.
+    
     fprintf(OUT, "\tset_imm\tI%d, 0, %c0\n", idxreg.no, reg_chars[(int)retvaltarget_reg.type]);   
     
     /* index the callee's frame (Px) with the index _of_ register X0. 
@@ -1944,19 +1948,24 @@ gencode_switch(M1_compiler *comp, m1_switch *expr) {
     /* iterate over cases and generate code for each. */
     caseiter = expr->cases;    
     while (caseiter != NULL) {
-        int testlabel;
-        /* XXX TODO handle numbers > 255 */
-        /* reuse register "test". */
+        int testlabel;  
         
-        INS (M0_SET_IMM, "%I, %d, %d", test.no, 0, caseiter->selector);
+        /* reuse register "test". */
+        int selector  = caseiter->selector;
+        int remainder = selector % 256;
+        int num256    = (selector - remainder) / 256;
+        
+        INS (M0_SET_IMM, "%I, %d, %d", test.no, num256, selector);
         INS (M0_SUB_I,   "%I, %I, %I", test.no, reg.no, test.no);
-        fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", test.no, caseiter->selector);
+        
+        fprintf(OUT, "\tset_imm\tI%d, %d, %d\n", test.no, num256, selector);
         fprintf(OUT, "\tsub_i\tI%d, I%d, I%d\n", test.no, reg.no, test.no);
      
         testlabel = gen_label(comp);
         INS (M0_GOTO_IF, "%L, %I", testlabel, test.no);
         fprintf(OUT, "\tgoto_if L%d, I%d\n", testlabel, test.no);
-        /* generate code for this case's block. */
+        
+        /* generate code for this case's block. Note this "block" is a list of expressions. */
         gencode_exprlist(comp, caseiter->block);
         
         /* next test label. */
