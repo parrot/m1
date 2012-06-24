@@ -58,6 +58,7 @@ typedef struct M1_compiler {
 	/* code generator fields. */
 	FILE                  *outfile;
 	struct m0_instr       *lastgenerated;
+	struct m0_chunk       *current_m0chunk;
 	
 } M1_compiler;
 

@@ -55,9 +55,7 @@ static const char type_chars[REG_TYPE_NUM] = {'i', 'n', 's', 'p'};
 static const char reg_chars[REG_TYPE_NUM] = {'I', 'N', 'S', 'P'};
 
 #define LABEL(label)                  mk_label(comp, label)
- 
 #define INS(opcode, format, ...)      mk_instr(comp, opcode, format, ##__VA_ARGS__)
-
 #define CHUNK(name)                   mk_chunk(comp, name)
 
 
@@ -2403,7 +2401,7 @@ static void
 gencode_chunk(M1_compiler *comp, m1_chunk *c) {
 #define PRELOAD_0_AND_1     0
 
-    CHUNK (c->name);
+    comp->current_m0chunk = CHUNK (c->name);
     
     fprintf(OUT, ".chunk \"%s\"\n", c->name);    
 
