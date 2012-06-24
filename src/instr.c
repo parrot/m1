@@ -79,6 +79,8 @@ static const char regs[REG_TYPE_NUM + 2] = {'I', 'N', 'S', 'P', ' ', 'L'};
 static void
 write_instr(M1_compiler *comp, m0_instr *i) {
     
+    assert(comp != NULL);
+    
     if (i->label != 0)
         fprintf(OUT, "L%d:\n", i->label);
         
@@ -107,7 +109,14 @@ write_instr(M1_compiler *comp, m0_instr *i) {
                                               regs[i->operands[1].type], i->operands[1].value);                                              
             break;
         case 3:
-            fprintf(OUT, "   %s\t%c%d, %c%d, %c%d\n", m0_instr_names[(int)i->opcode], 
+            /* special case for CONSTS. */
+            if (i->operands[1].type == VAL_VOID && i->operands[1].value == CONSTS) 
+                fprintf(OUT, "   %s\t%c%d, CONSTS, %c%d\n", m0_instr_names[(int)i->opcode], 
+                                              regs[i->operands[0].type], i->operands[0].value,
+                                              regs[i->operands[2].type], i->operands[2].value);        
+            else
+            
+                fprintf(OUT, "   %s\t%c%d, %c%d, %c%d\n", m0_instr_names[(int)i->opcode], 
                                               regs[i->operands[0].type], i->operands[0].value,
                                               regs[i->operands[1].type], i->operands[1].value,
                                               regs[i->operands[2].type], i->operands[2].value);
@@ -147,28 +156,51 @@ new_instr(M1_compiler *comp) {
     return ins;
 }
 
+/* Get a new instruction node; it may already exist to store a label;
+   if not, then a new instruction node is created.
+   Whereever the instr node comes from, it's returned and usable
+   by the instr constructor. 
+*/
+static m0_instr *
+link_instr(M1_compiler *comp) {
+    m0_instr *instr = NULL;
+    
+    /* comp keeps a pointer to the last generated one for quick access to the tail
+       of the list, so that the new one can be added in O(1) time, rather than
+       O(n) time.
+     */
+    if (comp->lastgenerated == NULL) 
+        instr = new_instr(comp);  /* first instruction. */          
+    else {
+        /* If the last generated instruction was a "noop", then it was a label;
+           noop is not generated normally, and is used as a dummy. Therefore,
+           reuse it by overwriting its opcode.
+         */
+        if (comp->lastgenerated->opcode == M0_NOOP)            
+            instr = comp->lastgenerated;        
+        else /* last one was normal so just create a new instr node. */ 
+            instr = new_instr(comp);           
+        
+        /* lastgenerated wasn't NULL, so link new instruction to it. */
+        comp->lastgenerated->next = instr;
+    }
+    /* update "last generated instruction" pointer. */
+    comp->lastgenerated = instr;  
+    
+    return instr;  
+}
+
 m0_instr *
 mk_instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
     va_list     argp;
-    char const *p = NULL;
-    int index     = 0;    
-    m0_instr *ins = NULL; 
-    
-    
-    if (comp->lastgenerated == NULL) 
-        ins = new_instr(comp);            
-    else {
-        /* NOOP is never used, except if we had an instruction made already for a label.
-           This is a signal that we can use that node, rather than making a new one.
-        */
-        if (comp->lastgenerated->opcode == M0_NOOP)            
-            ins = comp->lastgenerated;        
-        else 
-            ins = new_instr(comp);           
-    }
-       
-    ins->opcode = opcode;
+    char const *p     = NULL;
+    int         index = 0;    
+    m0_instr   *ins   = NULL;                
+
             
+    ins         = link_instr(comp);
+    ins->opcode = opcode;
+                    
     va_start(argp, format);
            
     for (p = format; *p != '\0'; p++) {
@@ -223,7 +255,7 @@ mk_instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
     
     va_end(argp);
     
-    comp->lastgenerated = ins;
+
     
     //write_instr(comp, ins);
     return ins;
@@ -232,9 +264,9 @@ mk_instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
 
 void 
 mk_label(M1_compiler *comp, unsigned labelno) {
-    m0_instr *ins       = new_instr(comp);
-    ins->label          = labelno;            
-    comp->lastgenerated = ins;
+    m0_instr *ins = link_instr(comp);
+    
+    ins->label    = labelno;            
     
     /* set this instruction's opcode to "noop", which is a signal to mk_instr
        that this node can be used for the next instruction.       
@@ -245,7 +277,7 @@ mk_label(M1_compiler *comp, unsigned labelno) {
 m0_chunk *
 mk_chunk(M1_compiler *comp, char *name) {
     m0_chunk *ch = (m0_chunk *)calloc(1, sizeof(m0_chunk));
-    ch->name = name;
+    ch->name     = name;
     return ch;   
 }
 
