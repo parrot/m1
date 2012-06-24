@@ -250,7 +250,7 @@ check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
     /* break and continue are allowed in for loops. */
     
     if (i->init)
-        check_expr(comp, i->init);
+        (void)check_expr(comp, i->init);
 
     if (i->cond) {
         m1_type *t = check_expr(comp, i->cond);
@@ -471,7 +471,6 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
         
     }
     else {
-        assert(f->funsym->typedecl != NULL);
         f->typedecl = f->funsym->typedecl;
     }
     
@@ -491,7 +490,7 @@ static void
 check_exprlist(M1_compiler *comp, m1_expression *expr) {
     m1_expression *iter = expr;
     while (iter != NULL) {
-        check_expr(comp, iter);
+        (void)check_expr(comp, iter);
         iter = iter->next;   
     }   
 }

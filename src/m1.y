@@ -514,11 +514,6 @@ function_init   : return_type TK_IDENT
                           $$ = chunk(comp, $1, $2, 0); 
                           comp->currentchunk = $$;
 
-                          /* enter name of function declaration in table 
-                          XXX is this still needed? Dont think so but leave it for now.
-                          */
-                          //sym_enter_chunk(comp, &comp->currentchunk->constants, $2);
-                          
                           
                           /* enter name of this function in global symbol table, so
                              compiler can find it whenever another function calls this one.

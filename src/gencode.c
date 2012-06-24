@@ -162,7 +162,7 @@ unfreeze_registers(M1_compiler *comp, m1_symboltable *table) {
     while (iter != NULL) {
         /* if num elems == 1 take the typedecl's type, otherwise it's an array. */
         m1_valuetype type  = iter->num_elems == 1 ? iter->typedecl->valtype : VAL_INT;
-        unsigned     regno = iter->regno;
+        int          regno = iter->regno;
     
         if (regno != NO_REG_ALLOCATED_YET) {
             assert(comp->registers[type][regno] == REG_SYMBOL);
