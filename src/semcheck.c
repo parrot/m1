@@ -40,46 +40,14 @@ init_typechecker(M1_compiler *comp) {
 static void
 type_error(M1_compiler *comp, unsigned line, char *msg, ...) {
     va_list argp;
-    char *p;
-    char *s;
-    int i;
-    char fmtbuf[256];
         
     ++comp->errors;  
     fprintf(stderr, "%s:%d: error: ", comp->current_filename, line);  
     
     va_start(argp, msg);
-           
-    for (p = msg; *p != '\0'; p++) {
-        if (*p != '%') {
-            putc(*p, stderr);
-
-            continue;
-        }
-        switch (*++p) {
-            case 'd':
-                i = va_arg(argp, int);
-                sprintf(fmtbuf, "%d", i);
-			    fputs(fmtbuf, stderr);
-    			break;
-
-            case 's': 
-                s = va_arg(argp, char *);
-                fputs(s, stderr);
-                break;
-            case '%':
-                putchar('%');
-                break;
-            default:
-                fprintf(stderr, "unrecognized error reporting format\n");
-                assert(0);
-                
-        }       
-               
-    }
-    fprintf(stderr, "\n");
-    
+    vfprintf(stderr, msg, argp);        
     va_end(argp);
+    fprintf(stderr, "\n");
 }
 
 static void
