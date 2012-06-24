@@ -147,6 +147,35 @@ free_reg(M1_compiler *comp, m1_reg r) {
     */
 }
 
+
+/* Unfreeze a register for a symbol. Don't use except by unfreeze_registers(). */
+static void
+unfreeze_reg(M1_compiler *comp, m1_valuetype type, unsigned regno) {
+    assert(comp->registers[type][regno] == REG_SYMBOL);
+    comp->registers[type][regno] = REG_UNUSED;    
+}
+
+/* Iterate over all symbols in the symboltable <table>. Get each symbol's
+   type and register number, and unfreeze them. 
+ */
+static void
+unfreeze_registers(M1_compiler *comp, m1_symboltable *table) {
+    if (comp->no_reg_opt) /* don't do this if option -r was specified. */
+        return;
+        
+    m1_symbol *iter = sym_get_table_iter(table);
+    
+    while (iter != NULL) {
+        /* if num elems == 1 take the typedecl's type, otherwise it's an array. */
+        m1_valuetype type  = iter->num_elems == 1 ? iter->typedecl->valtype : VAL_INT;
+        unsigned     regno = iter->regno;
+    
+        unfreeze_reg(comp, type, regno);  
+        iter = sym_iter_next(iter);
+    }
+}
+
+
 /*
 
 Generate label identifiers.
@@ -2341,31 +2370,6 @@ static void
 gencode_metadata(m1_chunk *c) {
     assert(c != NULL);
 	fprintf(OUT, ".metadata\n");	
-}
-
-/* Unfreeze a register for a symbol. Don't use except by unfreeze_registers(). */
-static void
-unfreeze_reg(M1_compiler *comp, m1_valuetype type, unsigned regno, char *name) {
-    assert(comp->registers[type][regno] == REG_SYMBOL);
-//    fprintf(stderr, "Unfreezing reg: %d, %d for symbol %s", type, regno, name);
-    comp->registers[type][regno] = REG_UNUSED;    
-}
-
-/* Iterate over all symbols in the symboltable <table>. Get each symbol's
-   type and register number, and unfreeze them. 
- */
-static void
-unfreeze_registers(M1_compiler *comp, m1_symboltable *table) {
-    m1_symbol *iter = sym_get_table_iter(table);
-    
-    while (iter != NULL) {
-        /* if num elems == 1 take the typedecl's type, otherwise it's an array. */
-        m1_valuetype type  = iter->num_elems == 1 ? iter->typedecl->valtype : VAL_INT;
-        unsigned     regno = iter->regno;
-    
-        unfreeze_reg(comp, type, regno, iter->name);  
-        iter = sym_iter_next(iter);
-    }
 }
 
 static void
