@@ -751,7 +751,8 @@ check_struct_decl(M1_compiler *comp, m1_struct *str) {
                            iter->type_name, iter->name);                      
             }
             else {
-                fprintf(stderr, "check struct decl: type of member %s is %s and size is %d\n", iter->name, iter->typedecl->name, type_get_size(iter->typedecl));   
+                fprintf(stderr, "check struct decl: type of member %s is %s and size is %d\n", 
+                                iter->name, iter->typedecl->name, type_get_size(iter->typedecl));   
             }
         }
         
@@ -766,41 +767,6 @@ check_struct_decl(M1_compiler *comp, m1_struct *str) {
             
 }
 
-static void
-check_pmc_decl(M1_compiler *comp, m1_pmc *pmc) {
-    m1_symbol *iter = sym_get_table_iter(&pmc->sfields);
-    
-    
-    unsigned offset          = 0;
-    unsigned size_of_current = 0;
-
-    fprintf(stderr, "[semcheck] checking PMC %s\n", pmc->name);
-    
-    while (iter != NULL) 
-    {        
-        iter->offset = offset;
-        
-        if (iter->typedecl == NULL) {
-
-            iter->typedecl = type_find_def(comp, iter->type_name);
-            if (iter->typedecl == NULL) {
-                type_error(comp, pmc->line_defined,
-                           "Cannot find type '%s' for PMC member '%s'", 
-                           iter->type_name, iter->name);                      
-            }
-        }
-        
-        /* add current field's size to offset, which will be next field's offset. */
-        size_of_current = type_get_size(iter->typedecl);
-        offset += size_of_current; 
-        
-        iter = sym_iter_next(iter);
-    }
-    
-    pmc->size = offset;
-    fprintf(stderr, "[semcheck] Size of PMC %s is %d\n", pmc->name, offset);
-
-}
 
 /* Go through type declarations and do a sanity check. */
 static void
@@ -811,9 +777,6 @@ check_decls(M1_compiler *comp) {
         switch (iter->decltype) {
             case DECL_STRUCT:
                 check_struct_decl(comp, iter->d.s);
-                break;
-            case DECL_PMC:
-                check_pmc_decl(comp, iter->d.p);
                 break;
             default: /* ignore all other types. */
                 break;    

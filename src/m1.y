@@ -51,7 +51,6 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, const char *str) {
     struct m1_statement     *stat;
     struct m1_object        *obj;
     struct m1_struct        *strct;
-    struct m1_pmc           *pmc;
     struct m1_enum          *enm;
     struct m1_structfield   *sfld;
     struct m1_var           *var;
@@ -243,7 +242,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, const char *str) {
              
 %type <strct> struct_definition
               struct_init
-%type <pmc>   pmc_definition    
+              pmc_definition    
               pmc_init
 
 %type <enm> enum_definition
@@ -424,11 +423,15 @@ namespace_definition: "namespace" TK_IDENT ';'
                     ;    
 
 pmc_definition	: pmc_init '{'  struct_members pmc_methods '}'
+                    {
+                      comp->currentsymtab = NULL; /* otherwise it might be linked as a 
+                                                     parent symtab for a chunk. */
+                    }
                 ;
                 
 pmc_init        : "pmc" TK_IDENT extends_clause
                     {          
-                       $$ = newpmc(comp, $2, $3); 
+                       $$ = newstruct(comp, $2, $3); 
                        type_enter_pmc(comp, $2, $$);
                        /* point to this PMC's symbol table. */
                        comp->currentsymtab = &$$->sfields;
@@ -554,7 +557,7 @@ struct_definition   : struct_init '{' struct_members '}'
                     
 struct_init         : struct_or_union TK_IDENT
                         {
-                          $$ = newstruct(comp, $2); /* make AST node for this definition. */
+                          $$ = newstruct(comp, $2, NULL); /* make AST node for this definition. */
                           type_enter_struct(comp, $2, $$); /* enter into type definitions. */
                           comp->currentsymtab = &$$->sfields; /* make symbol table easily accessible. */
                           $$->is_union = $1; 

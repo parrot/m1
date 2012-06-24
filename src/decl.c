@@ -72,26 +72,13 @@ type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structd
     return decl;
 }
 
-/*
-
-Enter a new PMC declaration that goes by name <pmcname>.
-
-*/
+/* PMCs are just structs, but override type. */
 m1_type *
-type_enter_pmc(M1_compiler *comp, char *pmcname, struct m1_pmc *pmcdef) {
-    m1_type *decl = make_decl(comp, DECL_PMC);
-    decl->name    = pmcname;
-    decl->d.p     = pmcdef;
-
-    pmcdef->size = 4; /* XXX fix size */
-    
-    /* link in list of declarations. */
-    decl->next = comp->declarations;
-    comp->declarations = decl;
-    
-    return decl;    
+type_enter_pmc(M1_compiler *comp, char *pmcname, struct m1_struct *pmcdef) {
+    m1_type *decl = type_enter_struct(comp, pmcname, pmcdef);
+    decl->decltype = DECL_PMC;
+    return decl;   
 }
-
 /*
 
 Enter a new enumeration declaration that goes by <enumname>.
@@ -156,11 +143,10 @@ type_get_size(m1_type *decl) {
     assert(decl != NULL);
     switch (decl->decltype) {
         case DECL_STRUCT:
+        case DECL_PMC:
             size = decl->d.s->size;
             break;
-        case DECL_PMC:
-            size = decl->d.p->size;
-            break;
+
         case DECL_ENUM:
             fprintf(stderr, "Why do you need to know the size of an enum?\n");
             assert(0);

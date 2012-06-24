@@ -164,8 +164,10 @@ unfreeze_registers(M1_compiler *comp, m1_symboltable *table) {
         m1_valuetype type  = iter->num_elems == 1 ? iter->typedecl->valtype : VAL_INT;
         unsigned     regno = iter->regno;
     
-        assert(comp->registers[type][regno] == REG_SYMBOL);
-        comp->registers[type][regno] = REG_UNUSED;    
+        if (regno != NO_REG_ALLOCATED_YET) {
+            assert(comp->registers[type][regno] == REG_SYMBOL);
+            comp->registers[type][regno] = REG_UNUSED;    
+        }
 
         iter = sym_iter_next(iter);
     }
@@ -2477,7 +2479,7 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
 
 /* Generate a function to setup the vtable. */
 static void
-gencode_pmc_vtable(M1_compiler *comp, m1_pmc *pmc) {
+gencode_pmc_vtable(M1_compiler *comp, m1_struct *pmc) {
     m1_chunk *methoditer = pmc->methods;
     
     /* add methods to this special init chunk's const table. 
@@ -2526,7 +2528,7 @@ gencode_pmc_vtable(M1_compiler *comp, m1_pmc *pmc) {
 }
 
 static void
-gencode_pmc(M1_compiler *comp, m1_pmc *pmc) {
+gencode_pmc(M1_compiler *comp, m1_struct *pmc) {
 
     
     /* generate code for the methods. */
@@ -2569,7 +2571,7 @@ gencode(M1_compiler *comp, m1_chunk *ast) {
     while (decliter != NULL) {
         /* find the PMC definitions. */
         if (decliter->decltype == DECL_PMC) {
-            m1_pmc *pmc = decliter->d.p;    
+            m1_struct *pmc = decliter->d.s;    
             gencode_pmc(comp, pmc);
         }
         decliter = decliter->next;   
