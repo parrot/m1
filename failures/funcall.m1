@@ -1,0 +1,12 @@
+void main() {
+    foo();
+    bar();
+}
+
+void foo() {
+    print("foo()\n");
+}
+
+void bar() {
+    print("bar()\n");   
+}
