@@ -20,9 +20,9 @@ void main() {
     print(a.b.c.x, "\n");
     
 /* Select one of 3: any other combination fails. */    
-//    foo(a.b.c.x);
+    foo(a.b.c.x);
 //    baz(a);
-    bar(a.b.c);
+//    bar(a.b.c);
     
 }    
 
