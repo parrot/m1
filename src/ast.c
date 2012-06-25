@@ -355,7 +355,7 @@ m1_object *
 object(M1_compiler *comp, m1_object_type type) {
     m1_object *obj = (m1_object *)m1_malloc(sizeof(m1_object));
     obj->type      = type;
-    
+    obj->line      = yyget_lineno(comp->yyscanner);    
     assert(comp != NULL);
     return obj;    
 }

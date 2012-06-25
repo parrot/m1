@@ -729,7 +729,7 @@ OBJECT_LINK------>     L3
                    initialized yet. Emit a warning.
                  */
                 if (!is_target) {
-                    warning(comp, obj->sym->line, "use of uninitialized variable '%s'\n",  
+                    warning(comp, obj->line, "use of uninitialized variable '%s'\n",  
                             obj->sym->name);   
                 }
                       

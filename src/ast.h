@@ -211,6 +211,7 @@ typedef enum m1_object_type {
    
  */
 typedef struct m1_object {
+    unsigned line;    
     
     union {
         char                 *name;  /* for name, field or deref access, in a.b.c for instance. */
@@ -220,7 +221,7 @@ typedef struct m1_object {
     
     enum m1_object_type type;       /* selector for union */
     struct m1_symbol   *sym;        /* pointer to this object's declaration. */ 
-    
+
     struct m1_object   *parent;     /* pointer to its parent (in a.b.c, a is b's parent) */
       
 } m1_object;
