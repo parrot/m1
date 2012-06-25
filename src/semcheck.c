@@ -298,6 +298,9 @@ check_address(M1_compiler *comp, m1_object *o, unsigned line) {
     return t;
 }
 
+/* Check the type of the expression that's returned, and cross-check that with the
+   function's return type in which this return statement is executed.
+ */
 static m1_type *
 check_return(M1_compiler *comp, m1_expression *e, unsigned line) {
     /* find type of current chunk */
@@ -536,8 +539,7 @@ check_vardecl(M1_compiler *comp, m1_var *v, unsigned line) {
     v->sym->typedecl = type_find_def(comp, v->type);
 
     if (v->sym->typedecl == NULL) {        
-        type_error(comp, line, 
-                   "Cannot find type '%s' for variable '%s'", v->type, v->name);   
+        type_error(comp, line, "Cannot find type '%s' for variable '%s'", v->type, v->name);   
     }
     else {
         /* now check the type of the initialization expression and check 

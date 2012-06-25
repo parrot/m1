@@ -43,6 +43,8 @@ What's working?
 * basic register allocation.
 * int, num, string and struct parameters and arguments.
 * basic returning values. (still buggy).
+* detection of use of uninitialized variables.
+* detection of declared but unused variables.
 
 What's not working?
 -------------------
