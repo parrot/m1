@@ -5,5 +5,6 @@
 #include "ast.h"
 
 extern void check(struct M1_compiler *comp, struct m1_chunk *ast);
+extern void warning(M1_compiler *comp, unsigned line, char *msg, ...);
 
 #endif

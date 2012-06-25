@@ -63,11 +63,16 @@ type_error(M1_compiler *comp, unsigned line, char *msg, ...) {
 }
 
 /* Emit a warning. */
-static void
-warning(M1_compiler *comp, unsigned line, char *msg) {
-    assert(comp != NULL);
-    fprintf(stderr, "%s:%d: warning: %s\n", comp->current_filename, line, msg);   
+void
+warning(M1_compiler *comp, unsigned line, char *msg, ...) {
+    va_list argp;
     ++comp->warnings;
+           
+    fprintf(stderr, "%s:%d: warning: ", comp->current_filename, line);   
+    va_start(argp, msg);
+    vfprintf(stderr, msg, argp);
+    va_end(argp);
+    fprintf(stderr, "\n");    
 }
 
 

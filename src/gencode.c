@@ -28,6 +28,8 @@ This happens in gencode_number().
 #include "decl.h"
 #include "instr.h"
 
+#include "semcheck.h" /* for warning(). */
+
 #include "ann.h"
 
 #define OUT	stdout
@@ -168,11 +170,8 @@ unfreeze_registers(M1_compiler *comp, m1_symboltable *table) {
             assert(comp->registers[type][regno] == REG_SYMBOL);
             comp->registers[type][regno] = REG_UNUSED;    
         }
-        else { /* if no register is allocated, it's an unused variable. Emit a warning*/
-            
-            fprintf(stderr, "%s:%d: warning: unused variable '%s'\n", 
-                    comp->current_filename, iter->line, iter->name);   
-            ++comp->warnings;   
+        else { /* if no register is allocated, it's an unused variable. Emit a warning*/            
+            warning(comp, iter->line, "unused variable '%s'\n", iter->name);   
         }
 
         iter = sym_iter_next(iter);
@@ -730,8 +729,8 @@ OBJECT_LINK------>     L3
                    initialized yet. Emit a warning.
                  */
                 if (!is_target) {
-                    fprintf(stderr, "%s:%d: warning: use of uninitialized variable '%s'\n", 
-                            comp->current_filename, obj->sym->line, obj->sym->name);   
+                    warning(comp, obj->sym->line, "use of uninitialized variable '%s'\n",  
+                            obj->sym->name);   
                 }
                       
         	}  
