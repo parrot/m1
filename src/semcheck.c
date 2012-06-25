@@ -1,3 +1,15 @@
+/*
+
+Type checker for M1 compiler.
+
+The AST is traversed; each node returns its type as a pointer
+to an m1_type object. M1_types are stored in the module m1_decl.c;
+for each type, there is exactly one m1_type object, which allows
+to do pointer comparisons, since 2 values of the same type will
+point to the same m1_type object.
+
+
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,7 +48,7 @@ init_typechecker(M1_compiler *comp) {
     VOIDTYPE   = type_find_def(comp, "void");
 }
 
-
+/* Emit a type error. */
 static void
 type_error(M1_compiler *comp, unsigned line, char *msg, ...) {
     va_list argp;
@@ -50,6 +62,7 @@ type_error(M1_compiler *comp, unsigned line, char *msg, ...) {
     fprintf(stderr, "\n");
 }
 
+/* Emit a warning. */
 static void
 warning(M1_compiler *comp, unsigned line, char *msg) {
     assert(comp != NULL);
@@ -85,6 +98,7 @@ check_assign(M1_compiler *comp, m1_assignment *a, unsigned line) {
                                "of right expression (%s) in assignment", 
                                ltype->name, rtype->name);   
     }
+    /* XXX implement compatibility of types. bool and int for instance are compatible. */
     return rtype;
 }
 
@@ -108,6 +122,9 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
             if (t != VOIDTYPE) /* only check fields if main object was found. */
                 fieldtype = check_obj(comp, obj->obj.field, line, parent); 
                 
+            /* if it's a struct member, get the member's type. If it's an array, just
+               return the parent's type. 
+            */                
             if (obj->obj.field->type == OBJECT_FIELD) 
                 t = fieldtype;
             
@@ -122,12 +139,14 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
                 type_error(comp, line, "undeclared variable '%s'", obj->obj.name);
             }
             else { /* found symbol, now link it to the object node. */
+                
                 /* find the type definition for this symbol's type. */
-                obj->sym->typedecl = type_find_def(comp, obj->sym->type_name);
-                if (obj->sym->typedecl == NULL) {
+                t = obj->sym->typedecl = type_find_def(comp, obj->sym->type_name);
+                
+                /* Check if the type of this node (x in x.y.z) was defined. */
+                if (t == NULL) {
                     type_error(comp, line, "type '%s' is not defined", obj->sym->type_name);   
                 }
-                t = obj->sym->typedecl;
 
                 assert(t != NULL);
             }             
@@ -147,12 +166,12 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
             }
             else {
                 /* find the type declaration for this field's type. */
-                obj->sym->typedecl = type_find_def(comp, obj->sym->type_name);
+                t = obj->sym->typedecl = type_find_def(comp, obj->sym->type_name);
                 
-                if (obj->sym->typedecl == NULL) {
+                if (t == NULL) {
                     type_error(comp, line, "type '%s' is not defined", obj->sym->type_name);   
                 }
-                t = obj->sym->typedecl;    
+
                 /* only update parent with this field if obj->sym was found, otherwise segfaults will result. */
                 *parent = obj;  
             }
@@ -310,8 +329,7 @@ check_binary(M1_compiler *comp, m1_binexpr *b, unsigned line) {
         case OP_DIV:       
         case OP_MOD:
         case OP_XOR:
-            if (ltype != INTTYPE && ltype != NUMTYPE 
-                && rtype != INTTYPE && rtype != NUMTYPE) 
+            if ((ltype != INTTYPE) && (ltype != NUMTYPE) && (rtype != INTTYPE) && (rtype != NUMTYPE)) 
             {
                 type_error(comp, line, "mathematical operator needs integer or "
                                        "floating-point expressions as operands");   
@@ -321,6 +339,12 @@ check_binary(M1_compiler *comp, m1_binexpr *b, unsigned line) {
         case OP_GE:
         case OP_LT:
         case OP_LE:
+            if ((ltype != INTTYPE) && (ltype != NUMTYPE) && (rtype != INTTYPE) && (rtype != NUMTYPE)) 
+            {
+                type_error(comp, line, "comparison operator needs integer or "
+                                       "floating-point expressions as operands");   
+            }
+            break;
         case OP_EQ:
         case OP_NE:
             if (ltype == NUMTYPE) {

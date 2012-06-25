@@ -723,7 +723,17 @@ OBJECT_LINK------>     L3
         	if (obj->sym->regno == NO_REG_ALLOCATED_YET) {
                 m1_reg r        = alloc_reg(comp, obj->sym->typedecl->valtype);
                 obj->sym->regno = r.no;
-                freeze_reg(comp, r);                
+                freeze_reg(comp, r);      
+                
+                /* if this object is NOT a target, it's an r-value. In that case,
+                   if it doesn't have a register allocated yet, it means it's not
+                   initialized yet. Emit a warning.
+                 */
+                if (!is_target) {
+                    fprintf(stderr, "%s:%d: warning: use of uninitialized variable '%s'\n", 
+                            comp->current_filename, obj->sym->line, obj->sym->name);   
+                }
+                      
         	}  
             
             /* Decide what type of register to use; for arrays it's always INT 
@@ -2240,6 +2250,8 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
                                only its space on the C runtime stack. 
                              */
             unsigned dimension_dummy = 0;
+            
+            
             num_regs = gencode_obj(comp, e->expr.t, &obj, &dimension_dummy, 0);            
             
             if (num_regs == 2) { /* gencode_obj() may return 2 registers for array and struct access. */
@@ -2251,7 +2263,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
                 assert(obj != NULL);
                 assert(obj->sym != NULL);
                 assert(obj->sym->typedecl != NULL);
-                
+                                
                 m1_type *target_type = obj->sym->typedecl;
                 m1_reg target = alloc_reg(comp, target_type->valtype); 
                 
