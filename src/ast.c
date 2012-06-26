@@ -244,8 +244,8 @@ constdecl(M1_compiler *comp, char *type, char *name, m1_expression *e) {
 	return expr;	
 }
 
-static void 
-expr_set_for(m1_expression *node, m1_expression *init, m1_expression *cond, m1_expression *step,
+void 
+expr_set_for(M1_compiler *comp, m1_expression *node, m1_expression *init, m1_expression *cond, m1_expression *step,
              m1_expression *stat) 
 {
     node->expr.o = (m1_forexpr *)m1_malloc(sizeof(m1_forexpr));
@@ -259,7 +259,7 @@ expr_set_for(m1_expression *node, m1_expression *init, m1_expression *cond, m1_e
 m1_expression *
 forexpr(M1_compiler *comp, m1_expression *init, m1_expression *cond, m1_expression *step, m1_expression *stat) {
 	m1_expression *expr = expression(comp, EXPR_FOR);
-	expr_set_for(expr, init, cond, step, stat);	
+	//expr_set_for(comp, expr, init, cond, step, stat);	
 	return expr;
 }
 

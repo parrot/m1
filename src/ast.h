@@ -362,6 +362,10 @@ extern m1_expression *whileexpr(M1_compiler *comp, m1_expression *cond, m1_expre
 extern m1_expression *dowhileexpr(M1_compiler *comp, m1_expression *cond, m1_expression *block);
 extern m1_expression *forexpr(M1_compiler *comp, m1_expression *init, m1_expression *cond, m1_expression *step, m1_expression *stat);
 
+extern void expr_set_for(M1_compiler *comp, m1_expression *node, m1_expression *init, 
+                         m1_expression *cond, m1_expression *step, m1_expression *stat);
+
+
 extern m1_expression *inc_or_dec(M1_compiler *comp, m1_expression *obj, m1_unop optype);
 extern m1_expression *returnexpr(M1_compiler *comp, m1_expression *retexp);
 extern m1_expression *assignexpr(M1_compiler *comp, m1_expression *lhs, int assignop, m1_expression *rhs);
