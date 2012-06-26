@@ -140,7 +140,7 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
             /* look up identifier's declaration. */
             obj->sym = sym_lookup_symbol(comp->currentsymtab, obj->obj.name);            
 
-            if (obj->sym == NULL) {
+            if (obj->sym == NULL) {                                                
                 type_error(comp, line, "undeclared variable '%s'", obj->obj.name);
             }
             else { /* found symbol, now link it to the object node. */
@@ -526,7 +526,7 @@ check_newexpr(M1_compiler *comp, m1_newexpr *n, unsigned line) {
     n->typedecl = type_find_def(comp, n->type); 
     
     if (n->typedecl == NULL) { 
-        type_error(comp, line, "Cannot find type '%s' requested for in new-statement", n->type);         
+        type_error(comp, line, "cannot find type '%s' requested for in new-statement", n->type);         
     }
     return n->typedecl;
 }
@@ -539,10 +539,10 @@ check_vardecl(M1_compiler *comp, m1_var *v, unsigned line) {
     v->sym->typedecl = type_find_def(comp, v->type);
 
     if (v->sym->typedecl == NULL) {        
-        type_error(comp, line, "Cannot find type '%s' for variable '%s'", v->type, v->name);   
+        type_error(comp, line, "cannot find type '%s' for variable '%s'", v->type, v->name);   
     }
     else {
-        /* now check the type of the initialization expression and check 
+        /* Check the type of the initialization expression and check 
            compatibility with type of variable. Only do this check if 
            v->sym->typedecl was found.
         */
@@ -551,7 +551,7 @@ check_vardecl(M1_compiler *comp, m1_var *v, unsigned line) {
                
             if (inittype != v->sym->typedecl) {
                 type_error(comp, line, 
-                           "Incompatible types in initialization of variable %s.", v->name);       
+                           "incompatible types in initialization of variable %s.", v->name);       
             }            
         }
     }
@@ -573,7 +573,7 @@ check_cast(M1_compiler *comp, m1_castexpr *expr, unsigned line) {
         type = NUMTYPE;
     }
     else {
-        type_error(comp, line, "Cannot cast value to type %s", expr->type);
+        type_error(comp, line, "cannot cast value to type %s", expr->type);
         type = type_find_def(comp, expr->type);
     }   
     return type; 
@@ -744,13 +744,8 @@ check_struct_decl(M1_compiler *comp, m1_struct *str) {
 
             iter->typedecl = type_find_def(comp, iter->type_name);
             if (iter->typedecl == NULL) {
-                type_error(comp, str->line_defined,
-                           "Cannot find type '%s' for struct member '%s'", 
+                type_error(comp, str->line_defined, "cannot find type '%s' for struct member '%s'", 
                            iter->type_name, iter->name);                      
-            }
-            else {
-                fprintf(stderr, "check struct decl: type of member %s is %s and size is %d\n", 
-                                iter->name, iter->typedecl->name, type_get_size(iter->typedecl));   
             }
         }
         

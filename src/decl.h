@@ -60,6 +60,8 @@ extern m1_type *type_enter_pmc(M1_compiler *comp, char *pmcname, struct m1_struc
 extern m1_type *type_enter_type(M1_compiler *comp, char *type, m1_type_type decltype, unsigned size);
 extern m1_type *type_enter_enum(M1_compiler *comp, char *enumname, struct m1_enum *enumdef);
 
+extern struct m1_enumconst *type_find_enumconst(M1_compiler *comp, char *enumconst_name);
+
 extern unsigned type_get_size(m1_type *decl);
 
 #endif

@@ -96,6 +96,25 @@ type_enter_enum(M1_compiler *comp, char *enumname, struct m1_enum *enumdef) {
     return decl;   
 }
 
+
+m1_enumconst *
+type_find_enumconst(M1_compiler *comp, char *enumconst_name) {
+    m1_type *decl = comp->declarations;
+    
+    while (decl != NULL) {
+        if (decl->decltype == DECL_ENUM) {
+            m1_enumconst *iter = decl->d.e->enums;
+            while (iter != NULL) {
+                if (strcmp(enumconst_name, iter->name) == 0) 
+                    return iter;
+                iter = iter->next;   
+            }       
+        }
+        decl = decl->next;   
+    }    
+    return NULL;
+}
+
 /* 
 
 Interface for declaring basic types. 

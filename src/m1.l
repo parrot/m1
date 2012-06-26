@@ -189,17 +189,33 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
                               a user-defined type. Otherwise just return TK_IDENT.
                             */
                            if (comp->is_parsing_usertype == 1) {
-                               m1_type     *decl = type_find_def(comp, yytext);
+                               m1_type *decl = type_find_def(comp, yytext);
                        
-                               if (decl == NULL) { /* not found, so must be an identifier */
-                                  return TK_IDENT; 
+                               if (decl == NULL) { /* it's not a user-defined type name. */
+                               
+                                   /* maybe it's an enum const.... */
+                                   m1_enumconst *econst = type_find_enumconst(comp, yytext);
+                                   if (econst == NULL) 
+                                       return TK_IDENT; /* no, it wasn't so must be an ident. */
+                                   else {
+                                       /* it was an enum const, so return its value. */
+                                       yylval->ival = econst->value;
+                                       return TK_INT;
+                                   }
                                }                            
                                else {
                                   return TK_USERTYPE;
                                }
                            }
                            else {
-                               return TK_IDENT;
+                               m1_enumconst *econst = type_find_enumconst(comp, yytext);
+                               if (econst == NULL) 
+                                   return TK_IDENT;
+                               else {
+                                   yylval->ival = econst->value;
+                                   return TK_INT;
+                               }
+                                
                            }
                            
                         }
