@@ -241,7 +241,7 @@ check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
     /* break and continue are allowed in for loops. */
     
     if (i->init)
-        (void)check_expr(comp, i->init);
+        (void)check_exprlist(comp, i->init);
 
     if (i->cond) {
         m1_type *t = check_expr(comp, i->cond);

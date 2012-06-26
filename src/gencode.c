@@ -924,7 +924,7 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
     push(comp->continuestack, steplabel); /* continue still executes the "step" part in a for loop*/
     
     if (i->init)
-        gencode_expr(comp, i->init);
+        gencode_exprlist(comp, i->init);
 
     LABEL (startlabel); 
 	fprintf(OUT, "L%d:\n", startlabel);

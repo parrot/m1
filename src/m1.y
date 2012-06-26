@@ -200,6 +200,8 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, const char *str) {
              for_stat
              arguments
              for_init
+             for_inits
+             init
              for_cond
              for_step
              for_steps
@@ -826,8 +828,20 @@ for_stat    : "for" '(' for_init ';' for_cond ';' for_step ')' statement
             
 for_init    : /* empty */
                 { $$ = NULL; }
-            | assign_expr
-/*            | type assign_expr XXX for (int i ... )*/
+            | for_inits
+            ;
+            
+for_inits   : init
+            | for_inits ',' init
+                {
+                 $3->next = $1;
+                 $$ = $3;    
+                }
+            ;
+            
+init        : assign_expr
+            | type assign_expr 
+                { $$ = $2; }
             ;
             
 for_cond    : /* empty */
