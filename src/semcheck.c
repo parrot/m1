@@ -26,10 +26,9 @@ point to the same m1_type object.
 
 
 static m1_type *check_expr(M1_compiler *comp, m1_expression *e);
-
 static void check_block(M1_compiler *comp, m1_block *expr);
-
 static m1_type *check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent);
+static void check_exprlist(M1_compiler *comp, m1_expression *expr);
 
 /* Cache these built-in types. Read-only. */
 static m1_type *BOOLTYPE;
@@ -251,8 +250,8 @@ check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
         }        
     }
 
-    if (i->step)
-        (void)check_expr(comp, i->step);
+    if (i->step) 
+        check_exprlist(comp, i->step);
 
     push(comp->breakstack, 1); 
     push(comp->continuestack, 1);

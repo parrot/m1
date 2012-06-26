@@ -202,6 +202,8 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, const char *str) {
              for_init
              for_cond
              for_step
+             for_steps
+             step
              return_stat
              break_stat
              continue_stat
@@ -422,6 +424,45 @@ namespace_definition: "namespace" TK_IDENT ';'
                          { comp->current_namespace = $2; }    
                     ;    
 
+struct_definition   : struct_init '{' struct_members '}' 
+                        { 
+                          comp->currentsymtab = NULL; /* otherwise it might be linked as a 
+                                                         parent symtab for a chunk. */
+
+                        }
+                    ;       
+                    
+struct_init         : struct_or_union TK_IDENT
+                        {
+                          $$ = newstruct(comp, $2, NULL); /* make AST node for this definition. */
+                          type_enter_struct(comp, $2, $$); /* enter into type definitions. */
+                          comp->currentsymtab = &$$->sfields; /* make symbol table easily accessible. */
+                          $$->is_union = $1; 
+                        }
+                    ;  
+                    
+struct_or_union     : "struct"  { $$ = 0; }
+                    | "union"   { $$ = 1; }
+                    ;                                        
+                    
+struct_members      : struct_member   
+                    | struct_members struct_member                                                  
+                    ;
+
+/* struct_members are handled in a similar way as vars, but the grammar rules are slightly. */
+
+struct_member       : type TK_IDENT ';'
+                        {  
+                          comp->parsingtype = $1;                            
+                          $$ = var(comp, $2, NULL); 
+                        }
+                    | type TK_IDENT dimension ';'
+                        { 
+                          comp->parsingtype = $1;                            
+                          $$ = array(comp, $2, $3, NULL); 
+                        }
+                    ; 
+
 pmc_definition	: pmc_init '{'  struct_members pmc_methods '}'
                     {
                       comp->currentsymtab = NULL; /* otherwise it might be linked as a 
@@ -540,50 +581,7 @@ param_list  : param
         
 param   : type TK_IDENT         { $$ = parameter(comp, $1, $2); }
         | type '*' TK_IDENT     { $$ = parameter(comp, $1, $3); }
-        ;
-                                             
-struct_definition   : struct_init '{' struct_members '}' 
-                        { 
-                          comp->currentsymtab = NULL; /* otherwise it might be linked as a 
-                                                         parent symtab for a chunk. */
-
-                        }
-                    ;       
-                    
-struct_init         : struct_or_union TK_IDENT
-                        {
-                          $$ = newstruct(comp, $2, NULL); /* make AST node for this definition. */
-                          type_enter_struct(comp, $2, $$); /* enter into type definitions. */
-                          comp->currentsymtab = &$$->sfields; /* make symbol table easily accessible. */
-                          $$->is_union = $1; 
-                        }
-                    ;  
-                    
-struct_or_union     : "struct"  { $$ = 0; }
-                    | "union"   { $$ = 1; }
-                    ;                                        
-                    
-struct_members      : struct_member   
-                    | struct_members struct_member                          
-                        { 
-                            
-                        }
-                    ;
-
-/* struct_members are handled in a similar way as vars, but the grammar rules are slightly. */
-
-struct_member       : type TK_IDENT ';'
-                        {  
-                          comp->parsingtype = $1;                            
-                          $$ = var(comp, $2, NULL); 
-                        }
-                    | type TK_IDENT dimension ';'
-                        { 
-                          comp->parsingtype = $1;                            
-                          $$ = array(comp, $2, $3, NULL); 
-                        }
-                    ;                                        
-
+        ;                                                                                   
         
 block   : open_block statements close_block
             {  
@@ -829,6 +827,7 @@ for_stat    : "for" '(' for_init ';' for_cond ';' for_step ')' statement
 for_init    : /* empty */
                 { $$ = NULL; }
             | assign_expr
+/*            | type assign_expr XXX for (int i ... )*/
             ;
             
 for_cond    : /* empty */
@@ -838,7 +837,19 @@ for_cond    : /* empty */
             
 for_step    : /* empty */
                 { $$ = NULL; }
-            | expression
+            | for_steps
+            ;
+            
+for_steps   : step
+            | for_steps ',' step
+                {
+                   $3->next = $1;
+                   $$ = $3;   
+                }
+                
+            ;
+            
+step        : expression
             | assign_expr
             ;                                                                      
             

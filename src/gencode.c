@@ -52,6 +52,7 @@ This happens in gencode_number().
 static unsigned gencode_expr(M1_compiler *comp, m1_expression *e);
 static void gencode_block(M1_compiler *comp, m1_block *block);
 static unsigned gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, unsigned *dimension, int is_target);
+static void gencode_exprlist(M1_compiler *comp, m1_expression *expr);
 
 static const char type_chars[REG_TYPE_NUM] = {'i', 'n', 's', 'p'};
 static const char reg_chars[REG_TYPE_NUM] = {'I', 'N', 'S', 'P'};
@@ -950,8 +951,8 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
         
     LABEL (steplabel);        
     fprintf(OUT, "L%d:\n", steplabel);
-    if (i->step)
-        gencode_expr(comp, i->step);
+    if (i->step)         
+        gencode_exprlist(comp, i->step);
     
     INS (M0_GOTO, "%L", startlabel);
     fprintf(OUT, "\tgoto L%d\n", startlabel);
