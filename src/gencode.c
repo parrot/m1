@@ -437,6 +437,7 @@ gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, unsigned *dim
 
     unsigned numregs_pushed = 0;
 
+//    fprintf(stderr, "gencode for %s\n", obj->obj.name);
     assert(comp != NULL);
     assert(comp->currentchunk != NULL);
     assert(comp->currentsymtab != NULL);
@@ -923,6 +924,9 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
     push(comp->breakstack, endlabel);
     push(comp->continuestack, steplabel); /* continue still executes the "step" part in a for loop*/
     
+    if (i->block->type == EXPR_BLOCK)
+        comp->currentsymtab = &i->block->expr.blck->locals;
+
     if (i->init)
         gencode_exprlist(comp, i->init);
 

@@ -417,7 +417,7 @@ to the currently active symbol table. The m1_var node gets a pointer to this
 symbol entry; the symbol entry gets a pointer to this AST node. 
 
 */
-static m1_var *
+m1_var *
 make_var(M1_compiler *comp, char *varname, m1_expression *init, unsigned num_elems) {
     m1_var *v    = (m1_var *)m1_malloc(sizeof(m1_var));
     v->name      = varname;
@@ -425,6 +425,12 @@ make_var(M1_compiler *comp, char *varname, m1_expression *init, unsigned num_ele
     v->init      = init;
     v->num_elems = num_elems;
     v->dims      = NULL;
+    return v;
+}
+    
+static m1_var *
+enter_var(M1_compiler *comp, char *varname, m1_expression *init, unsigned num_elems) {
+    m1_var *v = make_var(comp, varname, init, num_elems);
     
     /* enter this var. declaration into the symbol table; 
        store a pointer to the symbol in this var. */
@@ -441,7 +447,7 @@ make_var(M1_compiler *comp, char *varname, m1_expression *init, unsigned num_ele
 m1_var *
 var(M1_compiler *comp, char *varname, m1_expression *init) {
     /* a single var is just size 1. */
-	m1_var *v = make_var(comp, varname, init, 1);
+	m1_var *v = enter_var(comp, varname, init, 1);
    		
     /* XXX Can we do this in semcheck so that all types are parsed? */   		
 	/* get a pointer to the type declaration */	
@@ -499,7 +505,7 @@ array(M1_compiler *comp, char *varname, m1_dimension *dimension, m1_expression *
         iter       = iter->next;    
     }   
     
-    var       = make_var(comp, varname, init, num_elems);
+    var       = enter_var(comp, varname, init, num_elems);
     var->dims = dimension;
 	return var;
 }

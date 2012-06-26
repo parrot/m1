@@ -824,7 +824,32 @@ expr_list   : expression
             ;                                                    
             
 for_stat    : for_head '(' for_init ';' for_cond ';' for_step ')' statement
-                { expr_set_for(comp, $1, $3, $5, $7, $9); }
+                { 
+
+                  
+                  /* If for_init contains an iterator declaration, enter its declaration in
+                     a block's symbol table. 
+                  */
+                  if ($3->type == EXPR_VARDECL) {
+                    
+                      if ($9->type != EXPR_BLOCK) {
+                        /* a single statement, make it a block. */
+                        m1_block *b = block(comp);
+                        b->locals.parentscope = comp->currentsymtab;
+                        block_set_stat(b, $9);
+                        $9 = expression(comp, EXPR_BLOCK);
+                        $9->expr.blck = b;
+                        
+                      }
+                      $3->expr.v->sym = sym_new_symbol(comp, 
+                                  &($9->expr.blck->locals), 
+                                  $3->expr.v->name, 
+                                  $3->expr.v->type, 
+                                  1);  
+                  }
+                
+                  expr_set_for(comp, $1, $3, $5, $7, $9);                 
+                }
             ;  
             
 for_head    : "for" /* ensure for expr node is in place to enable loop iterator declarations. */
@@ -845,8 +870,14 @@ for_inits   : init
             ;
             
 init        : assign_expr
-            | type assign_expr 
-                { $$ = $2; }
+            | type TK_IDENT '=' expression 
+                { 
+                    m1_var *v;
+                    comp->parsingtype = $1;
+                    v = make_var(comp, $2, $4, 1);
+                    $$ = vardecl(comp, $1, v);                 
+                
+                }
             ;
             
 for_cond    : /* empty */

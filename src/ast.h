@@ -387,6 +387,8 @@ extern m1_expression *constdecl(M1_compiler *comp, char *type, char *name, m1_ex
 extern m1_expression *vardecl(M1_compiler *comp, char *type, m1_var *v);
 
 extern m1_var *var(M1_compiler *comp, char *name, m1_expression *init);
+extern m1_var *make_var(M1_compiler *comp, char *varname, m1_expression *init, unsigned num_elems);
+
 extern m1_var *array(M1_compiler *comp, char *name, m1_dimension *dimension, m1_expression *init);
 
 extern unsigned field_size(struct m1_symbol *field);

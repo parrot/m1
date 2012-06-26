@@ -240,6 +240,10 @@ static void
 check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
     /* break and continue are allowed in for loops. */
     
+    /* if for statement is a block, load that block's symbol table already. */
+    if (i->block->type == EXPR_BLOCK)
+        comp->currentsymtab = &i->block->expr.blck->locals;
+    
     if (i->init)
         (void)check_exprlist(comp, i->init);
 
