@@ -197,8 +197,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, const char *str) {
              if_stat
              while_stat
              do_stat
-             for_stat
-             for_head
+             for_stat             
              arguments
              for_init
              for_inits
@@ -823,7 +822,7 @@ expr_list   : expression
                 }
             ;                                                    
             
-for_stat    : for_head '(' for_init ';' for_cond ';' for_step ')' statement
+for_stat    : "for" '(' for_init ';' for_cond ';' for_step ')' statement
                 {                   
                   /* If for_init contains an iterator declaration, enter its declaration in
                      a block's symbol table. 
@@ -848,13 +847,10 @@ for_stat    : for_head '(' for_init ';' for_cond ';' for_step ')' statement
                         }
                     }
                 
-                  expr_set_for(comp, $1, $3, $5, $7, $9);                 
+                  $$ = forexpr(comp, $3, $5, $7, $9);                 
                 }
             ;  
             
-for_head    : "for" /* ensure for expr node is in place to enable loop iterator declarations. */
-                { $$ = forexpr(comp, NULL, NULL, NULL, NULL); }
-            ;            
             
 for_init    : /* empty */
                 { $$ = NULL; }

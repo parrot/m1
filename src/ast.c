@@ -259,7 +259,7 @@ expr_set_for(M1_compiler *comp, m1_expression *node, m1_expression *init, m1_exp
 m1_expression *
 forexpr(M1_compiler *comp, m1_expression *init, m1_expression *cond, m1_expression *step, m1_expression *stat) {
 	m1_expression *expr = expression(comp, EXPR_FOR);
-	//expr_set_for(comp, expr, init, cond, step, stat);	
+	expr_set_for(comp, expr, init, cond, step, stat);	
 	return expr;
 }
 
