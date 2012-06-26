@@ -39,8 +39,8 @@ typedef struct m1_type {
        as well. 
      */
     union { 
-        struct m1_struct *s;    /* struct declaration. */
-        struct m1_enum   *e;    /* enum declaration */
+        struct m1_struct *as_struct;    /* struct declaration. */
+        struct m1_enum   *as_enum;    /* enum declaration */
         unsigned          size; /* size of basic type whenever DECL_INT, DECL_FLOAT, DECL_STRING. */
     } d;
     

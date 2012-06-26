@@ -314,10 +314,10 @@ typedef struct m1_enum {
 /* to represent statements */
 typedef struct m1_expression {
     union {
-        struct m1_unexpr     *u;
-        struct m1_binexpr    *b;
-        struct m1_funcall    *f;  
-        struct m1_assignment *a; 
+        struct m1_unexpr     *as_unexpr;
+        struct m1_binexpr    *as_binexpr;
+        struct m1_funcall    *as_funcall;  
+        struct m1_assignment *as_assign; 
         struct m1_whileexpr  *w;  
         struct m1_forexpr    *o;
         struct m1_ifexpr     *i;

@@ -766,7 +766,7 @@ OBJECT_LINK------>     L3
             assert((*parent)->sym->typedecl != NULL);
                         
             /* parent's symbol has a typedecl node, which holds the structdef (d.s), which has a symbol table. */
-            m1_symbol *fieldsym = sym_lookup_symbol(&(*parent)->sym->typedecl->d.s->sfields, obj->obj.name);
+            m1_symbol *fieldsym = sym_lookup_symbol(&(*parent)->sym->typedecl->d.as_struct->sfields, obj->obj.name);
                        
             assert(fieldsym != NULL);
             
@@ -2184,10 +2184,10 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             gencode_address(comp, e->expr.t);
             break;
         case EXPR_ASSIGN:
-            gencode_assign(comp, e->expr.a);
+            gencode_assign(comp, e->expr.as_assign);
             break;
         case EXPR_BINARY:
-            gencode_binary(comp, e->expr.b);
+            gencode_binary(comp, e->expr.as_binexpr);
             break;
         case EXPR_BLOCK:
             gencode_block(comp, e->expr.blck);
@@ -2225,7 +2225,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             num_regs = 0;
             break;                      
         case EXPR_FUNCALL:
-            gencode_funcall(comp, e->expr.f);
+            gencode_funcall(comp, e->expr.as_funcall);
             break;
         case EXPR_IF:   
             gencode_if(comp, e->expr.i);
@@ -2294,7 +2294,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             gencode_bool(comp, 1);
             break;
         case EXPR_UNARY:
-            gencode_unary(comp, e->expr.u);
+            gencode_unary(comp, e->expr.as_unexpr);
             break;
         case EXPR_VARDECL:
             gencode_vardecl(comp, e->expr.v);            
@@ -2588,7 +2588,7 @@ gencode(M1_compiler *comp, m1_chunk *ast) {
     while (decliter != NULL) {
         /* find the PMC definitions. */
         if (decliter->decltype == DECL_PMC) {
-            m1_struct *pmc = decliter->d.s;    
+            m1_struct *pmc = decliter->d.as_struct;    
             gencode_pmc(comp, pmc);
         }
         decliter = decliter->next;   

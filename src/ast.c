@@ -170,11 +170,12 @@ unaryexpr(M1_compiler *comp, m1_unop op, m1_expression *e) {
                 
 m1_expression *
 binexpr(M1_compiler *comp, m1_expression *e1, int op, m1_expression *e2) {
-	m1_expression *expr = expression(comp, EXPR_BINARY);
-	expr->expr.b = (m1_binexpr *)m1_malloc(sizeof(m1_binexpr));
-    expr->expr.b->op    = (m1_binop)op;
-    expr->expr.b->left  = e1;
-    expr->expr.b->right = e2;       
+	m1_expression *expr   = expression(comp, EXPR_BINARY);
+    m1_binexpr    *b      = (m1_binexpr *)m1_malloc(sizeof(m1_binexpr));
+    b->op                 = (m1_binop)op;
+    b->left               = e1;
+    b->right              = e2;       
+	expr->expr.as_binexpr = b;
     return expr;    
 }
 
@@ -199,7 +200,7 @@ unexpr(M1_compiler *comp, m1_expression *node, m1_unop op) {
 static void
 expr_set_unexpr(M1_compiler *comp, m1_expression *node, m1_expression *exp, m1_unop op) {
     assert(node->type == EXPR_UNARY);   
-    node->expr.u = unexpr(comp, exp, op);
+    node->expr.as_unexpr = unexpr(comp, exp, op);
 }
 
 /* funcall(). Creates an AST node for a function call; it stores the name of t
@@ -209,18 +210,18 @@ expr_set_unexpr(M1_compiler *comp, m1_expression *node, m1_expression *exp, m1_u
  */
 m1_expression *
 funcall(M1_compiler *comp, m1_object *fun, m1_expression *args) {
-	m1_expression *expr      = expression(comp, EXPR_FUNCALL);
-	expr->expr.f             = (m1_funcall *)m1_malloc(sizeof(m1_funcall));
+	m1_expression *expr   = expression(comp, EXPR_FUNCALL);
+	expr->expr.as_funcall = (m1_funcall *)m1_malloc(sizeof(m1_funcall));
 	
     /* XXX need to handle method calls. */	
-    expr->expr.f->name       = fun->obj.name;
-    expr->expr.f->arguments  = args;	
+    expr->expr.as_funcall->name       = fun->obj.name;
+    expr->expr.as_funcall->arguments  = args;	
     
 	/* enter name of function to invoke into constant table. */
 	// replace this somehow. Get access to the vtable of the object and copy the
 	// method reference from that into this chunk's const segment.
     m1_symbol *chunk_entry   = sym_enter_chunk(comp, &comp->currentchunk->constants, fun->obj.name);
-	expr->expr.f->constindex = chunk_entry->constindex; 
+	expr->expr.as_funcall->constindex = chunk_entry->constindex; 
     return expr;   
 }
 
@@ -279,18 +280,18 @@ assignexpr(M1_compiler *comp, m1_expression *lhs, int assignop, m1_expression *r
 	a = b  => normal case
 	a += b => a = a + b
 	*/
-    node->expr.a      = (m1_assignment *)m1_malloc(sizeof(m1_assignment));
-    node->expr.a->lhs = lhs->expr.t; /* unwrap the m1_object representing lhs from its m1_expression wrapper. */
+    node->expr.as_assign      = (m1_assignment *)m1_malloc(sizeof(m1_assignment));
+    node->expr.as_assign->lhs = lhs->expr.t; /* unwrap the m1_object representing lhs from its m1_expression wrapper. */
     
     switch (assignop) {
     	case OP_ASSIGN: /* normal case, lhs = rhs. */
-    		node->expr.a->rhs = rhs;        
+    		node->expr.as_assign->rhs = rhs;        
     		break;
     	default: /* all other cases, such as: 
     	            a +=b => a = a + b; 
     	            make a new binary expression node for a + b.
     	          */
-    		node->expr.a->rhs = binexpr(comp, lhs, assignop, rhs);
+    		node->expr.as_assign->rhs = binexpr(comp, lhs, assignop, rhs);
     		break;
     }
 

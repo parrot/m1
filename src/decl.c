@@ -59,9 +59,9 @@ Enter a new struct declaration that goes by name <structname>.
 */
 m1_type *
 type_enter_struct(M1_compiler *comp, char *structname, struct m1_struct *structdef) {
-    m1_type *decl   = make_decl(comp, DECL_STRUCT);    
-    decl->name      = structname;
-    decl->d.s       = structdef;
+    m1_type *decl     = make_decl(comp, DECL_STRUCT);    
+    decl->name        = structname;
+    decl->d.as_struct = structdef;
     
     structdef->size = 4; /* XXX The size of a struct or PMC is always 4 bytes, as it's stored as a pointer. */
     
@@ -86,9 +86,9 @@ Enter a new enumeration declaration that goes by <enumname>.
 */
 m1_type *
 type_enter_enum(M1_compiler *comp, char *enumname, struct m1_enum *enumdef) {
-    m1_type *decl = make_decl(comp, DECL_ENUM);
-    decl->name    = enumname;
-    decl->d.e     = enumdef;
+    m1_type *decl   = make_decl(comp, DECL_ENUM);
+    decl->name      = enumname;
+    decl->d.as_enum = enumdef;
     
     decl->next = comp->declarations;
     comp->declarations = decl;
@@ -103,7 +103,7 @@ type_find_enumconst(M1_compiler *comp, char *enumconst_name) {
     
     while (decl != NULL) {
         if (decl->decltype == DECL_ENUM) {
-            m1_enumconst *iter = decl->d.e->enums;
+            m1_enumconst *iter = decl->d.as_enum->enums;
             while (iter != NULL) {
                 if (strcmp(enumconst_name, iter->name) == 0) 
                     return iter;
@@ -163,7 +163,7 @@ type_get_size(m1_type *decl) {
     switch (decl->decltype) {
         case DECL_STRUCT:
         case DECL_PMC:
-            size = decl->d.s->size;
+            size = decl->d.as_struct->size;
             break;
 
         case DECL_ENUM:

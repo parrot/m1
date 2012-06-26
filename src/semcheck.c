@@ -163,7 +163,7 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
             assert((*parent)->sym != NULL);
             assert((*parent)->sym->typedecl != NULL);
             /* look up symbol for this field in parent's symbol table (which is a struct/PMC). */
-            obj->sym = sym_lookup_symbol( &(*parent)->sym->typedecl->d.s->sfields, obj->obj.name);
+            obj->sym = sym_lookup_symbol( &(*parent)->sym->typedecl->d.as_struct->sfields, obj->obj.name);
 
             if (obj->sym == NULL) {
                 type_error(comp, line, "struct %s has no member %s", 
@@ -600,9 +600,9 @@ check_expr(M1_compiler *comp, m1_expression *e) {
         case EXPR_ADDRESS:
             return check_address(comp, e->expr.t, e->line);        
         case EXPR_ASSIGN:
-            return check_assign(comp, e->expr.a, e->line);       
+            return check_assign(comp, e->expr.as_assign, e->line);       
         case EXPR_BINARY:
-            return check_binary(comp, e->expr.b, e->line);
+            return check_binary(comp, e->expr.as_binexpr, e->line);
         case EXPR_BLOCK:
             check_block(comp, e->expr.blck);
             break;            
@@ -629,7 +629,7 @@ check_expr(M1_compiler *comp, m1_expression *e) {
             check_for(comp, e->expr.o, e->line);
             break;
         case EXPR_FUNCALL:
-            return check_funcall(comp, e->expr.f, e->line);
+            return check_funcall(comp, e->expr.as_funcall, e->line);
         case EXPR_IF:   
             check_if(comp, e->expr.i, e->line);
             break;        
@@ -658,7 +658,7 @@ check_expr(M1_compiler *comp, m1_expression *e) {
         case EXPR_TRUE:
             return BOOLTYPE;                                    
         case EXPR_UNARY:
-            return check_unary(comp, e->expr.u, e->line);            
+            return check_unary(comp, e->expr.as_unexpr, e->line);            
         case EXPR_VARDECL:
             check_vardecl(comp, e->expr.v, e->line);
             break;
@@ -770,7 +770,7 @@ check_decls(M1_compiler *comp) {
         switch (iter->decltype) {
             case DECL_STRUCT:
             case DECL_PMC:
-                check_struct_decl(comp, iter->d.s);
+                check_struct_decl(comp, iter->d.as_struct);
                 break;
             default: /* ignore all other types. */
                 break;    

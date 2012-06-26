@@ -267,16 +267,16 @@ eval_expr(m1_expression *e) {
             eval_int(e->expr.l->value.ival);
             break;
         case EXPR_BINARY:
-            eval_binary(e->expr.b);
+            eval_binary(e->expr.as_binexpr);
             break;
         case EXPR_UNARY:
-            eval_unary(e->expr.u);
+            eval_unary(e->expr.as_unexpr);
             break;
         case EXPR_FUNCALL:
-            eval_funcall(e->expr.f);
+            eval_funcall(e->expr.as_funcall);
             break;
         case EXPR_ASSIGN:
-            eval_assign(e->expr.a);
+            eval_assign(e->expr.as_assign);
             break;
         case EXPR_IF:   
             eval_if(e->expr.i);
