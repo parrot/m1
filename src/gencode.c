@@ -2179,10 +2179,7 @@ static unsigned
 gencode_expr(M1_compiler *comp, m1_expression *e) {
     unsigned num_regs = 1;
              
-    if (e == NULL) { /* XXX should check on e before invoking gencode_expr(). */
-    	debug("expr e is null in gencode_expr\n");
-    	return 0;
-    }
+    assert(e != NULL);             
         
     switch (e->type) {
         case EXPR_ADDRESS:

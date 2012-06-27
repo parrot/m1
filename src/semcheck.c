@@ -189,9 +189,8 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
             break;
         case OBJECT_INDEX: 
             t = check_expr(comp, obj->obj.as_index);
-            if (t != INTTYPE) {
+            if (t != INTTYPE) 
                 type_error(comp, line, "result of expression does not yield an integer value");   
-            }
             break;                    
         default:
             break;
@@ -204,9 +203,8 @@ static void
 check_while(M1_compiler *comp, m1_whileexpr *w, unsigned line) {    
     m1_type *condtype = check_expr(comp, w->cond);
         
-    if (condtype != BOOLTYPE) {
+    if (condtype != BOOLTYPE) 
         warning(comp, line, "condition in while statement is not a boolean expression");       
-    }
 
     push(comp->breakstack, 1);
     push(comp->continuestack, 1);       
@@ -219,14 +217,10 @@ check_while(M1_compiler *comp, m1_whileexpr *w, unsigned line) {
 
 static void
 check_dowhile(M1_compiler *comp, m1_whileexpr *w, unsigned line) {
-    m1_type *condtype;
-    
-    
-    condtype = check_expr(comp, w->cond);
+    m1_type *condtype = check_expr(comp, w->cond);
  
-    if (condtype != BOOLTYPE) {
+    if (condtype != BOOLTYPE) 
         warning(comp, line, "condition in do-while statement is not a boolean expression");   
-    }
 
     push(comp->breakstack, 1);
     push(comp->continuestack, 1);    
@@ -246,7 +240,7 @@ check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
         comp->currentsymtab = &i->block->expr.blck->locals;
     
     if (i->init)
-        (void)check_exprlist(comp, i->init);
+        check_exprlist(comp, i->init);
 
     if (i->cond) {
         m1_type *t = check_expr(comp, i->cond);
@@ -270,18 +264,15 @@ check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
 
 static void
 check_if(M1_compiler *comp, m1_ifexpr *i, unsigned line) {
-
     m1_type *condtype = check_expr(comp, i->cond);
-    if (condtype != BOOLTYPE) {
+    
+    if (condtype != BOOLTYPE) 
         warning(comp, line, "condition in if-statement does not yield boolean value");   
-    }
 
     (void)check_expr(comp, i->ifblock);
 
-    if (i->elseblock) {
-        (void)check_expr(comp, i->elseblock);
-    }
-           
+    if (i->elseblock) 
+        (void)check_expr(comp, i->elseblock);           
 }
 
 static m1_type *
@@ -311,28 +302,22 @@ check_return(M1_compiler *comp, m1_expression *e, unsigned line) {
     m1_type *funtype = type_find_def(comp, comp->currentchunk->rettype);    
     m1_type *rettype = VOIDTYPE;
     
-    if (e != NULL) {
-        rettype = check_expr(comp, e);
-    }
+    if (e != NULL) 
+        rettype = check_expr(comp, e);    
     
-    if (funtype != rettype) {
+    if (funtype != rettype) 
         type_error(comp, line, "type of return expression does not match function's return type");   
-    }
+    
     return rettype; /* return type of the expression */
 }
 
 static m1_type *
-check_binary(M1_compiler *comp, m1_binexpr *b, unsigned line) {
-    m1_type *ltype, 
-            *rtype;
+check_binary(M1_compiler *comp, m1_binexpr *b, unsigned line) {    
+    m1_type *ltype = check_expr(comp, b->left);
+    m1_type *rtype = check_expr(comp, b->right);   
     
-    ltype = check_expr(comp, b->left);
-    rtype = check_expr(comp, b->right);   
-
-    
-    if (ltype != rtype) {
+    if (ltype != rtype) 
         type_error(comp, line, "types of left and right operands do not match");   
-    }
     
     switch(b->op) {
         case OP_PLUS:
@@ -411,20 +396,17 @@ check_unary(M1_compiler *comp, m1_unexpr *u, unsigned line) {
     switch (u->op) {
         case UNOP_POSTINC:
         case UNOP_PREINC:
-            if (t != INTTYPE) {
-                type_error(comp, line, "cannot apply '++' operator on non-integer expression");   
-            }                    
+            if (t != INTTYPE) 
+                type_error(comp, line, "cannot apply '++' operator on non-integer expression");      
             break;        
         case UNOP_POSTDEC:
         case UNOP_PREDEC:   
-            if (t != INTTYPE) {
-                type_error(comp, line, "cannot apply '--' operator on non-integer expression");   
-            }                    
+            if (t != INTTYPE) 
+                type_error(comp, line, "cannot apply '--' operator on non-integer expression");      
             break;        
         case UNOP_NOT:
-            if (t != BOOLTYPE) {
+            if (t != BOOLTYPE) 
                 type_error(comp, line, "cannot apply '!' operator on non-boolean expression");
-            }
             break;
         default:
             break;   
@@ -436,21 +418,18 @@ check_unary(M1_compiler *comp, m1_unexpr *u, unsigned line) {
 
 static void
 check_break(M1_compiler *comp, unsigned line) {
-    if (top(comp->breakstack) == 0) {
-        type_error(comp, line, "cannot use break in non-iterating block");
-    }
+    if (top(comp->breakstack) == 0) 
+        type_error(comp, line, "cannot use break in non-iterating block");    
 }
 
 static void
 check_continue(M1_compiler *comp, unsigned line) {
-    if (top(comp->continuestack) == 0) {
+    if (top(comp->continuestack) == 0) 
         type_error(comp, line, "cannot use continue in non-iterating block");
-    }
 }
 
 static m1_type *
-check_funcall(M1_compiler *comp, m1_funcall *funcall, unsigned line) {
-    
+check_funcall(M1_compiler *comp, m1_funcall *funcall, unsigned line) {    
     assert(comp != NULL);
     assert(funcall != NULL);    
     assert(line != 0);
@@ -474,16 +453,11 @@ check_funcall(M1_compiler *comp, m1_funcall *funcall, unsigned line) {
         if (funcall->typedecl == NULL) {
             type_error(comp, line, "return type '%s' of function '%s' is not defined", 
                        funcall->funsym->type_name, funcall->name);               
-        }   
-        
+        }           
     }
     else {
         funcall->typedecl = funcall->funsym->typedecl;
     }
-    
-    /* check arguments of the function call; this is a list of expressions. */
-//    if (funcall->arguments != NULL)
-//        (void)check_expr(comp, funcall->arguments);
     
 
     /*  check arguments against  function signature.     
@@ -537,7 +511,7 @@ check_switch(M1_compiler *comp, m1_switch *s, unsigned line) {
     if (s->cases) {
         m1_case *iter = s->cases;
         while (iter != NULL) {
-            (void)check_exprlist(comp, iter->block);
+            check_exprlist(comp, iter->block);
             iter = iter->next;   
         }   
     }
