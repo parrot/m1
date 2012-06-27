@@ -447,50 +447,49 @@ check_continue(M1_compiler *comp, unsigned line) {
 }
 
 static m1_type *
-check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
+check_funcall(M1_compiler *comp, m1_funcall *funcall, unsigned line) {
     
     assert(comp != NULL);
-    assert(f != NULL);    
+    assert(funcall != NULL);    
     assert(line != 0);
       
     /* look up declaration of function in compiler's global symbol table. 
        XXX if not found, it must be handled by the linker, which is yet to be written.
        */    
-    f->funsym = sym_lookup_symbol(comp->globalsymtab, f->name);
+    funcall->funsym = sym_lookup_symbol(comp->globalsymtab, funcall->name);
 
     
-    if (f->funsym == NULL) {
-        type_error(comp, line, "function '%s' not defined", f->name);
+    if (funcall->funsym == NULL) {
+        type_error(comp, line, "function '%s' not defined", funcall->name);
         return NULL;    
     }
     /* set the function's return type declaration as stored in the symbol. */
-    if (f->funsym->typedecl == NULL) { 
+    if (funcall->funsym->typedecl == NULL) { 
         /* type wasn't declared yet at time that function was defined. */
-        f->funsym->typedecl = f->typedecl = type_find_def(comp, f->funsym->type_name);
-        
-        if (f->typedecl == NULL) {
+        funcall->funsym->typedecl = funcall->typedecl = type_find_def(comp, 
+                                                                      funcall->funsym->type_name);
+         
+        if (funcall->typedecl == NULL) {
             type_error(comp, line, "return type '%s' of function '%s' is not defined", 
-                       f->funsym->type_name, f->name);               
+                       funcall->funsym->type_name, funcall->name);               
         }   
         
     }
     else {
-        f->typedecl = f->funsym->typedecl;
+        funcall->typedecl = funcall->funsym->typedecl;
     }
     
     /* check arguments of the function call; this is a list of expressions. */
-    if (f->arguments != NULL)
-        (void)check_expr(comp, f->arguments);
+//    if (funcall->arguments != NULL)
+//        (void)check_expr(comp, funcall->arguments);
     
 
-    /* XXX find declaration of function, check arguments against 
-    function signature. 
-    
-    args are stored in f->arguments
-    parameters are stored in a chunk, accessible through f->funsym->chunk
+    /*  check arguments against  function signature.     
+        args are stored in f->arguments 
+        parameters are stored in a chunk, accessible through funcall->funsym->chunk
     */
-    m1_var *paramiter      = f->funsym->chunk->parameters;
-    m1_expression *argiter = f->arguments;
+    m1_var *paramiter      = funcall->funsym->chunk->parameters;
+    m1_expression *argiter = funcall->arguments;
     unsigned count = 1;
     while (paramiter != NULL && argiter != NULL) {
         
@@ -499,15 +498,20 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
         
         if (paramtype != argtype) {
             type_error(comp, line, 
-                       "type of argument %d (%s) does not match type of parameter (%s)", 
-                       count, argtype->name, paramtype->name);   
+                 "type of argument %d (%s) does not match type of parameter (%s) of function '%s'", 
+                 count, argtype->name, paramtype->name, funcall->name);   
         }   
         argiter   = argiter->next;
         paramiter = paramiter->next;
         ++count;
     }
+    /* if one of the iterators is non-null, that means there's too few or many arguments. */
+    if (paramiter != NULL) 
+        type_error(comp, line, "too few arguments passed to function '%s'", funcall->name);   
+    else if (argiter != NULL)
+        type_error(comp, line, "too many arguments passed to function '%s'", funcall->name);
     
-    return f->typedecl;
+    return funcall->typedecl;
 }
 
 static void
