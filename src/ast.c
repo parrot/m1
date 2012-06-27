@@ -137,7 +137,7 @@ string(M1_compiler *comp, char *str) {
 
 static void
 obj_set_index(m1_object *node, m1_expression *index) {
-    node->obj.index = index; 
+    node->obj.as_index = index; 
 }
 
 m1_object *
@@ -214,13 +214,13 @@ funcall(M1_compiler *comp, m1_object *fun, m1_expression *args) {
 	expr->expr.as_funcall = (m1_funcall *)m1_malloc(sizeof(m1_funcall));
 	
     /* XXX need to handle method calls. */	
-    expr->expr.as_funcall->name       = fun->obj.name;
+    expr->expr.as_funcall->name       = fun->obj.as_name;
     expr->expr.as_funcall->arguments  = args;	
     
 	/* enter name of function to invoke into constant table. */
 	// replace this somehow. Get access to the vtable of the object and copy the
 	// method reference from that into this chunk's const segment.
-    m1_symbol *chunk_entry   = sym_enter_chunk(comp, &comp->currentchunk->constants, fun->obj.name);
+    m1_symbol *chunk_entry   = sym_enter_chunk(comp, &comp->currentchunk->constants, fun->obj.as_name);
 	expr->expr.as_funcall->constindex = chunk_entry->constindex; 
     return expr;   
 }
@@ -244,8 +244,8 @@ constdecl(M1_compiler *comp, char *type, char *name, m1_expression *e) {
 	return expr;	
 }
 
-void 
-expr_set_for(M1_compiler *comp, m1_expression *node, m1_expression *init, m1_expression *cond, m1_expression *step,
+static void 
+expr_set_for(m1_expression *node, m1_expression *init, m1_expression *cond, m1_expression *step,
              m1_expression *stat) 
 {
     node->expr.o = (m1_forexpr *)m1_malloc(sizeof(m1_forexpr));
@@ -259,7 +259,7 @@ expr_set_for(M1_compiler *comp, m1_expression *node, m1_expression *init, m1_exp
 m1_expression *
 forexpr(M1_compiler *comp, m1_expression *init, m1_expression *cond, m1_expression *step, m1_expression *stat) {
 	m1_expression *expr = expression(comp, EXPR_FOR);
-	expr_set_for(comp, expr, init, cond, step, stat);	
+	expr_set_for(expr, init, cond, step, stat);	
 	return expr;
 }
 
@@ -348,7 +348,7 @@ expr_set_obj(m1_expression *node, m1_object *obj) {
 /* Set the <name> field of the union in the m1_object node. */
 void 
 obj_set_ident(m1_object *node, char *ident) {
-    node->obj.name = ident;    
+    node->obj.as_name = ident;    
 }
 
 
@@ -363,11 +363,11 @@ object(M1_compiler *comp, m1_object_type type) {
 
 m1_object *
 lhsobj(M1_compiler *comp, m1_object *parent, m1_object *field) {
-    m1_object *lhsobj = (m1_object *)m1_malloc(sizeof(m1_object));
-    lhsobj->type      = OBJECT_LINK;
+    m1_object *lhsobj    = (m1_object *)m1_malloc(sizeof(m1_object));
+    lhsobj->type         = OBJECT_LINK;
     
-    lhsobj->obj.field = field;
-    lhsobj->parent    = parent;
+    lhsobj->obj.as_field = field;
+    lhsobj->parent       = parent;
     
     assert(comp != NULL);
     return lhsobj;   

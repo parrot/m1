@@ -124,12 +124,12 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
                when it's an index, return the type of obj->parent. 
              */
             if (t != VOIDTYPE) /* only check fields if main object was found. */
-                fieldtype = check_obj(comp, obj->obj.field, line, parent); 
+                fieldtype = check_obj(comp, obj->obj.as_field, line, parent); 
                 
             /* if it's a struct member, get the member's type. If it's an array, just
                return the parent's type. 
             */                
-            if (obj->obj.field->type == OBJECT_FIELD) 
+            if (obj->obj.as_field->type == OBJECT_FIELD) 
                 t = fieldtype;
             
             break;   
@@ -137,10 +137,10 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
         case OBJECT_MAIN: {
 
             /* look up identifier's declaration. */
-            obj->sym = sym_lookup_symbol(comp->currentsymtab, obj->obj.name);            
+            obj->sym = sym_lookup_symbol(comp->currentsymtab, obj->obj.as_name);            
 
             if (obj->sym == NULL) {                                                
-                type_error(comp, line, "undeclared variable '%s'", obj->obj.name);
+                type_error(comp, line, "undeclared variable '%s'", obj->obj.as_name);
             }
             else { /* found symbol, now link it to the object node. */
                 
@@ -162,11 +162,11 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
             assert((*parent)->sym != NULL);
             assert((*parent)->sym->typedecl != NULL);
             /* look up symbol for this field in parent's symbol table (which is a struct/PMC). */
-            obj->sym = sym_lookup_symbol( &(*parent)->sym->typedecl->d.as_struct->sfields, obj->obj.name);
+            obj->sym = sym_lookup_symbol( &(*parent)->sym->typedecl->d.as_struct->sfields, obj->obj.as_name);
 
             if (obj->sym == NULL) {
                 type_error(comp, line, "struct %s has no member %s", 
-                           (*parent)->obj.name, obj->obj.name);
+                           (*parent)->obj.as_name, obj->obj.as_name);
             }
             else {
                 /* find the type declaration for this field's type. */
@@ -187,7 +187,7 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
             assert(0);
             break;
         case OBJECT_INDEX: 
-            t = check_expr(comp, obj->obj.index);
+            t = check_expr(comp, obj->obj.as_index);
             if (t != INTTYPE) {
                 type_error(comp, line, "result of expression does not yield an integer value");   
             }

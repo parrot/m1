@@ -614,12 +614,12 @@ OBJECT_LINK------>     L3
                As we do this, keep track of how many registers were used to store the result.
              */
             
-            numregs_pushed += gencode_obj(comp, obj->obj.field, parent, dimension, is_target);   
+            numregs_pushed += gencode_obj(comp, obj->obj.as_field, parent, dimension, is_target);   
                                    
             if (numregs_pushed == 3) {
                 
                 /* if the field was an index. (a[b]) */
-                if (obj->obj.field->type == OBJECT_INDEX) {
+                if (obj->obj.as_field->type == OBJECT_INDEX) {
                     m1_reg last           = popreg(comp->regstack);   /* latest added; store here for now. */
                     m1_reg field          = popreg(comp->regstack);   /* 2nd latest, this one needs to be removed. */
                     m1_reg parentreg      = popreg(comp->regstack);   /* x in x[2][3]. */                
@@ -690,7 +690,7 @@ OBJECT_LINK------>     L3
                     /* we popped 3, and pushed 2, so effectively decrement by 1. */
                     --numregs_pushed;
                 }              
-                else if (obj->obj.field->type == OBJECT_FIELD) {
+                else if (obj->obj.as_field->type == OBJECT_FIELD) {
                     /* field is a struct member access (a.b) */
                     m1_reg last      = popreg(comp->regstack);
                     m1_reg offset    = popreg(comp->regstack);
@@ -716,7 +716,7 @@ OBJECT_LINK------>     L3
         {   
             m1_reg reg;              
 
-        	assert(obj->obj.field != NULL);
+        	assert(obj->obj.as_field != NULL);
         	assert(obj->sym != NULL);
         	assert(obj->sym->typedecl != NULL);
  
@@ -768,7 +768,7 @@ OBJECT_LINK------>     L3
             assert((*parent)->sym->typedecl != NULL);
                         
             /* parent's symbol has a typedecl node, which holds the structdef (d.s), which has a symbol table. */
-            m1_symbol *fieldsym = sym_lookup_symbol(&(*parent)->sym->typedecl->d.as_struct->sfields, obj->obj.name);
+            m1_symbol *fieldsym = sym_lookup_symbol(&(*parent)->sym->typedecl->d.as_struct->sfields, obj->obj.as_name);
                        
             assert(fieldsym != NULL);
             
@@ -801,7 +801,7 @@ OBJECT_LINK------>     L3
         case OBJECT_INDEX: /* b in a[b] */        
         {
             (*dimension)++; /* increment dimension whenever we handle an index. */
-            numregs_pushed += gencode_expr(comp, obj->obj.index);                                                              
+            numregs_pushed += gencode_expr(comp, obj->obj.as_index);                                                              
             break;            
         }
         default:

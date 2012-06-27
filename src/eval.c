@@ -44,17 +44,17 @@ static void
 eval_obj(m1_object *obj) {
     switch (obj->type) {
         case OBJECT_MAIN:
-            fprintf(OUT, "%s", obj->obj.name);
+            fprintf(OUT, "%s", obj->obj.as_name);
             break;
         case OBJECT_FIELD:
-            fprintf(OUT, ".%s", obj->obj.name);
+            fprintf(OUT, ".%s", obj->obj.as_name);
             break;
         case OBJECT_DEREF:
-            fprintf(OUT, "->%s", obj->obj.name);
+            fprintf(OUT, "->%s", obj->obj.as_name);
             break;
         case OBJECT_INDEX:
             fprintf(OUT, "[");
-            eval_expr(obj->obj.index);
+            eval_expr(obj->obj.as_index);
             fprintf(OUT, "]");
             break;            
         default:
