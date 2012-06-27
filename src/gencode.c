@@ -1045,7 +1045,10 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
         m1_reg indexreg  = alloc_reg(comp, VAL_INT);
         
         /* load the number of register R0 */
-//        INS (M0_SET_IMM, "%I, %d, %R", indexreg.no, retvalreg);
+        m1_reg reg_zero;
+        reg_zero.type = retvalreg.type;
+        reg_zero.no   = 0;
+        INS (M0_SET_IMM, "%I, %d, %R", indexreg.no, reg_zero);
         fprintf(OUT, "\tset_imm\tI%d, 0, %c0\n", indexreg.no, reg_chars[(int)retvalreg.type]);
   
         /* index the current callframe, and set in its R0 register the value from the return expression. */
@@ -1247,7 +1250,7 @@ is different. This /could/ be refactored but it's better for clarity it's not.
 
 */
 static void
-lt_le_common(M1_compiler *comp, m1_binexpr *b, char const * const op) {
+lt_le_common(M1_compiler *comp, m1_binexpr *b, int opcode, char const * const op) {
     m1_reg result = alloc_reg(comp, VAL_INT);
     m1_reg left, right;
     
@@ -1259,7 +1262,7 @@ lt_le_common(M1_compiler *comp, m1_binexpr *b, char const * const op) {
     
 
     /* using isgt or isge ops, but swap arguments; hence, right first, then left. */
-    //INS (??, "%I, %R, %R", result.no, right, left);
+    INS (opcode + right.type , "%I, %R, %R", result.no, right, left);
     fprintf(OUT, "\t%s_%c I%d, %c%d, %c%d\n", op, type_chars[(int)left.type], result.no, 
                                                   reg_chars[(int)right.type], right.no,
                                                   reg_chars[(int)left.type], left.no);
@@ -1271,7 +1274,7 @@ lt_le_common(M1_compiler *comp, m1_binexpr *b, char const * const op) {
 
 
 static void
-gencode_binary_bitwise(M1_compiler *comp, m1_binexpr *b, char const * const op) {
+gencode_binary_bitwise(M1_compiler *comp, m1_binexpr *b, int opcode, char const * const op) {
     m1_reg left, right, target;
     
     gencode_expr(comp, b->left);
@@ -1281,7 +1284,7 @@ gencode_binary_bitwise(M1_compiler *comp, m1_binexpr *b, char const * const op) 
     right  = popreg(comp->regstack);
     
     target = alloc_reg(comp, (m1_valuetype)left.type);    
-    // INS (op, "%R, %R, %R", target, left, right);
+    INS (opcode, "%R, %R, %R", target, left, right);
     fprintf(OUT, "\t%s \t%c%d, %c%d, %c%d\n", op, reg_chars[(int)target.type], target.no, 
                                                   reg_chars[(int)left.type], left.no, 
                                                   reg_chars[(int)right.type], right.no);
@@ -1302,7 +1305,7 @@ type checker (see semcheck.c) that left and right are compatible.
 
 */
 static void
-gencode_binary_math(M1_compiler *comp, m1_binexpr *b, char const * const op) {
+gencode_binary_math(M1_compiler *comp, m1_binexpr *b, int opcode, char const * const op) {
     m1_reg left, 
            right, 
            target;
@@ -1315,7 +1318,9 @@ gencode_binary_math(M1_compiler *comp, m1_binexpr *b, char const * const op) {
     
     target = alloc_reg(comp, (m1_valuetype)left.type);    
     
-    //INS (??, "%R, %R, %R", target, left, right);
+    /* left.type is 0 for int, or 1 for float; _i and _n variants are always in that order,
+       so for int-variants, add 0, and for num variants, add 1. */    
+    INS (opcode + left.type, "%R, %R, %R", target, left, right);
     
     fprintf(OUT, "\t%s_%c\t%c%d, %c%d, %c%d\n", op, type_chars[(int)left.type],
                                                 reg_chars[(int)target.type], target.no, 
@@ -1332,31 +1337,31 @@ static void
 gencode_binary(M1_compiler *comp, m1_binexpr *b) {
     switch(b->op) {
         case OP_PLUS:
-            gencode_binary_math(comp, b, "add");
+            gencode_binary_math(comp, b, M0_ADD_I, "add");
             break;            
         case OP_MINUS:
-            gencode_binary_math(comp, b, "sub");    
+            gencode_binary_math(comp, b, M0_SUB_I, "sub");    
             break;            
         case OP_MUL:
-            gencode_binary_math(comp, b, "mult");
+            gencode_binary_math(comp, b, M0_MULT_I, "mult");
             break;
         case OP_DIV:
-            gencode_binary_math(comp, b, "div");
+            gencode_binary_math(comp, b, M0_DIV_I, "div");
             break;            
         case OP_MOD:
-            gencode_binary_math(comp, b, "mod");
+            gencode_binary_math(comp, b, M0_MOD_I, "mod");
             break;            
         case OP_GT:
-            gencode_binary_math(comp, b, "isgt");
+            gencode_binary_math(comp, b, M0_ISGT_I, "isgt");
             break;            
         case OP_GE:
-            gencode_binary_math(comp, b, "isge");
+            gencode_binary_math(comp, b, M0_ISGE_I, "isge");
             break;            
         case OP_LT:
-            lt_le_common(comp, b, "isgt"); /* swapping arguments. */
+            lt_le_common(comp, b, M0_ISGT_I, "isgt"); /* swapping arguments. */
             break;
         case OP_LE:
-            lt_le_common(comp, b, "isge");
+            lt_le_common(comp, b, M0_ISGE_I, "isge");
             break;
         case OP_EQ:
             ne_eq_common(comp, b, 1);  /* 1 means is_eq_op is true. */
@@ -1371,22 +1376,22 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
             gencode_or(comp, b);
             break;
         case OP_BAND:
-            gencode_binary_bitwise(comp, b, "and");
+            gencode_binary_bitwise(comp, b, M0_AND, "and");
             break;            
         case OP_BOR:
-            gencode_binary_bitwise(comp, b, "or");
+            gencode_binary_bitwise(comp, b, M0_OR, "or");
             break;
         case OP_XOR:
-            gencode_binary_bitwise(comp, b, "xor");
+            gencode_binary_bitwise(comp, b, M0_XOR, "xor");
             break;                        
         case OP_LRSH:
-            gencode_binary_bitwise(comp, b, "lshr");
+            gencode_binary_bitwise(comp, b, M0_LSHR, "lshr");
             break;
         case OP_RSH:
-            gencode_binary_bitwise(comp, b, "ashr");
+            gencode_binary_bitwise(comp, b, M0_ASHR, "ashr");
             break;
         case OP_LSH:
-            gencode_binary_bitwise(comp, b, "shl");
+            gencode_binary_bitwise(comp, b, M0_SHL, "shl");
             break;
         default:
             fprintf(stderr, "unknown operator\n");
@@ -2311,7 +2316,6 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             assert(0);
     }  
 
-    print_stack(comp->regstack, "EXPR");
     return num_regs; 
 
 }

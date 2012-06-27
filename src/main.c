@@ -48,6 +48,7 @@ main(int argc, char *argv[]) {
     yyscan_t     yyscanner;
     M1_compiler  comp;
     int          turnoff_reg_opt = 0;
+    char        *outputfile = "a.m1";
     
     if (argc <= 1) {
         fprintf(stderr, "Usage: m1 <file>\n");
@@ -58,6 +59,12 @@ main(int argc, char *argv[]) {
         /* turn of register optimization. */
         turnoff_reg_opt = 1;   
         argv++; /* go to next arg. */
+    }
+    
+    if (strcmp(argv[1], "-o") == 0) {
+        argv++;
+        outputfile = argv[1];
+        argv++;   
     }
     
     fp = fopen(argv[1], "r");
@@ -90,7 +97,7 @@ main(int argc, char *argv[]) {
     	if (comp.errors == 0) 
     	{
         	fprintf(stderr, "generating code...\n");
-        	comp.outfile = fopen("a.m1", "w");
+        	comp.outfile = fopen(outputfile, "w");
 	        gencode(&comp, comp.ast);
 	        fclose(comp.outfile);
     	}
