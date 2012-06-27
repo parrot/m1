@@ -72,7 +72,7 @@ char const * const m0_instr_names[] = {
 static const char regs[REG_TYPE_NUM + 2] = {'I', 'N', 'S', 'P', ' ', 'L'};
 
 
-#define OUT stdout
+#define OUT comp->outfile
 
 
 
@@ -81,8 +81,11 @@ write_instr(M1_compiler *comp, m0_instr *i) {
     
     assert(comp != NULL);
     
-    if (i->label != 0)
-        fprintf(OUT, "L%d:\n", i->label);
+    if (i->label != 0 && i->opcode == M0_NOOP) 
+        fprintf(OUT, "L%d:\n", i->label);    
+        
+    if (i->opcode == M0_NOOP)
+        return;
         
     switch (i->numops) {
         case 0:
@@ -259,7 +262,7 @@ mk_instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
     
 
     
-    //write_instr(comp, ins);
+    write_instr(comp, ins);
     return ins;
     
 }
@@ -274,7 +277,8 @@ mk_label(M1_compiler *comp, unsigned labelno) {
     /* set this instruction's opcode to "noop", which is a signal to mk_instr
        that this node can be used for the next instruction.       
      */
-    ins->opcode = M0_NOOP;       
+    ins->opcode = M0_NOOP;   
+    write_instr(comp, ins);    
 }
 
 m0_chunk *

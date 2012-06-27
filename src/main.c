@@ -90,7 +90,9 @@ main(int argc, char *argv[]) {
     	if (comp.errors == 0) 
     	{
         	fprintf(stderr, "generating code...\n");
+        	comp.outfile = fopen("a.m1", "w");
 	        gencode(&comp, comp.ast);
+	        fclose(comp.outfile);
     	}
     	else {
     	   fprintf(stderr, "%d errors and %d warnings\n", comp.errors, comp.warnings);
