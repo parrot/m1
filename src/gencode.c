@@ -2458,15 +2458,14 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
 #define PRELOAD_0_AND_1     0
 
     comp->current_m0chunk = CHUNK (c->name);
-    
-    fprintf(OUT, ".chunk \"%s\"\n", c->name);    
-
     /* for each chunk, reset the register allocator */
     reset_reg(comp);
-        
-    gencode_consts(&c->constants);
-    gencode_metadata(c);
     
+    write_chunk(comp, c);
+
+    fprintf(OUT, ".chunk \"%s\"\n", c->name);            
+    gencode_consts(&c->constants);
+    gencode_metadata(c);    
     fprintf(OUT, ".bytecode\n");  
     
         
@@ -2575,7 +2574,8 @@ gencode(M1_compiler *comp, m1_chunk *ast) {
     m1_type *decliter;
                             
     fprintf(OUT, ".version 0\n");
-    
+    write_m0b_file(comp);
+        
     while (iter != NULL) {     
         /* set pointer to current chunk, so that the code generator 
            has access to anything that belongs to the chunk. 

@@ -288,4 +288,60 @@ mk_chunk(M1_compiler *comp, char *name) {
     return ch;   
 }
 
+static void
+write_consts(M1_compiler *comp, m1_symboltable *consttable) {
+    m1_symbol *iter;
+	
+	fprintf(OUT, ".constants\n");
+	
+    assert(consttable != NULL);
+	iter = consttable->syms;
+	
+	while (iter != NULL) {
+		
+		switch (iter->valtype) {
+			case VAL_STRING:
+				fprintf(OUT, "%d %s\n", iter->constindex, iter->value.sval);
+				break;
+			case VAL_FLOAT:
+				fprintf(OUT, "%d %f\n", iter->constindex, iter->value.fval);
+				break;
+			case VAL_INT:			
+				fprintf(OUT, "%d %d\n", iter->constindex, iter->value.ival);
+				break;
+	        case VAL_CHUNK:
+	            fprintf(OUT, "%d &%s\n", iter->constindex, iter->value.sval);
+	            break;
+			default:
+				fprintf(stderr, "unknown symbol type (%d)\n", iter->valtype);
+				assert(0); /* should never happen. */
+		}
+		iter = iter->next;	
+	}
+
+}
+
+static void
+write_metadata(M1_compiler *comp, m1_chunk *c) {
+    assert(c != NULL);
+	fprintf(OUT, ".metadata\n");	
+}
+
+
+void
+write_chunk(M1_compiler *comp, m1_chunk *c) {
+    fprintf(OUT, ".chunk \"%s\"\n", c->name);       
+    
+    write_consts(comp, &c->constants);
+    write_metadata(comp, c);
+    
+    fprintf(OUT, ".bytecode\n");  
+
+}
+
+void
+write_m0b_file(M1_compiler *comp) {
+    fprintf(OUT, ".version 0\n");
+       
+}
 

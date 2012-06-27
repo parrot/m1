@@ -109,5 +109,8 @@ extern m0_instr *mk_instr(M1_compiler *comp, m0_opcode, char const * const forma
 
 extern void mk_label(M1_compiler *comp, unsigned labelno);
 
+extern void write_chunk(M1_compiler *comp, struct m1_chunk *c);
+extern void write_m0b_file(M1_compiler *comp);
+
 #endif
 
