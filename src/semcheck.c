@@ -356,6 +356,7 @@ check_binary(M1_compiler *comp, m1_binexpr *b, unsigned line) {
                 type_error(comp, line, "comparison operator needs integer or "
                                        "floating-point expressions as operands");   
             }
+            return BOOLTYPE; /* binary expressions with >, < and friends are boolean. */
             break;
         case OP_EQ:
         case OP_NE:
@@ -366,6 +367,7 @@ check_binary(M1_compiler *comp, m1_binexpr *b, unsigned line) {
             else if (ltype == STRINGTYPE) {
                 type_error(comp, line, "cannot apply comparison operator on strings");   
             }
+            return BOOLTYPE; /* binary expressions with != and == operators are boolean. */
             break;
         case OP_AND:
         case OP_OR:
@@ -435,7 +437,7 @@ check_unary(M1_compiler *comp, m1_unexpr *u, unsigned line) {
 static void
 check_break(M1_compiler *comp, unsigned line) {
     if (top(comp->breakstack) == 0) {
-        type_error(comp, line, "Cannot use break in non-iterating block");
+        type_error(comp, line, "cannot use break in non-iterating block");
     }
 }
 
