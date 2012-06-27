@@ -561,7 +561,8 @@ function_init   : return_type TK_IDENT
                           /* enter name of this function in global symbol table, so
                              compiler can find it whenever another function calls this one.
                            */
-                          sym_new_symbol(comp, comp->globalsymtab, $2, $1, 1);
+                          $$->sym = sym_new_symbol(comp, comp->globalsymtab, $2, $1, 1);
+                          $$->sym->chunk = $$;
                         }
                 ;
 

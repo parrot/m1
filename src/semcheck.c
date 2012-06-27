@@ -29,6 +29,7 @@ static m1_type *check_expr(M1_compiler *comp, m1_expression *e);
 static void check_block(M1_compiler *comp, m1_block *expr);
 static m1_type *check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent);
 static void check_exprlist(M1_compiler *comp, m1_expression *expr);
+static m1_type * check_vardecl(M1_compiler *comp, m1_var *v, unsigned line);
 
 /* Cache these built-in types. Read-only. */
 static m1_type *BOOLTYPE;
@@ -483,8 +484,28 @@ check_funcall(M1_compiler *comp, m1_funcall *f, unsigned line) {
     
 
     /* XXX find declaration of function, check arguments against 
-    function signature. */
-    /* TODO */
+    function signature. 
+    
+    args are stored in f->arguments
+    parameters are stored in a chunk, accessible through f->funsym->chunk
+    */
+    m1_var *paramiter      = f->funsym->chunk->parameters;
+    m1_expression *argiter = f->arguments;
+    unsigned count = 1;
+    while (paramiter != NULL && argiter != NULL) {
+        
+        m1_type *paramtype = check_vardecl(comp, paramiter, line);
+        m1_type *argtype   = check_expr(comp, argiter);
+        
+        if (paramtype != argtype) {
+            type_error(comp, line, 
+                       "type of argument %d (%s) does not match type of parameter (%s)", 
+                       count, argtype->name, paramtype->name);   
+        }   
+        argiter   = argiter->next;
+        paramiter = paramiter->next;
+        ++count;
+    }
     
     return f->typedecl;
 }
@@ -534,7 +555,7 @@ check_newexpr(M1_compiler *comp, m1_newexpr *n, unsigned line) {
     return n->typedecl;
 }
 
-static void
+static m1_type *
 check_vardecl(M1_compiler *comp, m1_var *v, unsigned line) {        
     assert(v->sym != NULL);
     
@@ -562,6 +583,7 @@ check_vardecl(M1_compiler *comp, m1_var *v, unsigned line) {
     if (v->next) {
         (void)check_vardecl(comp, v->next, line);   
     }
+    return v->sym->typedecl;
 }
 
 static m1_type *

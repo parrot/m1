@@ -45,6 +45,7 @@ typedef struct m1_chunk {
     struct m1_block      *block;        /* list of statements. */
 
     struct m1_var        *parameters;   /* list of parameters */
+    struct m1_symbol     *sym;          /* pointer to symbol table entry */
     unsigned              num_params;   /* parameter count. */
     
     int                   flags;

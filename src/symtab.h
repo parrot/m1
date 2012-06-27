@@ -75,7 +75,10 @@ typedef struct m1_symbol {
     };
     
     int               constindex;   /* index in const segment that holds this symbol's value. */
-    struct m1_var    *var;          /* pointer to declaration AST node for var */
+    union {
+        struct m1_var    *var;          /* pointer to declaration AST node for var */
+        struct m1_chunk  *chunk;        /* pointer to chunk AST node for functions. */
+    };
     struct m1_type   *typedecl;     /* pointer to declaration of type. */
     
     struct m1_symbol *next;         /* symbols are stored in a list. */
