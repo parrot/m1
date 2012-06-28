@@ -209,7 +209,7 @@ gencode_number(M1_compiler *comp, m1_literal *lit) {
     constindex = alloc_reg(comp, VAL_INT);
         
     INS (M0_SET_IMM, "%I, %d, %d", constindex.no, 0, lit->sym->constindex);    
-    INS (M0_DEREF,   "%N, %d, %I", reg.no, CONSTS, constindex.no);      
+    INS (M0_DEREF,   "%N, %X, %I", reg.no, CONSTS, constindex.no);      
     
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constindex.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tN%d, CONSTS, I%d\n", reg.no, constindex.no);
@@ -234,7 +234,7 @@ gencode_char(M1_compiler *comp, m1_literal *lit) {
     reg = alloc_reg(comp, VAL_INT);
 
     INS (M0_SET_IMM, "%I, %d, %d", reg.no, 0, lit->sym->constindex);
-    INS (M0_DEREF,   "%I, %d, %I", reg.no, CONSTS, reg.no);
+    INS (M0_DEREF,   "%I, %X, %I", reg.no, CONSTS, reg.no);
     
     /* reuse the reg, first for the index, then for the result. */        
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", reg.no, lit->sym->constindex);
@@ -285,7 +285,7 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
         int num256     = (constindex - remainder) / 256;
         
         INS (M0_SET_IMM, "%I, %d, %d", reg.no, num256, remainder);
-        INS (M0_DEREF,   "%I, %d, %I", reg.no, CONSTS, reg.no);
+        INS (M0_DEREF,   "%I, %X, %I", reg.no, CONSTS, reg.no);
         
         fprintf(OUT, "\tset_imm\tI%d, %d, %d\n", reg.no, num256, remainder);
         fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", reg.no, reg.no);
@@ -336,7 +336,7 @@ gencode_string(M1_compiler *comp, m1_literal *lit) {
     constidxreg = alloc_reg(comp, VAL_INT);
       
     INS (M0_SET_IMM, "%I, %d, %d", constidxreg.no, 0, lit->sym->constindex);
-    INS (M0_DEREF,   "%S, %d, %I", stringreg.no, CONSTS, constidxreg.no);
+    INS (M0_DEREF,   "%S, %X, %I", stringreg.no, CONSTS, constidxreg.no);
           
     fprintf(OUT, "\tset_imm\tI%d, 0, %d\n", constidxreg.no, lit->sym->constindex);
     fprintf(OUT, "\tderef\tS%d, CONSTS, I%d\n", stringreg.no, constidxreg.no);
@@ -1655,12 +1655,12 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     fprintf(OUT, "\tset_ref   P%d, I%d, BCS\n", cf_reg.no, temp.no);
 
     INS (M0_SET_IMM, "%I, %d, %X", temp.no, 0, PCF);
-    INS (M0_SET_REF, "%P, %I, %X", cf_reg.no, temp.no, PCF); 
+    INS (M0_SET_REF, "%P, %I, %X", cf_reg.no, temp.no, CF); 
     fprintf(OUT, "\tset_imm   I%d, 0, PCF\n", temp.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, CF\n", cf_reg.no, temp.no);
 
     INS (M0_SET_IMM, "%I, %d, %X", temp.no, 0, CF);
-    INS (M0_SET_REF, "%P, %I, %X", cf_reg.no, temp.no, CF);     
+    INS (M0_SET_REF, "%P, %I, %P", cf_reg.no, temp.no, cf_reg.no);     
     fprintf(OUT, "\tset_imm   I%d, 0, CF\n", temp.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, P%d\n", cf_reg.no, temp.no, cf_reg.no);
     
@@ -1678,7 +1678,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     fprintf(OUT, "\tset_imm   I%d, 0, RETPC\n", temp2.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, I%d\n", cf_reg.no, temp2.no, temp.no);
 
-    INS (M0_SET_IMM, "%I, %d, %X", temp.no, 0, SPILLCF);
+    INS (M0_SET_IMM, "%I, %d, %X", temp2.no, 0, SPILLCF);
     INS (M0_SET_REF, "%P, %I, %I", cf_reg.no, temp2.no, temp.no);     
     fprintf(OUT, "\tset_imm   I%d, 0, SPILLCF\n", temp2.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, I%d\n", cf_reg.no, temp2.no, temp.no);
@@ -1764,22 +1764,22 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     set_ref  PCF, I9, BCS
 */
     INS (M0_SET_IMM, "%I, %d, %X", I9.no, 0, CHUNK);
-    INS (M0_SET_REF, "%d, %I, %X", PCF, I9.no, CHUNK);
+    INS (M0_SET_REF, "%X, %I, %X", PCF, I9.no, CHUNK);
     fprintf(OUT, "\tset_imm   I%d, 0, CHUNK\n", I9.no);
     fprintf(OUT, "\tset_ref   PCF, I%d, CHUNK\n", I9.no);
 
     INS (M0_SET_IMM, "%I, %d, %X", I9.no, 0, CONSTS);
-    INS (M0_SET_REF, "%d, %I, %X", PCF, I9.no, CONSTS);    
+    INS (M0_SET_REF, "%X, %I, %X", PCF, I9.no, CONSTS);    
     fprintf(OUT, "\tset_imm   I%d, 0, CONSTS\n", I9.no);
     fprintf(OUT, "\tset_ref   PCF, I%d, CONSTS\n", I9.no);
 
     INS (M0_SET_IMM, "%I, %d, %X", I9.no, 0, MDS);
-    INS (M0_SET_REF, "%d, %I, %X", PCF, I9.no, MDS);    
+    INS (M0_SET_REF, "%X, %I, %X", PCF, I9.no, MDS);    
     fprintf(OUT, "\tset_imm   I%d, 0, MDS\n", I9.no);
     fprintf(OUT, "\tset_ref   PCF, I%d, MDS\n", I9.no);
 
     INS (M0_SET_IMM, "%I, %d, %X", I9.no, 0, BCS);
-    INS (M0_SET_REF, "%d, %I, %X", PCF, I9.no, BCS);    
+    INS (M0_SET_REF, "%X, %I, %X", PCF, I9.no, BCS);    
     fprintf(OUT, "\tset_imm   I%d, 0, BCS\n", I9.no);
     fprintf(OUT, "\tset_ref   PCF, I%d, BCS\n", I9.no);
     
