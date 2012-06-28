@@ -1052,7 +1052,7 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
         fprintf(OUT, "\tset_imm\tI%d, 0, %c0\n", indexreg.no, reg_chars[(int)retvalreg.type]);
   
         /* index the current callframe, and set in its R0 register the value from the return expression. */
-        INS (M0_SET_REF, "%d, %I, %R", CF, indexreg.no, retvalreg);
+        INS (M0_SET_REF, "%X, %I, %R", CF, indexreg.no, retvalreg);
         fprintf(OUT, "\tset_ref\tCF, I%d, %c%d\n", indexreg.no, reg_chars[(int)retvalreg.type], retvalreg.no);
 
         free_reg(comp, indexreg);
@@ -1074,19 +1074,19 @@ gencode_return(M1_compiler *comp, m1_expression *e) {
     chunk_index = alloc_reg(comp, VAL_INT);
     retpc_reg   = alloc_reg(comp, VAL_INT);
 
-    INS (M0_SET_IMM, "%I, %d, %d", retpc_reg.no, 0, RETPC);
+    INS (M0_SET_IMM, "%I, %d, %X", retpc_reg.no, 0, RETPC);
     fprintf(OUT, "\tset_imm    I%d, 0, RETPC\n", retpc_reg.no);
     
-    INS (M0_DEREF,   "%I, %d, %I", retpc_reg.no, PCF, retpc_reg.no);    
+    INS (M0_DEREF,   "%I, %X, %I", retpc_reg.no, PCF, retpc_reg.no);    
     fprintf(OUT, "\tderef      I%d, PCF, I%d\n", retpc_reg.no, retpc_reg.no);
     
-    INS (M0_SET_IMM, "%I, %d, %d", chunk_index.no, 0, CHUNK);
+    INS (M0_SET_IMM, "%I, %d, %X", chunk_index.no, 0, CHUNK);
     fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
     
-    INS (M0_DEREF,   "%I, %d, %I", chunk_index.no, PCF, chunk_index.no);
+    INS (M0_DEREF,   "%I, %X, %I", chunk_index.no, PCF, chunk_index.no);
     fprintf(OUT, "\tderef      I%d, PCF, I%d\n", chunk_index.no, chunk_index.no);
     
-    INS (M0_GOTO_CHUNK, "%I, %I, %d", chunk_index.no, retpc_reg.no, 0);
+    INS (M0_GOTO_CHUNK, "%I, %I", chunk_index.no, retpc_reg.no);
     fprintf(OUT, "\tgoto_chunk I%d, I%d, x\n", chunk_index.no, retpc_reg.no);        
     
     free_reg(comp, chunk_index);    
