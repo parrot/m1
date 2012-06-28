@@ -1573,10 +1573,15 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     
     /* create a new call frame */
     /* alloc_cf: */
+    INS(M0_SET_IMM, "%I, %d, %d", sizereg.no, 0, 198);
+    INS(M0_SET_IMM, "%I, %d, %d", flagsreg.no, 0, 0);
+    INS(M0_GC_ALLOC, "%P, %I, %I", cf_reg.no, sizereg.no, flagsreg.no);
+    
     fprintf(OUT, "\tset_imm   I%d, 0, 198\n", sizereg.no);
 //    fprintf(OUT, "\tset_imm   I%d, 1, 0\n", sizereg.no); /* XXX: why $2 = 8 ? */
     fprintf(OUT, "\tset_imm   I%d, 0, 0\n", flagsreg.no);
     fprintf(OUT, "\tgc_alloc  P%d, I%d, I%d\n", cf_reg.no, sizereg.no, flagsreg.no);
+    
     free_reg(comp, sizereg);
     free_reg(comp, flagsreg);
 
@@ -1624,56 +1629,56 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     
     /* init_cf_copy: */
     m1_reg temp = alloc_reg(comp, VAL_INT);   
-    INS (M0_SET_IMM, "%I, %d, %d", temp.no, 0, INTERP);
-    INS (M0_SET_REF, "%P, %I, %d", cf_reg.no, temp.no, INTERP); 
+    INS (M0_SET_IMM, "%I, %d, %X", temp.no, 0, INTERP);
+    INS (M0_SET_REF, "%P, %I, %X", cf_reg.no, temp.no, INTERP); 
     fprintf(OUT, "\tset_imm   I%d, 0, INTERP\n", temp.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, INTERP\n", cf_reg.no, temp.no);
     
-    INS (M0_SET_IMM, "%I, %d, %d", temp.no, 0, CHUNK);
-    INS (M0_SET_REF, "%P, %I, %d", cf_reg.no, temp.no, CHUNK); 
+    INS (M0_SET_IMM, "%I, %d, %X", temp.no, 0, CHUNK);
+    INS (M0_SET_REF, "%P, %I, %X", cf_reg.no, temp.no, CHUNK); 
     fprintf(OUT, "\tset_imm   I%d, 0, CHUNK\n", temp.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, CHUNK\n", cf_reg.no, temp.no);
     
-    INS (M0_SET_IMM, "%I, %d, %d", temp.no, 0, CONSTS);
-    INS (M0_SET_REF, "%P, %I, %d", cf_reg.no, temp.no, CONSTS); 
+    INS (M0_SET_IMM, "%I, %d, %X", temp.no, 0, CONSTS);
+    INS (M0_SET_REF, "%P, %I, %X", cf_reg.no, temp.no, CONSTS); 
     fprintf(OUT, "\tset_imm   I%d, 0, CONSTS\n", temp.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, CONSTS\n", cf_reg.no, temp.no);
     
-    INS (M0_SET_IMM, "%I, %d, %d", temp.no, 0, MDS);
-    INS (M0_SET_REF, "%P, %I, %d", cf_reg.no, temp.no, MDS); 
+    INS (M0_SET_IMM, "%I, %d, %X", temp.no, 0, MDS);
+    INS (M0_SET_REF, "%P, %I, %X", cf_reg.no, temp.no, MDS); 
     fprintf(OUT, "\tset_imm   I%d, 0, MDS\n", temp.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, MDS\n", cf_reg.no, temp.no);
     
-    INS (M0_SET_IMM, "%I, %d, %d", temp.no, 0, BCS);
-    INS (M0_SET_REF, "%P, %I, %d", cf_reg.no, temp.no, BCS); 
+    INS (M0_SET_IMM, "%I, %d, %X", temp.no, 0, BCS);
+    INS (M0_SET_REF, "%P, %I, %X", cf_reg.no, temp.no, BCS); 
     fprintf(OUT, "\tset_imm   I%d, 0, BCS\n", temp.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, BCS\n", cf_reg.no, temp.no);
 
-    INS (M0_SET_IMM, "%I, %d, %d", temp.no, 0, PCF);
-    INS (M0_SET_REF, "%P, %I, %d", cf_reg.no, temp.no, PCF); 
+    INS (M0_SET_IMM, "%I, %d, %X", temp.no, 0, PCF);
+    INS (M0_SET_REF, "%P, %I, %X", cf_reg.no, temp.no, PCF); 
     fprintf(OUT, "\tset_imm   I%d, 0, PCF\n", temp.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, CF\n", cf_reg.no, temp.no);
 
-    INS (M0_SET_IMM, "%I, %d, %d", temp.no, 0, CF);
-    INS (M0_SET_REF, "%P, %I, %d", cf_reg.no, temp.no, CF);     
+    INS (M0_SET_IMM, "%I, %d, %X", temp.no, 0, CF);
+    INS (M0_SET_REF, "%P, %I, %X", cf_reg.no, temp.no, CF);     
     fprintf(OUT, "\tset_imm   I%d, 0, CF\n", temp.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, P%d\n", cf_reg.no, temp.no, cf_reg.no);
     
     /* init_cf_zero: */
     m1_reg temp2 = alloc_reg(comp, VAL_INT);
     INS (M0_SET_IMM, "%I, %d, %d", temp.no, 0, 0);
-    INS (M0_SET_IMM, "%I, %d, %d", temp2.no, 0, EH);
+    INS (M0_SET_IMM, "%I, %d, %X", temp2.no, 0, EH);
     INS (M0_SET_REF, "%P, %I, %I", cf_reg.no, temp2.no, temp.no);     
     fprintf(OUT, "\tset_imm   I%d, 0, 0\n", temp.no);
     fprintf(OUT, "\tset_imm   I%d, 0, EH\n", temp2.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, I%d\n", cf_reg.no, temp2.no, temp.no); 
 
-    INS (M0_SET_IMM, "%I, %d, %d", temp2.no, 0, RETPC);
+    INS (M0_SET_IMM, "%I, %d, %X", temp2.no, 0, RETPC);
     INS (M0_SET_REF, "%P, %I, %I", cf_reg.no, temp2.no, temp.no);     
     fprintf(OUT, "\tset_imm   I%d, 0, RETPC\n", temp2.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, I%d\n", cf_reg.no, temp2.no, temp.no);
 
-    INS (M0_SET_IMM, "%I, %d, %d", temp.no, 0, SPILLCF);
+    INS (M0_SET_IMM, "%I, %d, %X", temp.no, 0, SPILLCF);
     INS (M0_SET_REF, "%P, %I, %I", cf_reg.no, temp2.no, temp.no);     
     fprintf(OUT, "\tset_imm   I%d, 0, SPILLCF\n", temp2.no);
     fprintf(OUT, "\tset_ref   P%d, I%d, I%d\n", cf_reg.no, temp2.no, temp.no);
@@ -1682,7 +1687,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
 
     /* init_cf_retpc: */    
     INS (M0_SET_IMM, "%I, %d, %d", temp.no, 0, 10);
-    INS (M0_ADD_I,   "%d, %d, %I", RETPC, PC, temp.no);         
+    INS (M0_ADD_I,   "%X, %X, %I", RETPC, PC, temp.no);         
     fprintf(OUT, "\tset_imm   I%d, 0, 10\n", temp.no);
     fprintf(OUT, "\tadd_i     RETPC, PC, I%d\n", temp.no);
 
@@ -1693,8 +1698,8 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     
     /* init_cf_pc */
     INS (M0_SET_IMM, "%I, %d, %d", cont_offset.no, 0, 3);
-    INS (M0_ADD_I,   "%I, %I, %d", cont_offset.no, cont_offset.no, PC);
-    INS (M0_SET_IMM, "%I, %d, %d", pc_reg.no, 0, PC);
+    INS (M0_ADD_I,   "%I, %I, %X", cont_offset.no, cont_offset.no, PC);
+    INS (M0_SET_IMM, "%I, %d, %X", pc_reg.no, 0, PC);
     INS (M0_SET_REF, "%P, %I, %I", cf_reg.no, pc_reg.no, cont_offset.no);
     fprintf(OUT, "\tset_imm   I%d, 0, 3\n", cont_offset.no);
     fprintf(OUT, "\tadd_i     I%d, I%d, PC\n", cont_offset.no, cont_offset.no);
@@ -1704,7 +1709,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     free_reg(comp, cont_offset);
     free_reg(comp, pc_reg);
 
-    INS (M0_SET, "%d, %P", CF, cf_reg.no);
+    INS (M0_SET, "%X, %P", CF, cf_reg.no);
     fprintf(OUT, "\tset       CF, P%d, x\n", cf_reg.no);
      
      
@@ -1719,7 +1724,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
 
     int calledfun_index = funcall->constindex;
     INS (M0_SET_IMM, "%P, %d, %d", cf_reg.no, 0, calledfun_index);
-    INS (M0_DEREF,   "%P, %d, %P", cf_reg.no, CONSTS, cf_reg.no);
+    INS (M0_DEREF,   "%P, %X, %P", cf_reg.no, CONSTS, cf_reg.no);
     fprintf(OUT, "\tset_imm    P%d, 0, %d\n", cf_reg.no, calledfun_index);
     fprintf(OUT, "\tderef      P%d, CONSTS, P%d\n", cf_reg.no, cf_reg.no);
     
@@ -1758,23 +1763,23 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     set_imm  I9,  0,  BCS
     set_ref  PCF, I9, BCS
 */
-    INS (M0_SET_IMM, "%I, %d, %d", I9.no, 0, CHUNK);
-    INS (M0_SET_REF, "%d, %I, %d", PCF, I9.no, CHUNK);
+    INS (M0_SET_IMM, "%I, %d, %X", I9.no, 0, CHUNK);
+    INS (M0_SET_REF, "%d, %I, %X", PCF, I9.no, CHUNK);
     fprintf(OUT, "\tset_imm   I%d, 0, CHUNK\n", I9.no);
     fprintf(OUT, "\tset_ref   PCF, I%d, CHUNK\n", I9.no);
 
-    INS (M0_SET_IMM, "%I, %d, %d", I9.no, 0, CONSTS);
-    INS (M0_SET_REF, "%d, %I, %d", PCF, I9.no, CONSTS);    
+    INS (M0_SET_IMM, "%I, %d, %X", I9.no, 0, CONSTS);
+    INS (M0_SET_REF, "%d, %I, %X", PCF, I9.no, CONSTS);    
     fprintf(OUT, "\tset_imm   I%d, 0, CONSTS\n", I9.no);
     fprintf(OUT, "\tset_ref   PCF, I%d, CONSTS\n", I9.no);
 
-    INS (M0_SET_IMM, "%I, %d, %d", I9.no, 0, MDS);
-    INS (M0_SET_REF, "%d, %I, %d", PCF, I9.no, MDS);    
+    INS (M0_SET_IMM, "%I, %d, %X", I9.no, 0, MDS);
+    INS (M0_SET_REF, "%d, %I, %X", PCF, I9.no, MDS);    
     fprintf(OUT, "\tset_imm   I%d, 0, MDS\n", I9.no);
     fprintf(OUT, "\tset_ref   PCF, I%d, MDS\n", I9.no);
 
-    INS (M0_SET_IMM, "%I, %d, %d", I9.no, 0, BCS);
-    INS (M0_SET_REF, "%d, %I, %d", PCF, I9.no, BCS);    
+    INS (M0_SET_IMM, "%I, %d, %X", I9.no, 0, BCS);
+    INS (M0_SET_REF, "%d, %I, %X", PCF, I9.no, BCS);    
     fprintf(OUT, "\tset_imm   I%d, 0, BCS\n", I9.no);
     fprintf(OUT, "\tset_ref   PCF, I%d, BCS\n", I9.no);
     
@@ -1794,11 +1799,11 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     */
     m1_reg I1 = alloc_reg(comp, VAL_INT);    
     INS (M0_SET_IMM, "%I, %d, %d", I1.no, 0, 5);
-    INS (M0_ADD_I,   "%I, %d, %I", I1.no, PC, I1.no);
-    INS (M0_SET_IMM, "%I, %d, %d", I9.no, 0, PC);
-    INS (M0_SET_REF, "%d, %I, %I", PCF, I0.no, I1.no);
-    INS (M0_SET_IMM, "%I, %d, %d", I9.no, 0, CF);
-    INS (M0_SET_REF, "%d, %I, %d", PCF, I9.no, PCF);
+    INS (M0_ADD_I,   "%I, %X, %I", I1.no, PC, I1.no);
+    INS (M0_SET_IMM, "%I, %d, %X", I9.no, 0, PC);
+    INS (M0_SET_REF, "%X, %I, %I", PCF, I0.no, I1.no);
+    INS (M0_SET_IMM, "%I, %d, %X", I9.no, 0, CF);
+    INS (M0_SET_REF, "%X, %I, %X", PCF, I9.no, PCF);
     
     fprintf(OUT, "\tset_imm   I%d, 0,   5\n", I1.no);
     fprintf(OUT, "\tadd_i     I%d, PC,  I%d\n", I1.no, I1.no);
@@ -1813,7 +1818,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     /*
     set     CF, PCF, x
     */
-    INS (M0_SET, "%d, %d", CF, PCF);
+    INS (M0_SET, "%X, %X", CF, PCF);
     fprintf(OUT, "\tset       CF, PCF, x\n");
     
 
@@ -1828,8 +1833,13 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     m1_reg idxreg           = alloc_reg(comp, VAL_INT);
     m1_reg retvaltarget_reg = alloc_reg(comp, funcall->typedecl->valtype);
 
-    /* load the number of register I0. */
-    INS (M0_SET_IMM, "%I, %d, %R", idxreg.no, 0, retvaltarget_reg); // XXX want index of reg. 0 of requested type.
+    regindexes[VAL_INT] = M0_REG_I0;
+    regindexes[VAL_FLOAT] = M0_REG_N0;
+    regindexes[VAL_STRING] = M0_REG_S0;
+    regindexes[VAL_CHUNK] = M0_REG_P0;
+    unsigned regzero = regindexes[funcall->typedecl->valtype];
+    /* load the number of register I0. */    
+    INS (M0_SET_IMM, "%I, %d, %d", idxreg.no, 0, regzero); // XXX want index of reg. 0 of requested type.
     
     fprintf(OUT, "\tset_imm\tI%d, 0, %c0\n", idxreg.no, reg_chars[(int)retvaltarget_reg.type]);   
     
@@ -2411,8 +2421,8 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *chunk) {
         m1_reg retpc_reg   = alloc_reg(comp, VAL_INT);
         m1_reg retpc_index = alloc_reg(comp, VAL_INT);
 
-        INS (M0_SET_IMM, "%I, %d, %d", retpc_index.no, 0, RETPC);
-        INS (M0_DEREF,   "%I, %d, %I", retpc_reg.no, PCF, retpc_index.no);
+        INS (M0_SET_IMM, "%I, %d, %X", retpc_index.no, 0, RETPC);
+        INS (M0_DEREF,   "%I, %X, %I", retpc_reg.no, PCF, retpc_index.no);
         fprintf(OUT, "\tset_imm    I%d, 0, RETPC\n", retpc_index.no);
         fprintf(OUT, "\tderef      I%d, PCF, I%d\n", retpc_reg.no, retpc_index.no);
 
@@ -2420,8 +2430,8 @@ gencode_chunk_return(M1_compiler *comp, m1_chunk *chunk) {
 
         chunk_index = alloc_reg(comp, VAL_INT);
 
-        INS (M0_SET_IMM, "%I, %d, %d", chunk_index.no, 0, CHUNK);
-        INS (M0_DEREF,   "%I, %d, %I", chunk_index.no, PCF, chunk_index.no);
+        INS (M0_SET_IMM, "%I, %d, %X", chunk_index.no, 0, CHUNK);
+        INS (M0_DEREF,   "%I, %X, %I", chunk_index.no, PCF, chunk_index.no);
         INS (M0_GOTO_CHUNK, "%I, %I", chunk_index.no, retpc_reg.no);
         fprintf(OUT, "\tset_imm    I%d, 0, CHUNK\n", chunk_index.no);
         fprintf(OUT, "\tderef      I%d, PCF, I%d\n", chunk_index.no, chunk_index.no);

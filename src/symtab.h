@@ -27,7 +27,8 @@ typedef enum m1_valuetype {
 	VAL_ADDRESS  = 0,   /* uses ival field of m1_value union */
 	VAL_USERTYPE = 3,
 	VAL_VOID     = 4,
-	VAL_LABEL    = 5 
+	VAL_LABEL    = 5,
+	VAL_INTERP_REG = 6 
 	
 } m1_valuetype;
 

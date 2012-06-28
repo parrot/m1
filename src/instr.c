@@ -13,6 +13,7 @@ The following specifiers may be used:
  %P     like %I, but for P registers.
  %d     to pass a integer literal.
  %L     to pass a label number.
+ %X     to pass a special register (CONSTS, CF, etc.)
 
 */
 #include <stdlib.h>
@@ -24,54 +25,70 @@ The following specifiers may be used:
 #include "gencode.h"
 
 char const * const m0_instr_names[] = {
-    "noop",
-    "goto",
-    "goto_if",
-    "goto_chunk",
-    "add_i",
-    "add_n",
-    "sub_i",
-    "sub_n",
-    "mult_i",
-    "mult_n",
-    "div_i",
-    "div_n",
-    "mod_i",
-    "mod_n",
-    "isgt_i",
-    "isgt_n",
-    "isge_i",
-    "isge_n",
+    "noop       ",
+    "goto       ",
+    "goto_if    ",
+    "goto_chunk ",
+    "add_i      ",
+    "add_n      ",
+    "sub_i      ",
+    "sub_n      ",
+    "mult_i     ",
+    "mult_n     ",
+    "div_i      ",
+    "div_n      ",
+    "mod_i      ",
+    "mod_n      ",
+    "isgt_i     ",
+    "isgt_n     ",
+    "isge_i     ",
+    "isge_n     ",
     "convert_n_i",
     "convert_i_n",
-    "ashr",
-    "lshr",
-    "shl",
-    "and",
-    "or",
-    "xor",
-    "gc_alloc",
-    "sys_alloc",
-    "sys_free",
-    "copy_mem",
-    "set",
-    "set_imm",
-    "deref",
-    "set_ref",
-    "set_byte",
-    "get_byte",
-    "set_word",
-    "get_word",
-    "csym",
-    "ccall_arg",
-    "ccall_ret",
-    "ccall",
-    "print_s",
-    "print_i",
-    "print_n",
-    "exit"
+    "ashr       ",
+    "lshr       ",
+    "shl        ",
+    "and        ",
+    "or         ",
+    "xor        ",
+    "gc_alloc   ",
+    "sys_alloc  ",
+    "sys_free   ",
+    "copy_mem   ",
+    "set        ",
+    "set_imm    ",
+    "deref      ",
+    "set_ref    ",
+    "set_byte   ",
+    "get_byte   ",
+    "set_word   ",
+    "get_word   ",
+    "csym       ",
+    "ccall_arg  ",
+    "ccall_ret  ",
+    "ccall      ",
+    "print_s    ",
+    "print_i    ",
+    "print_n    ",
+    "exit       "
     
 };
+
+static char const * const interp_regs[] = {
+    "CF",
+    "PCF",
+    "PC",
+    "RETPC",
+    "EH",
+    "CHUNK",
+    "CONSTS",
+    "MDS",
+    "BCS",
+    "INTERP",
+    "SPC4RENT",
+    "SPILLCF"
+};
+
 
 static const char regs[REG_TYPE_NUM + 2] = {'I', 'N', 'S', 'P', ' ', 'L'};
 
@@ -79,6 +96,36 @@ static const char regs[REG_TYPE_NUM + 2] = {'I', 'N', 'S', 'P', ' ', 'L'};
 #define OUT comp->outfile
 
 
+static void
+write_operand(M1_compiler *comp, m0_operand op) {
+
+    switch (op.type) {
+        case VAL_INT:
+            fprintf(OUT, "I%d", op.value);
+            break;
+        case VAL_FLOAT:
+            fprintf(OUT, "N%d", op.value);
+            break;        
+        case VAL_STRING:
+            fprintf(OUT, "S%d", op.value);
+            break;
+        case VAL_CHUNK:
+            fprintf(OUT, "P%d", op.value);
+            break;        
+        case VAL_VOID:
+            fprintf(OUT, "%d", op.value);
+            break;
+        case VAL_LABEL:
+            fprintf(OUT, "L%d", op.value);
+            break;            
+        case VAL_INTERP_REG:
+            fprintf(OUT, "%s", interp_regs[op.value]);
+            break;
+        default:
+            fprintf(stderr, "unknown m0_instr operand\n");
+            assert(0);
+    }
+}
 
 static void
 write_instr(M1_compiler *comp, m0_instr *i) {
@@ -91,47 +138,20 @@ write_instr(M1_compiler *comp, m0_instr *i) {
     if (i->opcode == M0_NOOP)
         return;
         
-    switch (i->numops) {
-        case 0:
-            fprintf(OUT, "\t%s\n", m0_instr_names[(int)i->opcode]); 
-            break;
-        case 1:                      
-            if (i->opcode == M0_GOTO) /* special case, don't print "x, x" */
-                fprintf(OUT, "\t%s\t%c%d\n", m0_instr_names[(int)i->opcode], 
-                                              regs[i->operands[0].type], i->operands[0].value);        
-            else                                    
-                fprintf(OUT, "\t%s\t%c%d, x, x\n", m0_instr_names[(int)i->opcode], 
-                                              regs[i->operands[0].type], i->operands[0].value);
- 
-            break;
-        case 2:                          
-            if (i->opcode == M0_GOTO_IF) /* special case, don't print "x" */                                               
-                fprintf(OUT, "\t%s\t%c%d, %c%d\n", m0_instr_names[(int)i->opcode], 
-                                              regs[i->operands[0].type], i->operands[0].value,
-                                              regs[i->operands[1].type], i->operands[1].value);                                              
-
-            else
-                fprintf(OUT, "\t%s\t%c%d, %c%d, x\n", m0_instr_names[(int)i->opcode], 
-                                              regs[i->operands[0].type], i->operands[0].value,
-                                              regs[i->operands[1].type], i->operands[1].value);                                              
-            break;
-        case 3:
-            /* special case for CONSTS. */
-            if (i->operands[1].type == VAL_VOID && i->operands[1].value == CONSTS) 
-                fprintf(OUT, "\t%s\t%c%d, CONSTS, %c%d\n", m0_instr_names[(int)i->opcode], 
-                                              regs[i->operands[0].type], i->operands[0].value,
-                                              regs[i->operands[2].type], i->operands[2].value);        
-            else
-            
-                fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", m0_instr_names[(int)i->opcode], 
-                                              regs[i->operands[0].type], i->operands[0].value,
-                                              regs[i->operands[1].type], i->operands[1].value,
-                                              regs[i->operands[2].type], i->operands[2].value);
-            break;
-        default:
-            fprintf(stderr, "too many operands for instruction");
-            assert(0);
-        }                                                                                                        
+    fprintf(OUT, "\t%s ", m0_instr_names[(int)i->opcode]);
+    unsigned index;
+    for (index = 0; index < i->numops; index++) {
+        write_operand(comp, i->operands[index]);   
+        if (index < i->numops - 1)
+            fprintf(OUT, ", ");
+    }        
+    
+    if (i->opcode != M0_GOTO && i->opcode != M0_GOTO_IF)
+        for (; index < 3; index++) 
+            fprintf(OUT, ", x");
+        
+    fprintf(OUT, "\n");
+                                                                                                           
 }
 
 void
@@ -244,6 +264,10 @@ mk_instr(M1_compiler *comp, m0_opcode opcode, char const * const format, ...) {
                 ins->operands[index].type  = VAL_LABEL;
                 ins->operands[index].value = va_arg(argp, int);
                 break;
+            case 'X':
+                ins->operands[index].type  = VAL_INTERP_REG;
+                ins->operands[index].value = va_arg(argp, int);
+                break; 
             case 'd':
                 ins->operands[index].type  = VAL_VOID;
                 ins->operands[index].value = va_arg(argp, int);
