@@ -392,7 +392,7 @@ gencode_assign(M1_compiler *comp, NOTNULL(m1_assignment *a)) {
         m1_reg index  = popreg(comp->regstack);
         m1_reg parent = popreg(comp->regstack);
         m1_reg rhs    = popreg(comp->regstack);
-                
+        
         INS (M0_SET_REF, "%R, %R, %R", parent, index, rhs);
             
         fprintf(OUT, "\tset_ref\t%c%d, %c%d, %c%d\n", reg_chars[(int)parent.type], parent.no, 
@@ -1222,7 +1222,7 @@ ne_eq_common(M1_compiler *comp, m1_binexpr *b, int is_eq_op) {
                                                       
     INS (M0_GOTO_IF, "%L, %R", eq_ne_label, reg);
     fprintf(OUT, "\tgoto_if L%d, %c%d\n", eq_ne_label, reg_chars[(int)reg.type], reg.no);
-    INS (M0_SET_IMM, "%R, %d, %d", reg, is_eq_op);
+    INS (M0_SET_IMM, "%R, %d, %d", reg, 0, is_eq_op);
     fprintf(OUT, "\tset_imm\t%c%d, 0, %d\n", reg_chars[(int)reg.type], reg.no, is_eq_op);
     INS (M0_GOTO, "%L", endlabel);
     fprintf(OUT, "\tgoto L%d\n", endlabel);                                                      
@@ -2117,7 +2117,7 @@ gencode_var(M1_compiler *comp, m1_var *v) {
                 m1_reg res = popreg(comp->regstack);
                 
                 /* and assign to array. */
-                INS (M0_SET_REF, "I%d, I%d, %R", sym->regno, index.no, res);
+                INS (M0_SET_REF, "%I, %I, %R", sym->regno, index.no, res);
                 fprintf(OUT, "\tset_ref\tI%d, I%d, %c%d\n", sym->regno, index.no, reg_chars[(int)res.type], res.no);
                 /* increment index. */
                 INS (M0_ADD_I, "%I, %I, %I", index.no, index.no, one.no);
