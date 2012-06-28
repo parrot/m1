@@ -285,7 +285,7 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
         int num256     = (constindex - remainder) / 256;
         
         INS (M0_SET_IMM, "%I, %d, %d", reg.no, num256, remainder);
-        INS (M0_DEREF,   "%I, %d, %d", reg.no, CONSTS, reg.no);
+        INS (M0_DEREF,   "%I, %d, %I", reg.no, CONSTS, reg.no);
         
         fprintf(OUT, "\tset_imm\tI%d, %d, %d\n", reg.no, num256, remainder);
         fprintf(OUT, "\tderef\tI%d, CONSTS, I%d\n", reg.no, reg.no);
@@ -1827,9 +1827,9 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     /* retrieve the return value. */
     m1_reg idxreg           = alloc_reg(comp, VAL_INT);
     m1_reg retvaltarget_reg = alloc_reg(comp, funcall->typedecl->valtype);
-    
+
     /* load the number of register I0. */
-    INS (M0_SET_IMM, "%I, %d, %R", idxreg.no, retvaltarget_reg); // XXX want index of reg. 0 of requested type.
+    INS (M0_SET_IMM, "%I, %d, %R", idxreg.no, 0, retvaltarget_reg); // XXX want index of reg. 0 of requested type.
     
     fprintf(OUT, "\tset_imm\tI%d, 0, %c0\n", idxreg.no, reg_chars[(int)retvaltarget_reg.type]);   
     
@@ -1841,7 +1841,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
     fprintf(OUT, "\tderef\t%c%d, P%d, I%d\n", reg_chars[(int)retvaltarget_reg.type], retvaltarget_reg.no, 
                                               cf_reg.no, idxreg.no);
                                                
-    /* make it available for use by another statement. */
+    /* make it available for use by another statement. */    
     pushreg(comp->regstack, retvaltarget_reg);
     
     /* we're accessing the callee's CF, so only free its register now.*/

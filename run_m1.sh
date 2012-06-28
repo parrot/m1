@@ -10,6 +10,6 @@ file_suffixe=${1##*.}
 
 ./m1 $1 2>/dev/null > $filename.m0
 [ -s $filename.m0 ] || { echo "error: outputs a empty file $filename.m0 when compiling $1"; exit 1; }
-./m0_assembler.pl a.m1 >/dev/null
-./m0 a.m1b || { exit 1; }
+./m0_assembler.pl $filename.m0 >/dev/null
+./m0 $filename.m0b || { exit 1; }
 exit 0
