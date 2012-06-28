@@ -93,37 +93,37 @@ write_instr(M1_compiler *comp, m0_instr *i) {
         
     switch (i->numops) {
         case 0:
-            fprintf(OUT, "   %s\n", m0_instr_names[(int)i->opcode]); 
+            fprintf(OUT, "\t%s\n", m0_instr_names[(int)i->opcode]); 
             break;
         case 1:                      
             if (i->opcode == M0_GOTO) /* special case, don't print "x, x" */
-                fprintf(OUT, "   %s\t%c%d\n", m0_instr_names[(int)i->opcode], 
+                fprintf(OUT, "\t%s\t%c%d\n", m0_instr_names[(int)i->opcode], 
                                               regs[i->operands[0].type], i->operands[0].value);        
             else                                    
-                fprintf(OUT, "   %s\t%c%d, x, x\n", m0_instr_names[(int)i->opcode], 
+                fprintf(OUT, "\t%s\t%c%d, x, x\n", m0_instr_names[(int)i->opcode], 
                                               regs[i->operands[0].type], i->operands[0].value);
  
             break;
         case 2:                          
             if (i->opcode == M0_GOTO_IF) /* special case, don't print "x" */                                               
-                fprintf(OUT, "   %s\t%c%d, %c%d\n", m0_instr_names[(int)i->opcode], 
+                fprintf(OUT, "\t%s\t%c%d, %c%d\n", m0_instr_names[(int)i->opcode], 
                                               regs[i->operands[0].type], i->operands[0].value,
                                               regs[i->operands[1].type], i->operands[1].value);                                              
 
             else
-                fprintf(OUT, "   %s\t%c%d, %c%d, x\n", m0_instr_names[(int)i->opcode], 
+                fprintf(OUT, "\t%s\t%c%d, %c%d, x\n", m0_instr_names[(int)i->opcode], 
                                               regs[i->operands[0].type], i->operands[0].value,
                                               regs[i->operands[1].type], i->operands[1].value);                                              
             break;
         case 3:
             /* special case for CONSTS. */
             if (i->operands[1].type == VAL_VOID && i->operands[1].value == CONSTS) 
-                fprintf(OUT, "   %s\t%c%d, CONSTS, %c%d\n", m0_instr_names[(int)i->opcode], 
+                fprintf(OUT, "\t%s\t%c%d, CONSTS, %c%d\n", m0_instr_names[(int)i->opcode], 
                                               regs[i->operands[0].type], i->operands[0].value,
                                               regs[i->operands[2].type], i->operands[2].value);        
             else
             
-                fprintf(OUT, "   %s\t%c%d, %c%d, %c%d\n", m0_instr_names[(int)i->opcode], 
+                fprintf(OUT, "\t%s\t%c%d, %c%d, %c%d\n", m0_instr_names[(int)i->opcode], 
                                               regs[i->operands[0].type], i->operands[0].value,
                                               regs[i->operands[1].type], i->operands[1].value,
                                               regs[i->operands[2].type], i->operands[2].value);

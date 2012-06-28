@@ -2102,7 +2102,6 @@ gencode_var(M1_compiler *comp, m1_var *v) {
             m1_expression *iter  = v->init;
             m1_reg         index = alloc_reg(comp, VAL_INT);
             m1_reg         one   = alloc_reg(comp, VAL_INT);
-            unsigned elem_count  = 0;
             
             INS (M0_SET_IMM, "%I, %d, %d", index.no, 0, 0);
             INS (M0_SET_IMM, "%I, %d, %d", one.no, 0, 1);
@@ -2110,13 +2109,7 @@ gencode_var(M1_compiler *comp, m1_var *v) {
             fprintf(OUT, "\tset_imm\tI%d, 0, 1\n", one.no);   /* to hold constant 1. */
             
             while (iter != NULL) {
-                /* check for array bounds. */
-                ++elem_count; /* XXX do this in semchec. */
-                if (elem_count > v->num_elems) {
-                    fprintf(stderr, "Error: too many elements for array of size %d\n", v->num_elems);
-                    ++comp->errors;   
-                }
-                
+                                                
                 /* evaluate expression. */
                 int numregs = gencode_expr(comp, iter);
                 assert(numregs == 1);

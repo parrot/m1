@@ -550,19 +550,34 @@ check_vardecl(M1_compiler *comp, m1_var *v, unsigned line) {
            compatibility with type of variable. Only do this check if 
            v->sym->typedecl was found.
         */
-        if (v->init) {
-            m1_type *inittype = check_expr(comp, v->init);   
-               
-            if (inittype != v->sym->typedecl) {
-                type_error(comp, line, 
-                           "incompatible types in initialization of variable %s.", v->name);       
-            }            
+        
+        m1_expression *iter = v->init;
+        unsigned elem_count = 0;
+        
+        while (iter != NULL) {
+            ++elem_count;
+                /* check for array bounds. */
+            if (elem_count > v->num_elems) { 
+                if (v->num_elems == 1) {
+                    type_error(comp, line, 
+                               "attempt to initialize non-array variable '%s' with an array", 
+                               v->name);
+                }
+                else                
+                    type_error(comp, line, "too many elements for array of size %d", v->num_elems);
+            }
+            m1_type *inittype = check_expr(comp, iter);
+            if (inittype != v->sym->typedecl) 
+                type_error(comp, line, "incompatible types in initialization of variable '%s'", 
+                           v->name);   
+    
+            iter = iter->next;   
         }
     }
         
-    if (v->next) {
+    if (v->next) 
         (void)check_vardecl(comp, v->next, line);   
-    }
+    
     return v->sym->typedecl;
 }
 
