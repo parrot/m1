@@ -161,9 +161,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, const char *str) {
 
 
              
-%type <ival> TK_INT
-             m0_op
-             m0_arg    
+%type <ival> TK_INT 
              opt_vtable
              struct_or_union
              
@@ -215,7 +213,6 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, const char *str) {
              const_declaration
              var_declaration
              unexpr
-             m0_block
              print_stat
              default_case
              arrayconstructor
@@ -230,10 +227,6 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, const char *str) {
 
 %type <blck>  open_block
              
-%type <instr> m0_instructions
-              m0_instr
-       
-
 %type <var>  var
              var_list
              param
@@ -260,52 +253,7 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, const char *str) {
 %type <ident> id_list
               extends_clause
         
-%token  KW_M0		    "M0"
-        TK_NL   
-        M0_INT_CONST
-        KW_NOOP         "noop"
-        KW_GOTO         "goto"
-        KW_GOTO_IF      "goto_if"
-        KW_GOTO_CHUNK   "goto_chunk"
-        KW_ADD_I        "add_i"
-        KW_ADD_N        "add_n"
-        KW_SUB_I        "sub_i"
-        KW_SUB_N        "sub_n"
-        KW_MULT_I       "mult_i"
-        KW_MULT_N       "mult_n"
-        KW_DIV_I        "div_i"
-        KW_DIV_N        "div_n"
-        KW_MOD_I        "mod_i"
-        KW_MOD_N        "mod_n"
-        KW_ITON         "iton"
-        KW_NTOI         "ntoi"
-        KW_ASHR         "ashr"
-        KW_LSHR         "lshr"
-        KW_SHL          "shl"
-        KW_AND          "and"
-        KW_OR           "or"
-        KW_XOR          "xor"
-        KW_GC_ALLOC     "gc_alloc"
-        KW_SYS_ALLOC    "sys_alloc"
-        KW_SYS_FREE     "sys_free"
-        KW_COPY_MEM     "copy_mem"
-        KW_SET          "set"
-        KW_SET_IMM      "set_imm"
-        KW_DEREF        "deref"
-        KW_SET_REF      "set_ref"
-        KW_SET_BYTE     "set_byte"
-        KW_GET_BYTE     "get_byte"
-        KW_SET_WORD     "set_word"
-        KW_GET_WORD     "get_word"
-        KW_CSYM         "csym"
-        KW_CCALL_ARG    "ccall_arg"
-        KW_CCALL_RET    "ccall_ret"
-        KW_CCALL        "ccall"
-        KW_PRINT_S      "print_s"
-        KW_PRINT_I      "print_i"
-        KW_PRINT_N      "print_n"
-        KW_EXIT         "exit"
-        TK_USERTYPE
+%token TK_USERTYPE
 
         
 %pure-parser
@@ -638,8 +586,7 @@ statement   : assign_stat
             | switch_stat 
             | print_stat
             | try_stat { $$ = NULL; fprintf(stderr, "try stat not implemented!\n"); }
-            | throw_stat { $$ = NULL; fprintf(stderr, "throw stat not implemented!\n"); }
-            | m0_block                                      
+            | throw_stat { $$ = NULL; fprintf(stderr, "throw stat not implemented!\n"); }                                     
             ;
 
 try_stat    : "try" block catch_blocks
@@ -1110,83 +1057,6 @@ native_type : "int"     { $$ = "int"; }
             ;
             
 
-/* Embedded M0 instructions in M1. */
-
-/* TODO: handle M0 instructions */                        
-m0_block    : "M0" '{' m0_instructions '}'
-                { 
-                  $$ = expression(comp, EXPR_M0BLOCK); 
-                }
-            ;            
-            
-m0_instructions : m0_instr
-                | m0_instructions m0_instr
-                    { 
-                      $1->next = $2; 
-                      $$ = $1;
-                    }
-                ;
-                
-m0_instr    : m0_op m0_arg ',' m0_arg ',' m0_arg
-                { $$ = NULL; /* instr($1, $2, $4, $6); */}
-            | m0_op m0_arg ',' m0_arg ',' 'x'
-                { $$ = NULL; /* instr($1, $2, $4, 0); */}
-            | m0_op m0_arg ',' 'x' ',' 'x'
-                { $$ = NULL; /*instr($1, $2, 0, 0); */}
-            | m0_op 'x' ',' 'x' ',' 'x'
-                { $$ = NULL; /*instr($1, 0, 0, 0); */}
-            ;                            
-            
-m0_arg      : M0_INT_CONST  { $$=0; }
-            
-            /* add other argument types for M0 instructions */
-            ;
-            
-m0_op       : "noop"            { $$ = M0_NOOP; }      
-            | "goto"            { $$ = M0_GOTO; }
-            | "goto_if"         { $$ = M0_GOTO_IF; }
-            | "goto_chunk"      { $$ = M0_GOTO_CHUNK; }
-            | "add_i"           { $$ = M0_ADD_I; }
-            | "add_n"           { $$ = M0_ADD_N; }
-            | "sub_i"           { $$ = M0_SUB_I; }
-            | "sub_n"           { $$ = M0_SUB_N; }
-            | "mult_i"          { $$ = M0_MULT_I; }
-            | "mult_n"          { $$ = M0_MULT_N; }
-            | "div_i"           { $$ = M0_DIV_I; }
-            | "div_n"           { $$ = M0_DIV_N; }
-            | "mod_i"           { $$ = M0_MOD_I; }    
-            | "mod_n"           { $$ = M0_MOD_N; }    
-            | "iton"            { $$ = M0_CONVERT_N_I; }
-            | "ntoi"            { $$ = M0_CONVERT_I_N; }    
-            | "ashr"            { $$ = M0_ASHR; }    
-            | "lshr"            { $$ = M0_LSHR; }
-            | "shl"             { $$ = M0_SHL; }
-            | "and"             { $$ = M0_AND; }
-            | "or"              { $$ = M0_OR; }
-            | "xor"             { $$ = M0_XOR; }
-            | "gc_alloc"        { $$ = M0_GC_ALLOC; }    
-            | "sys_alloc"       { $$ = M0_SYS_ALLOC; }
-            | "sys_free"        { $$ = M0_SYS_FREE; }
-            | "copy_mem"        { $$ = M0_COPY_MEM; }
-            | "set"             { $$ = M0_SET; }
-            | "set_imm"         { $$ = M0_SET_IMM; }
-            | "deref"           { $$ = M0_DEREF; }
-            | "set_ref"         { $$ = M0_SET_REF; }
-            | "set_byte"        { $$ = M0_SET_BYTE; }
-            | "get_byte"        { $$ = M0_GET_BYTE; }
-            | "set_word"        { $$ = M0_SET_WORD; }
-            | "get_word"        { $$ = M0_GET_WORD; }
-            | "csym"            { $$ = M0_CSYM; }
-            | "ccall_arg"       { $$ = M0_CCALL_ARG; }    
-            | "ccall_ret"       { $$ = M0_CCALL_RET; }    
-            | "ccall"           { $$ = M0_CCALL; }
-            | "print_s"         { $$ = M0_PRINT_S; }
-            | "print_i"         { $$ = M0_PRINT_I; }
-            | "print_n"         { $$ = M0_PRINT_N; }
-            | "exit"            { $$ = M0_EXIT; }                    
-            ;
-
-/* END */
             
 %%
 

@@ -36,7 +36,6 @@ extern int yyerror(yyscan_t yyscanner, M1_compiler *comp, char *str);
 %option noyyrealloc
 %option noyyfree
 
-%x M0_PARSING
 %x MULTLINECOMMENT
 
 WS              [\t\f\r\x1a ]
@@ -124,7 +123,6 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 "inline"                { return KW_INLINE; }
 "int"                   { return KW_INT; }
 
-"M0"                    { BEGIN(M0_PARSING); return KW_M0; }
 
 "method"				{ return KW_METHOD; }
 "namespace"             { return KW_NAMESPACE; }
@@ -222,55 +220,6 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
 
 .                       { yyerror(yyscanner, yyget_extra(yyscanner), yytext); }
 
-<M0_PARSING>{WS}             { /* do nothing */ }
-<M0_PARSING>{EOL}[\t\r\n ]*  { /* ignore */ }
-<M0_PARSING>[{,]             { return yytext[0]; }
-<M0_PARSING>[}]              { BEGIN INITIAL; return yytext[0]; }
-<M0_PARSING>[0-9]+           { yylval->ival = atoi(yytext); return TK_INT; }
-
-
-<M0_PARSING>"noop"        { return KW_NOOP; }
-<M0_PARSING>"goto"        { return KW_GOTO; }
-<M0_PARSING>"goto_if"     { return KW_GOTO_IF; }
-<M0_PARSING>"goto_chunk"  { return KW_GOTO_CHUNK; }
-<M0_PARSING>"add_i"       { return KW_ADD_I; }
-<M0_PARSING>"add_n"       { return KW_ADD_N; }
-<M0_PARSING>"sub_i"       { return KW_SUB_I; }
-<M0_PARSING>"sub_n"       { return KW_SUB_N; }
-<M0_PARSING>"mult_i"      { return KW_MULT_I; }
-<M0_PARSING>"mult_n"      { return KW_MULT_N; }
-<M0_PARSING>"div_i"       { return KW_DIV_I; }
-<M0_PARSING>"div_n"       { return KW_DIV_N; }
-<M0_PARSING>"mod_i"       { return KW_MOD_I; }
-<M0_PARSING>"mod_n"       { return KW_MOD_N; }
-<M0_PARSING>"iton"        { return KW_ITON; }
-<M0_PARSING>"ntoi"        { return KW_NTOI; }
-<M0_PARSING>"ashr"        { return KW_ASHR; }
-<M0_PARSING>"lshr"        { return KW_LSHR; }
-<M0_PARSING>"shl"         { return KW_SHL; }
-<M0_PARSING>"and"         { return KW_AND; }
-<M0_PARSING>"or"          { return KW_OR; }
-<M0_PARSING>"xor"         { return KW_XOR; }
-<M0_PARSING>"gc_alloc"    { return KW_GC_ALLOC; }
-<M0_PARSING>"sys_alloc"   { return KW_SYS_ALLOC; }
-<M0_PARSING>"sys_free"    { return KW_SYS_FREE; }
-<M0_PARSING>"copy_mem"    { return KW_COPY_MEM; }
-<M0_PARSING>"set"         { return KW_SET; }
-<M0_PARSING>"set_imm"     { return KW_SET_IMM; } 
-<M0_PARSING>"deref"       { return KW_DEREF; }
-<M0_PARSING>"set_ref"     { return KW_SET_REF; }  
-<M0_PARSING>"set_byte"    { return KW_SET_BYTE; }
-<M0_PARSING>"get_byte"    { return KW_GET_BYTE; }
-<M0_PARSING>"set_word"    { return KW_SET_WORD; }
-<M0_PARSING>"get_word"    { return KW_GET_WORD; }
-<M0_PARSING>"csym"        { return KW_CSYM; }
-<M0_PARSING>"ccall_arg"   { return KW_CCALL_ARG; }
-<M0_PARSING>"ccall_ret"   { return KW_CCALL_RET; }
-<M0_PARSING>"ccall"       { return KW_CCALL; }
-<M0_PARSING>"print_s"     { return KW_PRINT_S; }
-<M0_PARSING>"print_i"     { return KW_PRINT_I; }
-<M0_PARSING>"print_n"     { return KW_PRINT_N; }
-<M0_PARSING>"exit"        { return KW_EXIT; }
 
 
 %%

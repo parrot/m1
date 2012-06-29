@@ -295,10 +295,6 @@ typedef struct m1_literal {
     
 } m1_literal;
 
-typedef struct m0_block {
-    struct m0_instr       *instr;
-       
-} m0_block;
 
 typedef struct m1_enumconst {
     char  *name;                /* name of this constant */
@@ -326,7 +322,6 @@ typedef struct m1_expression {
         struct m1_object     *as_object;
         struct m1_const      *as_const;
         struct m1_var        *as_var;
-        struct m0_block      *as_m0_block;
         struct m1_switch     *as_switch;
         struct m1_newexpr    *as_newexpr;
         struct m1_literal    *as_literal;
