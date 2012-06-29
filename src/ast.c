@@ -85,10 +85,10 @@ new_literal(m1_valuetype type) {
 
 m1_expression *
 character(M1_compiler *comp, char ch) {
-    m1_expression *expr      = expression(comp, EXPR_CHAR);
-    expr->expr.l             = new_literal(VAL_INT);
-    expr->expr.l->value.ival = (int)ch;
-    expr->expr.l->sym        = sym_enter_int(comp, &comp->currentchunk->constants, (int)ch);
+    m1_expression *expr               = expression(comp, EXPR_CHAR);
+    expr->expr.as_literal             = new_literal(VAL_INT);
+    expr->expr.as_literal->value.ival = (int)ch;
+    expr->expr.as_literal->sym        = sym_enter_int(comp, &comp->currentchunk->constants, (int)ch);
     return expr;    
 }
 
@@ -97,10 +97,10 @@ number(M1_compiler *comp, double value) {
 	m1_expression *expr = expression(comp, EXPR_NUMBER);
 	
 	/* make a new literal node */
-	expr->expr.l             = new_literal(VAL_FLOAT);
-    expr->expr.l->value.fval = value;
+	expr->expr.as_literal             = new_literal(VAL_FLOAT);
+    expr->expr.as_literal->value.fval = value;
     /* store the constant in the constants segment. */
-    expr->expr.l->sym        = sym_enter_num(comp, &comp->currentchunk->constants, value);   
+    expr->expr.as_literal->sym        = sym_enter_num(comp, &comp->currentchunk->constants, value);   
     
 	return expr;	
 }
@@ -109,10 +109,10 @@ m1_expression *
 integer(M1_compiler *comp, int value) {
 	m1_expression *expr = expression(comp, EXPR_INT);
     /* make a new literal node. */
-	expr->expr.l             = new_literal(VAL_INT);
-    expr->expr.l->value.ival = value;
+	expr->expr.as_literal             = new_literal(VAL_INT);
+    expr->expr.as_literal->value.ival = value;
     /* store the constant in the constants segment. */
-    expr->expr.l->sym        = sym_enter_int(comp, &comp->currentchunk->constants, value);
+    expr->expr.as_literal->sym        = sym_enter_int(comp, &comp->currentchunk->constants, value);
 
 	return expr;	
 }
@@ -122,15 +122,15 @@ string(M1_compiler *comp, char *str) {
 	m1_expression *expr = expression(comp, EXPR_STRING);
 	assert(str != NULL);
 
-    expr->expr.l = new_literal(VAL_STRING);
-    expr->expr.l->value.sval = str;
+    expr->expr.as_literal = new_literal(VAL_STRING);
+    expr->expr.as_literal->value.sval = str;
     
     assert(comp != NULL);
     assert(comp->currentchunk != NULL);
     assert(&comp->currentchunk->constants != NULL);
     
     /* store the string in the constants segment. */
-    expr->expr.l->sym = sym_enter_str(comp, &comp->currentchunk->constants, str);
+    expr->expr.as_literal->sym = sym_enter_str(comp, &comp->currentchunk->constants, str);
 
 	return expr;	
 }
@@ -240,7 +240,7 @@ const_decl(char *type, char *name, m1_expression *expr) {
 m1_expression *
 constdecl(M1_compiler *comp, char *type, char *name, m1_expression *e) {
 	m1_expression *expr = expression(comp, EXPR_CONSTDECL);
-	expr->expr.c        = const_decl(type, name, e);
+	expr->expr.as_const        = const_decl(type, name, e);
 	return expr;	
 }
 
@@ -248,12 +248,12 @@ static void
 expr_set_for(m1_expression *node, m1_expression *init, m1_expression *cond, m1_expression *step,
              m1_expression *stat) 
 {
-    node->expr.o = (m1_forexpr *)m1_malloc(sizeof(m1_forexpr));
+    node->expr.as_forexpr = (m1_forexpr *)m1_malloc(sizeof(m1_forexpr));
     
-    node->expr.o->init  = init;
-    node->expr.o->cond  = cond;
-    node->expr.o->step  = step;
-    node->expr.o->block = stat;
+    node->expr.as_forexpr->init  = init;
+    node->expr.as_forexpr->cond  = cond;
+    node->expr.as_forexpr->step  = step;
+    node->expr.as_forexpr->block = stat;
 }   
 
 m1_expression *
@@ -281,7 +281,7 @@ assignexpr(M1_compiler *comp, m1_expression *lhs, int assignop, m1_expression *r
 	a += b => a = a + b
 	*/
     node->expr.as_assign      = (m1_assignment *)m1_malloc(sizeof(m1_assignment));
-    node->expr.as_assign->lhs = lhs->expr.t; /* unwrap the m1_object representing lhs from its m1_expression wrapper. */
+    node->expr.as_assign->lhs = lhs->expr.as_object; /* unwrap the m1_object representing lhs from its m1_expression wrapper. */
     
     switch (assignop) {
     	case OP_ASSIGN: /* normal case, lhs = rhs. */
@@ -316,9 +316,9 @@ returnexpr(M1_compiler *comp, m1_expression *retexp) {
 static void 
 expr_set_while(M1_compiler *comp, m1_expression *node, m1_expression *cond, m1_expression *block) {
     assert(comp != NULL);
-    node->expr.w        = (m1_whileexpr *)m1_malloc(sizeof(m1_whileexpr));    
-    node->expr.w->cond  = cond;
-    node->expr.w->block = block;                            
+    node->expr.as_whileexpr        = (m1_whileexpr *)m1_malloc(sizeof(m1_whileexpr));    
+    node->expr.as_whileexpr->cond  = cond;
+    node->expr.as_whileexpr->block = block;                            
 }   
 
 static void
@@ -326,22 +326,22 @@ expr_set_if(M1_compiler *comp, m1_expression *node, m1_expression *cond,
             m1_expression *ifblock, m1_expression *elseblock) 
 {
     assert(comp != NULL);
-    node->expr.i = (m1_ifexpr *)m1_malloc(sizeof(m1_ifexpr));              
-    node->expr.i->cond      = cond;
-    node->expr.i->ifblock   = ifblock;
-    node->expr.i->elseblock = elseblock;
+    node->expr.as_ifexpr = (m1_ifexpr *)m1_malloc(sizeof(m1_ifexpr));              
+    node->expr.as_ifexpr->cond      = cond;
+    node->expr.as_ifexpr->ifblock   = ifblock;
+    node->expr.as_ifexpr->elseblock = elseblock;
 }
 
 /* store <expr> in an m1_expression node. */
 static void 
 expr_set_expr(m1_expression *node, m1_expression *expr) {
-    node->expr.e = expr;   
+    node->expr.as_expr = expr;   
 }
 
 /* store <obj> in an m1_expression node. */
 static void 
 expr_set_obj(m1_expression *node, m1_object *obj) {
-    node->expr.t = obj;    
+    node->expr.as_object = obj;    
 }
 
 
@@ -405,7 +405,7 @@ vardecl(M1_compiler *comp, char *type, m1_var *v) {
 	assert(type != NULL);
 	assert(v != NULL);
 	/* set the m1_var node in the expression's union. */
-	expr->expr.v  = v;
+	expr->expr.as_var = v;
 
 	return expr;	
 }
@@ -535,10 +535,10 @@ dowhileexpr(M1_compiler *comp, m1_expression *cond, m1_expression *block) {
 
 static void
 expr_set_switch(m1_expression *node, m1_expression *selector, m1_case *cases, m1_expression *defaultstat) {
-	node->expr.s = (m1_switch *)m1_malloc(sizeof(m1_switch));
-	node->expr.s->selector    = selector; 
-	node->expr.s->cases       = cases;
-	node->expr.s->defaultstat = defaultstat;
+	node->expr.as_switch = (m1_switch *)m1_malloc(sizeof(m1_switch));
+	node->expr.as_switch->selector    = selector; 
+	node->expr.as_switch->cases       = cases;
+	node->expr.as_switch->defaultstat = defaultstat;
 	
 }
 
@@ -563,10 +563,10 @@ switchcase(M1_compiler *comp, int selector, m1_expression *block) {
 
 m1_expression *
 newexpr(M1_compiler *comp, char *type, m1_expression *args) {
-	m1_expression *expr = expression(comp, EXPR_NEW);
-	expr->expr.n        = (m1_newexpr *)m1_malloc(sizeof(m1_newexpr));
-	expr->expr.n->type  = type;
-	expr->expr.n->args  = args;
+	m1_expression *expr         = expression(comp, EXPR_NEW);
+	expr->expr.as_newexpr       = (m1_newexpr *)m1_malloc(sizeof(m1_newexpr));
+	expr->expr.as_newexpr->type = type;
+	expr->expr.as_newexpr->args = args;
 	return expr;	
 }
 
@@ -576,7 +576,7 @@ castexpr(M1_compiler *comp, char *type, m1_expression *castedexpr) {
     m1_castexpr *cast   = (m1_castexpr *)m1_malloc(sizeof(m1_castexpr));
     cast->type          = type;
     cast->expr          = castedexpr;
-    expr->expr.cast     = cast;
+    expr->expr.as_cast  = cast;
     return expr;   
 }
 

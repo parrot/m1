@@ -237,7 +237,7 @@ check_for(M1_compiler *comp, m1_forexpr *i, unsigned line) {
     
     /* if for statement is a block, load that block's symbol table already. */
     if (i->block->type == EXPR_BLOCK)
-        comp->currentsymtab = &i->block->expr.blck->locals;
+        comp->currentsymtab = &i->block->expr.as_block->locals;
     
     if (i->init)
         check_exprlist(comp, i->init);
@@ -618,13 +618,13 @@ check_expr(M1_compiler *comp, m1_expression *e) {
                 
     switch (e->type) {
         case EXPR_ADDRESS:
-            return check_address(comp, e->expr.t, e->line);        
+            return check_address(comp, e->expr.as_object, e->line);        
         case EXPR_ASSIGN:
             return check_assign(comp, e->expr.as_assign, e->line);       
         case EXPR_BINARY:
             return check_binary(comp, e->expr.as_binexpr, e->line);
         case EXPR_BLOCK:
-            check_block(comp, e->expr.blck);
+            check_block(comp, e->expr.as_block);
             break;            
         case EXPR_BREAK:
             check_break(comp, e->line);
@@ -635,55 +635,55 @@ check_expr(M1_compiler *comp, m1_expression *e) {
         case EXPR_CONSTDECL:
             break;            
         case EXPR_CAST:
-            return check_cast(comp, e->expr.cast, e->line);
+            return check_cast(comp, e->expr.as_cast, e->line);
         case EXPR_CHAR:
             return INTTYPE;
         case EXPR_DEREF:
-            return check_deref(comp, e->expr.t, e->line);        
+            return check_deref(comp, e->expr.as_object, e->line);        
         case EXPR_DOWHILE:
-            check_dowhile(comp, e->expr.w, e->line);
+            check_dowhile(comp, e->expr.as_whileexpr, e->line);
             break;
         case EXPR_FALSE:
             return BOOLTYPE;            
         case EXPR_FOR:
-            check_for(comp, e->expr.o, e->line);
+            check_for(comp, e->expr.as_forexpr, e->line);
             break;
         case EXPR_FUNCALL:
             return check_funcall(comp, e->expr.as_funcall, e->line);
         case EXPR_IF:   
-            check_if(comp, e->expr.i, e->line);
+            check_if(comp, e->expr.as_ifexpr, e->line);
             break;        
         case EXPR_INT:
             return INTTYPE;            
         case EXPR_NUMBER:
             return NUMTYPE;
         case EXPR_NEW:
-            return check_newexpr(comp, e->expr.n, e->line);
+            return check_newexpr(comp, e->expr.as_newexpr, e->line);
         case EXPR_NULL:   
             break;
         case EXPR_OBJECT: {
             m1_object *parent; /* Provides storage on C runtime stack to use by check_obj.*/
-            return check_obj(comp, e->expr.t, e->line, &parent);
+            return check_obj(comp, e->expr.as_object, e->line, &parent);
         }
         case EXPR_PRINT:
-            check_print_arg(comp, e->expr.e);
+            check_print_arg(comp, e->expr.as_expr);
             break;            
         case EXPR_RETURN:
-            return check_return(comp, e->expr.e, e->line);
+            return check_return(comp, e->expr.as_expr, e->line);
         case EXPR_STRING:
             return STRINGTYPE;                        
         case EXPR_SWITCH:
-            check_switch(comp, e->expr.s, e->line);
+            check_switch(comp, e->expr.as_switch, e->line);
             break;
         case EXPR_TRUE:
             return BOOLTYPE;                                    
         case EXPR_UNARY:
             return check_unary(comp, e->expr.as_unexpr, e->line);            
         case EXPR_VARDECL:
-            check_vardecl(comp, e->expr.v, e->line);
+            check_vardecl(comp, e->expr.as_var, e->line);
             break;
         case EXPR_WHILE:
-            check_while(comp, e->expr.w, e->line);
+            check_while(comp, e->expr.as_whileexpr, e->line);
             break;                                       
         default:
             fprintf(stderr, "unknown expr type (%d)", e->type);   

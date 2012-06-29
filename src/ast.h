@@ -319,19 +319,19 @@ typedef struct m1_expression {
         struct m1_binexpr    *as_binexpr;
         struct m1_funcall    *as_funcall;  
         struct m1_assignment *as_assign; 
-        struct m1_whileexpr  *w;  
-        struct m1_forexpr    *o;
-        struct m1_ifexpr     *i;
-        struct m1_expression *e; 
-        struct m1_object     *t;
-        struct m1_const      *c;
-        struct m1_var        *v;
-        struct m0_block      *m0;
-        struct m1_switch     *s;
-        struct m1_newexpr    *n;
-        struct m1_literal    *l;
-        struct m1_castexpr   *cast;
-        struct m1_block      *blck;
+        struct m1_whileexpr  *as_whileexpr;  
+        struct m1_forexpr    *as_forexpr;
+        struct m1_ifexpr     *as_ifexpr;
+        struct m1_expression *as_expr; 
+        struct m1_object     *as_object;
+        struct m1_const      *as_const;
+        struct m1_var        *as_var;
+        struct m0_block      *as_m0_block;
+        struct m1_switch     *as_switch;
+        struct m1_newexpr    *as_newexpr;
+        struct m1_literal    *as_literal;
+        struct m1_castexpr   *as_cast;
+        struct m1_block      *as_block;
     } expr;
     
     m1_expr_type  type; /* selector for union */

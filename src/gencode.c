@@ -51,11 +51,9 @@ This happens in gencode_number().
 
 static unsigned gencode_expr(M1_compiler *comp, m1_expression *e);
 static void gencode_block(M1_compiler *comp, m1_block *block);
-static unsigned gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, unsigned *dimension, int is_target);
+static unsigned gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, unsigned *dimension, int is_lvalue);
 static void gencode_exprlist(M1_compiler *comp, m1_expression *expr);
 
-static const char type_chars[REG_TYPE_NUM] = {'i', 'n', 's', 'p'};
-static const char reg_chars[REG_TYPE_NUM] = {'I', 'N', 'S', 'P'};
 
 #define LABEL(label)                  mk_label(comp, label)
 #define INS(opcode, format, ...)      mk_instr(comp, opcode, format, ##__VA_ARGS__)
@@ -410,7 +408,7 @@ none of the arrays is multi-dimensional.
 
 */
 static unsigned
-gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, unsigned *dimension, int is_target) 
+gencode_obj(M1_compiler *comp, m1_object *obj, m1_object **parent, unsigned *dimension, int is_lvalue) 
 {
 
     unsigned numregs_pushed = 0;
@@ -585,14 +583,14 @@ OBJECT_LINK------>     L3
             *parent = obj;   	
 
             /* count the number of regs pushed by the parent, which is 1. */
-            numregs_pushed += gencode_obj(comp, obj->parent, parent, dimension, is_target);
+            numregs_pushed += gencode_obj(comp, obj->parent, parent, dimension, is_lvalue);
             
             /* At this point, we're done visiting parents, so now visit the "fields".
                In x.y.z, after returning from x, we're visiting y. After that, we'll visit z.
                As we do this, keep track of how many registers were used to store the result.
              */
             
-            numregs_pushed += gencode_obj(comp, obj->obj.as_field, parent, dimension, is_target);   
+            numregs_pushed += gencode_obj(comp, obj->obj.as_field, parent, dimension, is_lvalue);   
                                    
             if (numregs_pushed == 3) {
                 
@@ -701,7 +699,7 @@ OBJECT_LINK------>     L3
                    if it doesn't have a register allocated yet, it means it's not
                    initialized yet. Emit a warning.
                  */
-                if (!is_target) {
+                if (!is_lvalue) {
                     warning(comp, obj->line, "use of uninitialized variable '%s'\n",  
                             obj->sym->name);   
                 }
@@ -888,7 +886,7 @@ gencode_for(M1_compiler *comp, m1_forexpr *i) {
     push(comp->continuestack, steplabel); /* continue still executes the "step" part in a for loop*/
     
     if (i->block->type == EXPR_BLOCK)
-        comp->currentsymtab = &i->block->expr.blck->locals;
+        comp->currentsymtab = &i->block->expr.as_block->locals;
 
     if (i->init)
         gencode_exprlist(comp, i->init);
@@ -2020,7 +2018,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
         
     switch (e->type) {
         case EXPR_ADDRESS:
-            gencode_address(comp, e->expr.t);
+            gencode_address(comp, e->expr.as_object);
             break;
         case EXPR_ASSIGN:
             gencode_assign(comp, e->expr.as_assign);
@@ -2029,7 +2027,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             gencode_binary(comp, e->expr.as_binexpr);
             break;
         case EXPR_BLOCK:
-            gencode_block(comp, e->expr.blck);
+            gencode_block(comp, e->expr.as_block);
             num_regs = 0;
             break;
         case EXPR_BREAK:
@@ -2041,45 +2039,45 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             num_regs = 0;
             break;
         case EXPR_CAST:
-            gencode_cast(comp, e->expr.cast);
+            gencode_cast(comp, e->expr.as_cast);
             break;   
         case EXPR_CHAR:
-            gencode_char(comp, e->expr.l);
+            gencode_char(comp, e->expr.as_literal);
             break;         
         case EXPR_CONSTDECL:
             /* do nothing. constants are compiled away */
         	break;            
         case EXPR_DEREF:
-            gencode_deref(comp, e->expr.t);
+            gencode_deref(comp, e->expr.as_object);
             break;            
         case EXPR_DOWHILE:
-            gencode_dowhile(comp, e->expr.w);
+            gencode_dowhile(comp, e->expr.as_whileexpr);
             num_regs = 0;
             break;
         case EXPR_FALSE:
             gencode_bool(comp, 0);
             break;              
         case EXPR_FOR:
-            gencode_for(comp, e->expr.o);
+            gencode_for(comp, e->expr.as_forexpr);
             num_regs = 0;
             break;                      
         case EXPR_FUNCALL:
             gencode_funcall(comp, e->expr.as_funcall);
             break;
         case EXPR_IF:   
-            gencode_if(comp, e->expr.i);
+            gencode_if(comp, e->expr.as_ifexpr);
             break;            
         case EXPR_INT:
-            gencode_int(comp, e->expr.l);
+            gencode_int(comp, e->expr.as_literal);
             break;
         case EXPR_NEW:
-        	gencode_new(comp, e->expr.n);
+        	gencode_new(comp, e->expr.as_newexpr);
         	break;    
         case EXPR_NULL:
             gencode_null(comp);
             break;
         case EXPR_NUMBER:
-            gencode_number(comp, e->expr.l);
+            gencode_number(comp, e->expr.as_literal);
             break;
         case EXPR_OBJECT: 
         {
@@ -2090,7 +2088,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             unsigned dimension_dummy = 0;
             
             
-            num_regs = gencode_obj(comp, e->expr.t, &obj, &dimension_dummy, 0);            
+            num_regs = gencode_obj(comp, e->expr.as_object, &obj, &dimension_dummy, 0);            
             
             if (num_regs == 2) { /* gencode_obj() may return 2 registers for array and struct access. */
                 m1_reg index  = popreg(comp->regstack);                
@@ -2113,17 +2111,17 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             break;
         }
         case EXPR_PRINT:
-            gencode_print(comp, e->expr.e);   
+            gencode_print(comp, e->expr.as_expr);   
             num_regs = 0;
             break; 
         case EXPR_RETURN:
-            gencode_return(comp, e->expr.e);
+            gencode_return(comp, e->expr.as_expr);
             break;            
         case EXPR_STRING:
-            gencode_string(comp, e->expr.l);     
+            gencode_string(comp, e->expr.as_literal);     
             break;
         case EXPR_SWITCH:
-            gencode_switch(comp, e->expr.s);
+            gencode_switch(comp, e->expr.as_switch);
             num_regs = 0;
         	break;    
         case EXPR_TRUE:
@@ -2133,11 +2131,11 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
             gencode_unary(comp, e->expr.as_unexpr);
             break;
         case EXPR_VARDECL:
-            gencode_vardecl(comp, e->expr.v);            
+            gencode_vardecl(comp, e->expr.as_var);            
             num_regs = 0;
             break;
         case EXPR_WHILE:
-            gencode_while(comp, e->expr.w);
+            gencode_while(comp, e->expr.as_whileexpr);
             num_regs = 0;
             break;        
          default:

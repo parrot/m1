@@ -590,7 +590,7 @@ block   : open_block statements close_block
             {  
                 /* a <block> isa <statement>, so need to wrap it as a m1_expression. */
                 m1_expression *e = expression(comp, EXPR_BLOCK);
-                e->expr.blck     = $1; /* store block in the expr union of e. */
+                e->expr.as_block     = $1; /* store block in the expr union of e. */
                 block_set_stat($1, $2);
                 $$ = e;
             }
@@ -800,7 +800,7 @@ default_case: /* empty */
             ;
                        
 function_call_expr  : lvalue '(' arguments ')' 
-                         { $$ = funcall(comp, $1->expr.t, $3); }
+                         { $$ = funcall(comp, $1->expr.as_object, $3); }
                     ;
                     
 function_call_stat  : function_call_expr ';'
@@ -837,13 +837,13 @@ for_stat    : "for" '(' for_init ';' for_cond ';' for_step ')' statement
                             b->locals.parentscope = comp->currentsymtab;
                             block_set_stat(b, $9);
                             $9 = expression(comp, EXPR_BLOCK);
-                            $9->expr.blck = b;
+                            $9->expr.as_block = b;
                             
                           }
-                          $3->expr.v->sym = sym_new_symbol(comp, 
-                                      &($9->expr.blck->locals), 
-                                      $3->expr.v->name, 
-                                      $3->expr.v->type, 
+                          $3->expr.as_var->sym = sym_new_symbol(comp, 
+                                      &($9->expr.as_block->locals), 
+                                      $3->expr.as_var->name, 
+                                      $3->expr.as_var->type, 
                                       1);  
                         }
                     }

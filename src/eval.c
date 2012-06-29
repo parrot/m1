@@ -261,10 +261,10 @@ eval_expr(m1_expression *e) {
         
     switch (e->type) {
         case EXPR_NUMBER:
-            eval_number(e->expr.l->value.fval);
+            eval_number(e->expr.as_literal->value.fval);
             break;
         case EXPR_INT:
-            eval_int(e->expr.l->value.ival);
+            eval_int(e->expr.as_literal->value.ival);
             break;
         case EXPR_BINARY:
             eval_binary(e->expr.as_binexpr);
@@ -279,31 +279,31 @@ eval_expr(m1_expression *e) {
             eval_assign(e->expr.as_assign);
             break;
         case EXPR_IF:   
-            eval_if(e->expr.i);
+            eval_if(e->expr.as_ifexpr);
             break;
         case EXPR_WHILE:
-            eval_while(e->expr.w);
+            eval_while(e->expr.as_whileexpr);
             break;
         case EXPR_DOWHILE:
-            eval_dowhile(e->expr.w);
+            eval_dowhile(e->expr.as_whileexpr);
             break;
         case EXPR_FOR:
-            eval_for(e->expr.o);
+            eval_for(e->expr.as_forexpr);
             break;
         case EXPR_RETURN:
-            eval_return(e->expr.e);
+            eval_return(e->expr.as_expr);
             break;
         case EXPR_NULL:
             eval_null();
             break;
         case EXPR_DEREF:
-            eval_deref(e->expr.t);
+            eval_deref(e->expr.as_object);
             break;
         case EXPR_ADDRESS:
-            eval_address(e->expr.t);
+            eval_address(e->expr.as_object);
             break;
         case EXPR_OBJECT:
-            eval_obj(e->expr.t);
+            eval_obj(e->expr.as_object);
             break;
         case EXPR_BREAK:
             eval_break();
