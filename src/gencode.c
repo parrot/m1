@@ -1509,10 +1509,7 @@ gencode_funcall(M1_compiler *comp, m1_funcall *funcall) {
         
         INS (M0_SET_IMM, "%I, %d, %d", indexreg.no, 0, regindexes[argreg.type]);
         INS (M0_SET_REF, "%P, %I, %R", cf_reg.no, indexreg.no, argreg);
-        fprintf(OUT, "\tset_imm   I%d, 0, %d\n", indexreg.no, regindexes[argreg.type]);
-        fprintf(OUT, "\tset_ref   P%d, I%d, %c%d\n", cf_reg.no, indexreg.no, 
-                                                     reg_chars[(int)argreg.type], argreg.no);
-
+     
         regindexes[argreg.type]++;
         
         argiter = argiter->next;   
@@ -1760,8 +1757,18 @@ gencode_new(M1_compiler *comp, m1_newexpr *expr) {
 
     assert(size != 0); 
 
-    INS (M0_SET_IMM,  "%I, %d, %d", sizereg.no, 0, size);
+    if (size < (256 * 255)) {
+        unsigned remainder = size % 256;
+        unsigned num256    = (size - remainder) / 256;
+        INS (M0_SET_IMM,  "%I, %d, %d", sizereg.no, num256, remainder);
+    }
+    else {
+        /* XXX need to find size in consts segment. */
+/// XXX        INS (M0_DEREF, "%I, %X, %d", sizereg.no, CONSTS, ???);     
+            assert(0); /* not implemented; catch this here. */
+    }
     INS (M0_GC_ALLOC, "%I, %I, %d", pointerreg.no, sizereg.no, 0);    		
+    
     	
 	free_reg(comp, sizereg);
 	pushreg(comp->regstack, pointerreg);
