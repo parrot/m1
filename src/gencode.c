@@ -1180,7 +1180,7 @@ is different. This /could/ be refactored but it's better for clarity it's not.
 
 */
 static void
-lt_le_common(M1_compiler *comp, m1_binexpr *b, int opcode, char const * const op) {
+lt_le_common(M1_compiler *comp, m1_binexpr *b, int opcode) {
     m1_reg result = alloc_reg(comp, VAL_INT);
     m1_reg left, right;
     
@@ -1201,7 +1201,7 @@ lt_le_common(M1_compiler *comp, m1_binexpr *b, int opcode, char const * const op
 
 
 static void
-gencode_binary_bitwise(M1_compiler *comp, m1_binexpr *b, int opcode, char const * const op) {
+gencode_binary_bitwise(M1_compiler *comp, m1_binexpr *b, int opcode) {
     m1_reg left, right, target;
     
     gencode_expr(comp, b->left);
@@ -1230,7 +1230,7 @@ type checker (see semcheck.c) that left and right are compatible.
 
 */
 static void
-gencode_binary_math(M1_compiler *comp, m1_binexpr *b, int opcode, char const * const op) {
+gencode_binary_math(M1_compiler *comp, m1_binexpr *b, int opcode) {
     m1_reg left, 
            right, 
            target;
@@ -1258,31 +1258,31 @@ static void
 gencode_binary(M1_compiler *comp, m1_binexpr *b) {
     switch(b->op) {
         case OP_PLUS:
-            gencode_binary_math(comp, b, M0_ADD_I, "add");
+            gencode_binary_math(comp, b, M0_ADD_I);
             break;            
         case OP_MINUS:
-            gencode_binary_math(comp, b, M0_SUB_I, "sub");    
+            gencode_binary_math(comp, b, M0_SUB_I);    
             break;            
         case OP_MUL:
-            gencode_binary_math(comp, b, M0_MULT_I, "mult");
+            gencode_binary_math(comp, b, M0_MULT_I);
             break;
         case OP_DIV:
-            gencode_binary_math(comp, b, M0_DIV_I, "div");
+            gencode_binary_math(comp, b, M0_DIV_I);
             break;            
         case OP_MOD:
-            gencode_binary_math(comp, b, M0_MOD_I, "mod");
+            gencode_binary_math(comp, b, M0_MOD_I);
             break;            
         case OP_GT:
-            gencode_binary_math(comp, b, M0_ISGT_I, "isgt");
+            gencode_binary_math(comp, b, M0_ISGT_I);
             break;            
         case OP_GE:
-            gencode_binary_math(comp, b, M0_ISGE_I, "isge");
+            gencode_binary_math(comp, b, M0_ISGE_I);
             break;            
         case OP_LT:
-            lt_le_common(comp, b, M0_ISGT_I, "isgt"); /* swapping arguments. */
+            lt_le_common(comp, b, M0_ISGT_I); /* swapping arguments. */
             break;
         case OP_LE:
-            lt_le_common(comp, b, M0_ISGE_I, "isge");
+            lt_le_common(comp, b, M0_ISGE_I);
             break;
         case OP_EQ:
             ne_eq_common(comp, b, 1);  /* 1 means is_eq_op is true. */
@@ -1297,22 +1297,22 @@ gencode_binary(M1_compiler *comp, m1_binexpr *b) {
             gencode_or(comp, b);
             break;
         case OP_BAND:
-            gencode_binary_bitwise(comp, b, M0_AND, "and");
+            gencode_binary_bitwise(comp, b, M0_AND);
             break;            
         case OP_BOR:
-            gencode_binary_bitwise(comp, b, M0_OR, "or");
+            gencode_binary_bitwise(comp, b, M0_OR);
             break;
         case OP_XOR:
-            gencode_binary_bitwise(comp, b, M0_XOR, "xor");
+            gencode_binary_bitwise(comp, b, M0_XOR);
             break;                        
         case OP_LRSH:
-            gencode_binary_bitwise(comp, b, M0_LSHR, "lshr");
+            gencode_binary_bitwise(comp, b, M0_LSHR);
             break;
         case OP_RSH:
-            gencode_binary_bitwise(comp, b, M0_ASHR, "ashr");
+            gencode_binary_bitwise(comp, b, M0_ASHR);
             break;
         case OP_LSH:
-            gencode_binary_bitwise(comp, b, M0_SHL, "shl");
+            gencode_binary_bitwise(comp, b, M0_SHL);
             break;
         default:
             fprintf(stderr, "unknown operator\n");
