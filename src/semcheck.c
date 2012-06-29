@@ -125,12 +125,12 @@ check_obj(M1_compiler *comp, m1_object *obj, unsigned line, m1_object **parent)
                when it's an index, return the type of obj->parent. 
              */
             if (t != VOIDTYPE) /* only check fields if main object was found. */
-                fieldtype = check_obj(comp, obj->obj.as_field, line, parent); 
+                fieldtype = check_obj(comp, obj->obj.as_link, line, parent); 
                 
             /* if it's a struct member, get the member's type. If it's an array, just
                return the parent's type. 
             */                
-            if (obj->obj.as_field->type == OBJECT_FIELD) 
+            if (obj->obj.as_link->type == OBJECT_FIELD) 
                 t = fieldtype;
             
             break;   

@@ -217,7 +217,7 @@ typedef struct m1_object {
     union {
         char                 *as_name;  /* for name, field or deref access, in a.b.c for instance. */
         struct m1_expression *as_index; /* for array index (a[42]) */        
-        struct m1_object     *as_field; /* if this is a linking node (OBJECT_LINK) representing "a.b" as a whole. */
+        struct m1_object     *as_link; /* if this is a linking node (OBJECT_LINK) representing "a.b" as a whole. */
     } obj;
     
     enum m1_object_type type;       /* selector for union */

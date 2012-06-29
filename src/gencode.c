@@ -590,12 +590,12 @@ OBJECT_LINK------>     L3
                As we do this, keep track of how many registers were used to store the result.
              */
             
-            numregs_pushed += gencode_obj(comp, obj->obj.as_field, parent, dimension, is_lvalue);   
+            numregs_pushed += gencode_obj(comp, obj->obj.as_link, parent, dimension, is_lvalue);   
                                    
             if (numregs_pushed == 3) {
                 
                 /* if the field was an index. (a[b]) */
-                if (obj->obj.as_field->type == OBJECT_INDEX) {
+                if (obj->obj.as_link->type == OBJECT_INDEX) {
                     m1_reg last           = popreg(comp->regstack);   /* latest added; store here for now. */
                     m1_reg field          = popreg(comp->regstack);   /* 2nd latest, this one needs to be removed. */
                     m1_reg parentreg      = popreg(comp->regstack);   /* x in x[2][3]. */                
@@ -660,7 +660,7 @@ OBJECT_LINK------>     L3
                     /* we popped 3, and pushed 2, so effectively decrement by 1. */
                     --numregs_pushed;
                 }              
-                else if (obj->obj.as_field->type == OBJECT_FIELD) {
+                else if (obj->obj.as_link->type == OBJECT_FIELD) {
                     /* field is a struct member access (a.b) */
                     m1_reg last      = popreg(comp->regstack);
                     m1_reg offset    = popreg(comp->regstack);
@@ -685,7 +685,7 @@ OBJECT_LINK------>     L3
         {   
             m1_reg reg;              
 
-        	assert(obj->obj.as_field != NULL);
+        	assert(obj->obj.as_link != NULL);
         	assert(obj->sym != NULL);
         	assert(obj->sym->typedecl != NULL);
  
