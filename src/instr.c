@@ -93,7 +93,8 @@ static char const * const interp_regs[] = {
 static const char regs[REG_TYPE_NUM + 2] = {'I', 'N', 'S', 'P', ' ', 'L'};
 
 
-#define OUT comp->outfile
+#define OUT stdout
+//comp->outfile
 
 
 static void
