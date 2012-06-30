@@ -153,7 +153,7 @@ print_symboltable(m1_symboltable *table) {
     m1_symbol *iter = table->syms;
     fprintf(stderr, "SYMBOL TABLE\n");
     while (iter != NULL) {
-        fprintf(stderr, "symbol '%s' [%s] has register %d and type %d\n", iter->value.sval, 
+        fprintf(stderr, "symbol '%s' [%s] has register %d and type %d\n", iter->value.as_string,
                                                                           iter->name, 
                                                                           iter->regno, 
                                                                           iter->valtype);
@@ -175,9 +175,9 @@ sym_enter_str(M1_compiler *comp, m1_symboltable *table, char *str) {
     	
    	sym = mk_sym();   
     
-    sym->value.sval = str;
-    sym->valtype    = VAL_STRING;
-    sym->constindex = comp->constindex++;
+    sym->value.as_string = str;
+    sym->valtype         = VAL_STRING;
+    sym->constindex      = comp->constindex++;
     
     link_sym(table, sym);
     return sym;    
@@ -207,9 +207,9 @@ sym_enter_num(M1_compiler *comp, m1_symboltable *table, double val) {
     	
     sym = mk_sym();
     
-    sym->value.fval = val;
-    sym->valtype    = VAL_FLOAT;
-    sym->constindex = comp->constindex++;
+    sym->value.as_double = val;
+    sym->valtype         = VAL_FLOAT;
+    sym->constindex      = comp->constindex++;
     
     link_sym(table, sym);
     
@@ -227,10 +227,10 @@ sym_enter_int(M1_compiler *comp, m1_symboltable *table, int val) {
         	
     sym = mk_sym();
     
-    sym->value.ival = val;
-    sym->valtype    = VAL_INT;    
-    sym->constindex = comp->constindex++;
-    sym->next       = NULL;
+    sym->value.as_int = val;
+    sym->valtype      = VAL_INT;    
+    sym->constindex   = comp->constindex++;
+    sym->next         = NULL;
     
     link_sym(table, sym);
     return sym;    
@@ -247,10 +247,10 @@ sym_find_str(m1_symboltable *table, char *name) {
         
     while (sym != NULL) {        
         if (sym->valtype == VAL_STRING || sym->valtype == VAL_CHUNK) {
-            assert(sym->value.sval != NULL);
+            assert(sym->value.as_string != NULL);
             assert(name != NULL);  
                            
-            if (strcmp(sym->value.sval, name) == 0) {     
+            if (strcmp(sym->value.as_string, name) == 0) {     
                 return sym;
             }   
         }
@@ -272,7 +272,7 @@ sym_find_num(m1_symboltable *table, double fval) {
            that are used in a program.
          */
         if (sym->valtype == VAL_FLOAT) {
-            if (sym->value.fval == fval) {        	
+            if (sym->value.as_double == fval) {        	
                 return sym;            
             }
         }
@@ -288,7 +288,7 @@ sym_find_int(m1_symboltable *table, int ival) {
     
     while (sym != NULL) {
         if (sym->valtype == VAL_INT) {
-            if (sym->value.ival == ival) {
+            if (sym->value.as_int == ival) {
                 return sym;
             }
         }    

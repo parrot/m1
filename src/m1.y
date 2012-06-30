@@ -656,7 +656,7 @@ opt_init    : /* empty */
             | '=' expression
                 { $$ = $2; }
             ;
-                        
+                                    
 assign_stat : assign_expr ';'
                 { $$ = $1; }
             ;

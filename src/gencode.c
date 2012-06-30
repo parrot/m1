@@ -259,10 +259,10 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
        table. set_imm X, Y, Z: set X to: 256 * Y + Z. All operands are 8 bit, so maximum value is 
        255. Numbers must be positive, so negative numbers are loaded from CONSTS segment as well.
      */
-    if (lit->sym->value.ival < (256 * 255) && lit->sym->value.ival >= 0) { 
+    if (lit->sym->value.as_int < (256 * 255) && lit->sym->value.as_int >= 0) { 
         /* use set_imm X, N*256, remainder)   */
-        int remainder = lit->sym->value.ival % 256;
-        int num256    = (lit->sym->value.ival - remainder) / 256; 
+        int remainder = lit->sym->value.as_int % 256;
+        int num256    = (lit->sym->value.as_int - remainder) / 256; 
         
         INS (M0_SET_IMM, "%I, %d, %d", reg.no, num256, remainder);
         

@@ -330,16 +330,16 @@ write_consts(M1_compiler *comp, m1_symboltable *consttable) {
 		
 		switch (iter->valtype) {
 			case VAL_STRING:
-				fprintf(OUT, "%d %s\n", iter->constindex, iter->value.sval);
+				fprintf(OUT, "%d %s\n", iter->constindex, iter->value.as_string);
 				break;
 			case VAL_FLOAT:
-				fprintf(OUT, "%d %f\n", iter->constindex, iter->value.fval);
+				fprintf(OUT, "%d %f\n", iter->constindex, iter->value.as_double);
 				break;
 			case VAL_INT:			
-				fprintf(OUT, "%d %d\n", iter->constindex, iter->value.ival);
+				fprintf(OUT, "%d %d\n", iter->constindex, iter->value.as_int);
 				break;
 	        case VAL_CHUNK:
-	            fprintf(OUT, "%d &%s\n", iter->constindex, iter->value.sval);
+	            fprintf(OUT, "%d &%s\n", iter->constindex, iter->value.as_string);
 	            break;
 			default:
 				fprintf(stderr, "unknown symbol type (%d)\n", iter->valtype);

@@ -85,10 +85,10 @@ new_literal(m1_valuetype type) {
 
 m1_expression *
 character(M1_compiler *comp, char ch) {
-    m1_expression *expr               = expression(comp, EXPR_CHAR);
-    expr->expr.as_literal             = new_literal(VAL_INT);
-    expr->expr.as_literal->value.ival = (int)ch;
-    expr->expr.as_literal->sym        = sym_enter_int(comp, &comp->currentchunk->constants, (int)ch);
+    m1_expression *expr                 = expression(comp, EXPR_CHAR);
+    expr->expr.as_literal               = new_literal(VAL_INT);
+    expr->expr.as_literal->value.as_int = (int)ch;
+    expr->expr.as_literal->sym          = sym_enter_int(comp, &comp->currentchunk->constants, (int)ch);
     return expr;    
 }
 
@@ -97,10 +97,10 @@ number(M1_compiler *comp, double value) {
 	m1_expression *expr = expression(comp, EXPR_NUMBER);
 	
 	/* make a new literal node */
-	expr->expr.as_literal             = new_literal(VAL_FLOAT);
-    expr->expr.as_literal->value.fval = value;
+	expr->expr.as_literal      = new_literal(VAL_FLOAT);
+    expr->expr.as_literal->value.as_double = value;
     /* store the constant in the constants segment. */
-    expr->expr.as_literal->sym        = sym_enter_num(comp, &comp->currentchunk->constants, value);   
+    expr->expr.as_literal->sym = sym_enter_num(comp, &comp->currentchunk->constants, value);   
     
 	return expr;	
 }
@@ -109,10 +109,10 @@ m1_expression *
 integer(M1_compiler *comp, int value) {
 	m1_expression *expr = expression(comp, EXPR_INT);
     /* make a new literal node. */
-	expr->expr.as_literal             = new_literal(VAL_INT);
-    expr->expr.as_literal->value.ival = value;
+	expr->expr.as_literal               = new_literal(VAL_INT);
+    expr->expr.as_literal->value.as_int = value;
     /* store the constant in the constants segment. */
-    expr->expr.as_literal->sym        = sym_enter_int(comp, &comp->currentchunk->constants, value);
+    expr->expr.as_literal->sym = sym_enter_int(comp, &comp->currentchunk->constants, value);
 
 	return expr;	
 }
@@ -123,7 +123,7 @@ string(M1_compiler *comp, char *str) {
 	assert(str != NULL);
 
     expr->expr.as_literal = new_literal(VAL_STRING);
-    expr->expr.as_literal->value.sval = str;
+    expr->expr.as_literal->value.as_string = str;
     
     assert(comp != NULL);
     assert(comp->currentchunk != NULL);

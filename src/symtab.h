@@ -35,9 +35,9 @@ typedef enum m1_valuetype {
 
 
 typedef union m1_value {
-	char  *sval;
-	double fval;
-	int    ival;
+	char  *as_string;
+	double as_double;
+	int    as_int;
 	
 } m1_value;
 

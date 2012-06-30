@@ -261,10 +261,10 @@ eval_expr(m1_expression *e) {
         
     switch (e->type) {
         case EXPR_NUMBER:
-            eval_number(e->expr.as_literal->value.fval);
+            eval_number(e->expr.as_literal->value.as_double);
             break;
         case EXPR_INT:
-            eval_int(e->expr.as_literal->value.ival);
+            eval_int(e->expr.as_literal->value.as_int);
             break;
         case EXPR_BINARY:
             eval_binary(e->expr.as_binexpr);
