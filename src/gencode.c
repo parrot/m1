@@ -35,7 +35,8 @@ This happens in gencode_number().
 #define OUT	stdout
 
 
-#define M1DEBUG 1
+#define M1DEBUG     1
+#define PRELOAD01   0
 
 #ifdef M1DEBUG
     #define debug(x)    fprintf(stderr, x);
@@ -251,24 +252,26 @@ gencode_int(M1_compiler *comp, m1_literal *lit) {
     assert(comp != NULL);
     assert(lit != NULL);
     assert(lit->type == VAL_INT);
-    assert(lit->sym != NULL);
+    
+    
 
     reg = alloc_reg(comp, VAL_INT);
       
     /* If the value is small enough, load it with set_imm; otherwise, take it from the constants 
        table. set_imm X, Y, Z: set X to: 256 * Y + Z. All operands are 8 bit, so maximum value is 
        255. Numbers must be positive, so negative numbers are loaded from CONSTS segment as well.
-     */
-    if (lit->sym->value.as_int < (256 * 255) && lit->sym->value.as_int >= 0) { 
+     */    
+    if (lit->value.as_int < (256 * 255) && lit->value.as_int >= 0) {    
         /* use set_imm X, N*256, remainder)   */
-        int remainder = lit->sym->value.as_int % 256;
-        int num256    = (lit->sym->value.as_int - remainder) / 256; 
+        int remainder = lit->value.as_int % 256;
+        int num256    = (lit->value.as_int - remainder) / 256; 
         
         INS (M0_SET_IMM, "%I, %d, %d", reg.no, num256, remainder);
         
     } 
     else { /* too big enough for set_imm, so load it from constants segment. */
         /* split up constindex into 2 operands if > 255. */
+        assert(lit->sym != NULL);
         int constindex = lit->sym->constindex;
         int remainder  = constindex % 256;
         int num256     = (constindex - remainder) / 256;
@@ -1895,8 +1898,8 @@ gencode_var(M1_compiler *comp, m1_var *v) {
     if (v->num_elems > 1) { /* generate code to allocate memory on the heap for arrays */
         m1_symbol *sym;
         m1_reg     memsize;                
-        int        elem_size = 4; /* XXX fix this. Size of one element in the array. */
-        int        size;
+        unsigned   elem_size = 4; /* XXX fix this. Size of one element in the array. */
+        unsigned   size;
 
         sym = v->sym;
         assert(sym != NULL);
@@ -2237,7 +2240,7 @@ gencode_parameters(M1_compiler *comp, m1_chunk *chunk) {
 
 static void 
 gencode_chunk(M1_compiler *comp, m1_chunk *c) {
-#define PRELOAD_0_AND_1     0
+
 
     comp->current_m0chunk = CHUNK (c->name);
     /* for each chunk, reset the register allocator */
@@ -2245,7 +2248,7 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     
     write_chunk(comp, c);
             
-#if PRELOAD_0_AND_1    
+#if PRELOAD01    
     m1_reg r0, r1;
     
     /* The numbers 0 and 1 are used quite a lot. Rather than
@@ -2260,8 +2263,11 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
     
     INS (M0_SET_IMM, "%I, %d, %d", r0.no, 0, 0);
     INS (M0_SET_IMM, "%I, %d, %d", r1.no, 0, 1);
-
+    
+    freeze_reg(comp, r0);
+    freeze_reg(comp, r1);
 #endif
+
     
     gencode_parameters(comp, c);
     /* generate code for statements */

@@ -111,8 +111,10 @@ integer(M1_compiler *comp, int value) {
     /* make a new literal node. */
 	expr->expr.as_literal               = new_literal(VAL_INT);
     expr->expr.as_literal->value.as_int = value;
-    /* store the constant in the constants segment. */
-    expr->expr.as_literal->sym = sym_enter_int(comp, &comp->currentchunk->constants, value);
+    
+    /* if value can't be loaded with set_imm, store it in consts segment. */
+    if (value >= (256 * 255) || value < 0) 
+        expr->expr.as_literal->sym = sym_enter_int(comp, &comp->currentchunk->constants, value);
 
 	return expr;	
 }

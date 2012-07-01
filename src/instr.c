@@ -119,7 +119,7 @@ write_operand(M1_compiler *comp, m0_operand op) {
             fprintf(OUT, "%d", op.value);
             break;
         case VAL_LABEL:
-            fprintf(OUT, "L%d", op.value);
+            fprintf(OUT, "L00%d", op.value);
             break;            
         case VAL_INTERP_REG:
             fprintf(OUT, "%s", interp_regs[op.value]);
@@ -137,7 +137,7 @@ write_instr(M1_compiler *comp, m0_instr *i) {
     
     /* write the label, if any. */
     if (i->label != 0 && i->opcode == M0_NOOP) 
-        fprintf(OUT, "L%d:\n", i->label);    
+        fprintf(OUT, "L00%d:\n", i->label);    
         
     /* if the last node is just a label, don't emit the dummy instruction. */    
     if (i->opcode == M0_NOOP)
