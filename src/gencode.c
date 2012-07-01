@@ -303,10 +303,18 @@ gencode_bool(M1_compiler *comp, int boolval) {
        set_imm Ix, 0, 1 # for true
        set_imm Ix, 0, 0 # for false
     */
-    m1_reg reg = alloc_reg(comp, VAL_INT);
-        
+    m1_reg reg;
+    
+#if PRELOAD01    
+    assert(boolval == 1 || boolval == 0);
+    reg.type = VAL_INT;
+    reg.no   = boolval;    
+#else    
+    reg = alloc_reg(comp, VAL_INT);        
     INS (M0_SET_IMM, "%I, %d, %d", reg.no, 0, boolval);
-    pushreg(comp->regstack, reg);   
+#endif
+
+    pushreg(comp->regstack, reg);       
 }
 
 static void
@@ -1333,7 +1341,7 @@ gencode_not(M1_compiler *comp, m1_unexpr *u) {
     
     gencode_expr(comp, u->expr);
     reg  = popreg(comp->regstack);  
-    temp = alloc_reg(comp, VAL_INT);
+
       
     /* If reg is zero, make it nonzero (false->true).
        If it's non-zero, make it zero. (true->false). 
@@ -1352,10 +1360,26 @@ gencode_not(M1_compiler *comp, m1_unexpr *u) {
     label2 = gen_label(comp);
     
     INS (M0_GOTO_IF, "%L, %R", label1, reg);
+
+#if PRELOAD01    
+    temp.no   = 1;
+    temp.type = VAL_INT;
+#else
+    temp = alloc_reg(comp, VAL_INT);
     INS (M0_SET_IMM, "%I, %d, %d", temp.no, 0, 1);
+#endif    
+
     INS (M0_GOTO, "%L", label2);
     LABEL (label1);
+
+#if PRELOAD01
+    temp.no   = 0;
+    temp.type = VAL_INT;
+#else    
+    temp = alloc_reg(comp, VAL_INT);
     INS (M0_SET_IMM, "%I, %d, %d", temp.no, 0, 0);
+#endif        
+
     LABEL (label2);
     INS (M0_SET, "%R, %I", reg, temp.no);
     
@@ -1417,7 +1441,15 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
     reg = popreg(comp->regstack);
     
     /* register to hold the value "1". */        
-    m1_reg one = alloc_reg(comp, VAL_INT);
+    m1_reg one;
+
+#if PRELOAD01
+    one.no   = 1;
+    one.type = VAL_INT;
+#else    
+    one = alloc_reg(comp, VAL_INT);
+    INS (M0_SET_IMM, "%I, %d, %d", one.no, 0, 1);    
+#endif
     
     /* if it's a postfix op, then need to save the old value. */
     if (postfix == 1) {
@@ -1425,7 +1457,6 @@ gencode_unary(M1_compiler *comp, NOTNULL(m1_unexpr *u)) {
         INS (M0_SET, "%I, %I", oldval.no, reg.no);
     }
     
-    INS (M0_SET_IMM, "%I, %d, %d", one.no, 0, 1);
     INS (opcode, "%I, %I, %I", reg.no, reg.no, one.no);
     
     if (postfix == 1) { /* postfix; give back the register containing the OLD value. */
@@ -1738,8 +1769,14 @@ static void
 gencode_print(M1_compiler *comp, m1_expression *expr) {    
     m1_reg one;
         
+
+#if PRELOAD01
+    one.no   = 1;
+    one.type = VAL_INT;
+#else    
     one = alloc_reg(comp, VAL_INT);    
     INS (M0_SET_IMM, "%I, %d, %d", one.no, 0, 1);
+#endif
     
     pushreg(comp->regstack, one); /* make reg holding "1" available to helper routine... */
     
@@ -1946,11 +1983,18 @@ gencode_var(M1_compiler *comp, m1_var *v) {
         
         if (v->init) { /* initialize arrays. */
             m1_expression *iter  = v->init;
-            m1_reg         index = alloc_reg(comp, VAL_INT);
-            m1_reg         one   = alloc_reg(comp, VAL_INT);
-            
+
+            m1_reg index = alloc_reg(comp, VAL_INT);
             INS (M0_SET_IMM, "%I, %d, %d", index.no, 0, 0);
+            
+#if PRELOAD01
+            m1_reg one;
+            one.no   = 1;
+            one.type = VAL_INT;  
+#else            
+            m1_reg one = alloc_reg(comp, VAL_INT);                        
             INS (M0_SET_IMM, "%I, %d, %d", one.no, 0, 1);
+#endif
             
             while (iter != NULL) {
                                                 
@@ -2241,7 +2285,6 @@ gencode_parameters(M1_compiler *comp, m1_chunk *chunk) {
 static void 
 gencode_chunk(M1_compiler *comp, m1_chunk *c) {
 
-
     comp->current_m0chunk = CHUNK (c->name);
     /* for each chunk, reset the register allocator */
     reset_reg(comp);
@@ -2258,8 +2301,8 @@ gencode_chunk(M1_compiler *comp, m1_chunk *c) {
        complex code. 
      */
      
-    r0 = gen_reg(comp, VAL_INT);
-    r1 = gen_reg(comp, VAL_INT); 
+    r0 = alloc_reg(comp, VAL_INT);
+    r1 = alloc_reg(comp, VAL_INT); 
     
     INS (M0_SET_IMM, "%I, %d, %d", r0.no, 0, 0);
     INS (M0_SET_IMM, "%I, %d, %d", r1.no, 0, 1);
