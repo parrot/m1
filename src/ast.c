@@ -97,7 +97,7 @@ number(M1_compiler *comp, double value) {
 	m1_expression *expr = expression(comp, EXPR_NUMBER);
 	
 	/* make a new literal node */
-	expr->expr.as_literal      = new_literal(VAL_FLOAT);
+	expr->expr.as_literal = new_literal(VAL_FLOAT);
     expr->expr.as_literal->value.as_double = value;
     /* store the constant in the constants segment. */
     expr->expr.as_literal->sym = sym_enter_num(comp, &comp->currentchunk->constants, value);   
@@ -220,7 +220,9 @@ funcall(M1_compiler *comp, m1_object *fun, m1_expression *args) {
 	/* enter name of function to invoke into constant table. */
 	// replace this somehow. Get access to the vtable of the object and copy the
 	// method reference from that into this chunk's const segment.
-    m1_symbol *chunk_entry   = sym_enter_chunk(comp, &comp->currentchunk->constants, fun->obj.as_name);
+    m1_symbol *chunk_entry = sym_enter_chunk(comp, &comp->currentchunk->constants, 
+                                             fun->obj.as_name);
+                                             
 	expr->expr.as_funcall->constindex = chunk_entry->constindex; 
     return expr;   
 }
@@ -240,7 +242,7 @@ const_decl(char *type, char *name, m1_expression *expr) {
 m1_expression *
 constdecl(M1_compiler *comp, char *type, char *name, m1_expression *e) {
 	m1_expression *expr = expression(comp, EXPR_CONSTDECL);
-	expr->expr.as_const        = const_decl(type, name, e);
+	expr->expr.as_const = const_decl(type, name, e);
 	return expr;	
 }
 

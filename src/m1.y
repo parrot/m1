@@ -144,7 +144,6 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, const char *str) {
         
 %type <sval> TK_IDENT
              TK_STRING_CONST
-             type 
              vartype
              native_type 
              
@@ -605,7 +604,7 @@ print_stat  : "print" '(' arguments ')' ';'
             ;
 
                   
-const_declaration   : "const" type TK_IDENT '=' constexpr ';'
+const_declaration   : "const" vartype TK_IDENT '=' constexpr ';'
                         { $$ = constdecl(comp, $2, $3, $5); }
                     ;                  
                         
@@ -972,7 +971,7 @@ const_list    : constexpr
             
 unexpr  : '-' expression
                { $$ = binexpr(comp, $2, OP_MUL, integer(comp, -1)); }                                          
-        | '(' type ')' expression %prec LOWER_THAN_ELSE
+        | '(' native_type ')' expression %prec LOWER_THAN_ELSE
                 { $$ = castexpr(comp, $2, $4); }
         | "!" expression 
                 { $$ = unaryexpr(comp, UNOP_NOT, $2); }                        
@@ -1035,12 +1034,9 @@ binexpr     : expression '+' expression
             ;
            
             
-type        : native_type   
-               { $$ = comp->parsingtype = $1; }         
-            ;
 
-vartype     : type
-            | TK_IDENT  { $$ = comp->parsingtype = $1; } 
+vartype     : native_type  { $$ = comp->parsingtype = $1; }  
+            | TK_IDENT     { $$ = comp->parsingtype = $1; } 
             ;            
 
         

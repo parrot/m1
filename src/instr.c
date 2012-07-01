@@ -24,6 +24,7 @@ The following specifiers may be used:
 #include "compiler.h"
 #include "gencode.h"
 
+/* ensure all opers have same width for pretty printing. */
 char const * const m0_instr_names[] = {
     "noop       ",
     "goto       ",
@@ -74,6 +75,7 @@ char const * const m0_instr_names[] = {
     
 };
 
+/* Names of interpreter's registers. */
 static char const * const interp_regs[] = {
     "CF",
     "PCF",
@@ -89,7 +91,7 @@ static char const * const interp_regs[] = {
     "SPILLCF"
 };
 
-
+/* letters for operands; the 4 register types, void, and labels. */
 static const char regs[REG_TYPE_NUM + 2] = {'I', 'N', 'S', 'P', ' ', 'L'};
 
 
@@ -133,13 +135,17 @@ write_instr(M1_compiler *comp, m0_instr *i) {
     
     assert(comp != NULL);
     
+    /* write the label, if any. */
     if (i->label != 0 && i->opcode == M0_NOOP) 
         fprintf(OUT, "L%d:\n", i->label);    
         
+    /* if the last node is just a label, don't emit the dummy instruction. */    
     if (i->opcode == M0_NOOP)
         return;
         
     fprintf(OUT, "\t%s ", m0_instr_names[(int)i->opcode]);
+    
+    /* write operands. */
     unsigned index;
     for (index = 0; index < i->numops; index++) {
         write_operand(comp, i->operands[index]);   
@@ -147,6 +153,7 @@ write_instr(M1_compiler *comp, m0_instr *i) {
             fprintf(OUT, ", ");
     }        
     
+    /* all instructions take 3 operands, except goto and goto_if. */
     if (i->opcode != M0_GOTO && i->opcode != M0_GOTO_IF)
         for (; index < 3; index++) 
             fprintf(OUT, ", x");
