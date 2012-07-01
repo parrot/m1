@@ -144,11 +144,9 @@ yyerror(yyscan_t yyscanner, M1_compiler *comp, const char *str) {
         
 %type <sval> TK_IDENT
              TK_STRING_CONST
-             return_type 
              type 
-             __type
+             vartype
              native_type 
-             TK_USERTYPE
              
 %type <chunk> function_definition 
               function_init
@@ -401,12 +399,12 @@ struct_members      : struct_member
 
 /* struct_members are handled in a similar way as vars, but the grammar rules are slightly. */
 
-struct_member       : type TK_IDENT ';'
+struct_member       : vartype TK_IDENT ';'
                         {  
                           comp->parsingtype = $1;                            
                           $$ = var(comp, $2, NULL); 
                         }
-                    | type TK_IDENT dimension ';'
+                    | vartype TK_IDENT dimension ';'
                         { 
                           comp->parsingtype = $1;                            
                           $$ = array(comp, $2, $3, NULL); 
@@ -467,7 +465,7 @@ pmc_method		: method_init '(' parameters ')' open_block statements '}'
                     }
 				;
 				
-method_init     : opt_vtable "method" type TK_IDENT	
+method_init     : opt_vtable "method" vartype TK_IDENT	
                     {
                       $$ = chunk(comp, $3, $4, $1 | CHUNK_ISMETHOD);
                       comp->currentchunk = $$;                         
@@ -495,7 +493,7 @@ function_definition : function_init '(' parameters ')' open_block statements '}'
                         }
                     ;
 
-function_init   : return_type TK_IDENT
+function_init   : vartype TK_IDENT
                         {
                           /* create a new chunk so we can set it as "current" before
                              parsing the remainder of the function. Parameters and
@@ -530,8 +528,8 @@ param_list  : param
                 }
             ;            
         
-param   : type TK_IDENT         { $$ = parameter(comp, $1, $2); }
-        | type '*' TK_IDENT     { $$ = parameter(comp, $1, $3); }
+param   : vartype TK_IDENT         { $$ = parameter(comp, $1, $2); }
+        | vartype '*' TK_IDENT     { $$ = parameter(comp, $1, $3); }
         ;                                                                                   
         
 block   : open_block statements close_block
@@ -611,9 +609,10 @@ const_declaration   : "const" type TK_IDENT '=' constexpr ';'
                         { $$ = constdecl(comp, $2, $3, $5); }
                     ;                  
                         
-var_declaration: type var_list ';'  
+var_declaration: vartype var_list ';'  
                     { $$ = vardecl(comp, $1, $2); }            
-               ;         
+               ;     
+                   
                               
 var_list    : var 				
                { $$ = $1; }
@@ -814,7 +813,7 @@ for_inits   : init
             ;
             
 init        : assign_expr
-            | type TK_IDENT '=' expression 
+            | vartype TK_IDENT '=' expression 
                 { 
                     m1_var *v;
                     comp->parsingtype = $1;
@@ -823,7 +822,7 @@ init        : assign_expr
                 
                 }
             ;
-            
+                        
 for_cond    : /* empty */
                 { $$ = NULL; }
             | expression
@@ -839,8 +838,7 @@ for_steps   : step
                 {
                    $3->next = $1;
                    $$ = $3;   
-                }
-                
+                }                
             ;
             
 step        : expression
@@ -946,7 +944,7 @@ subexpr     : '(' expression ')'
             ;
             
             
-newexpr     : "new" TK_USERTYPE '(' arguments ')'
+newexpr     : "new" TK_IDENT '(' arguments ')'
                 { $$ = newexpr(comp, $2, $4); }
             ;         
             
@@ -974,7 +972,7 @@ const_list    : constexpr
             
 unexpr  : '-' expression
                { $$ = binexpr(comp, $2, OP_MUL, integer(comp, -1)); }                                          
-        | '(' return_type ')' expression %prec LOWER_THAN_ELSE
+        | '(' type ')' expression %prec LOWER_THAN_ELSE
                 { $$ = castexpr(comp, $2, $4); }
         | "!" expression 
                 { $$ = unaryexpr(comp, UNOP_NOT, $2); }                        
@@ -1036,24 +1034,22 @@ binexpr     : expression '+' expression
                 { $$ = binexpr(comp, $1, OP_LRSH, $3); }                                                                                             
             ;
            
-return_type : type    { $$ = $1; }
-            | "void"  { $$ = "void"; }
-            ;
             
-type        : __type   
+type        : native_type   
                { $$ = comp->parsingtype = $1; }         
             ;
 
-/* __type is a helper rule to prevent code duplication. */              
-__type      : native_type
-            | TK_USERTYPE                                          
-            ;
+vartype     : type
+            | TK_IDENT  { $$ = comp->parsingtype = $1; } 
+            ;            
+
         
 native_type : "int"     { $$ = "int"; }
             | "num"     { $$ = "num"; }
             | "string"  { $$ = "string"; }
             | "bool"    { $$ = "bool"; }
             | "char"    { $$ = "char"; }
+            | "void"    { $$ = "void"; }
             ;
             
 

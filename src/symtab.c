@@ -11,6 +11,8 @@
 #include "decl.h"
 #include "stack.h"
 
+#include "ann.h"
+
 m1_symboltable *
 new_symtab(void) {
     m1_symboltable *table = (m1_symboltable *)calloc(1, sizeof (m1_symboltable));
@@ -237,7 +239,7 @@ sym_enter_int(M1_compiler *comp, m1_symboltable *table, int val) {
 }
 
 m1_symbol *
-sym_find_str(m1_symboltable *table, char *name) {
+sym_find_str(NOTNULL(m1_symboltable *table), char *name) {
     m1_symbol *sym;
     
     assert(table != NULL);
@@ -263,7 +265,7 @@ sym_find_str(m1_symboltable *table, char *name) {
 
 
 m1_symbol *
-sym_find_num(m1_symboltable *table, double fval) {
+sym_find_num(NOTNULL(m1_symboltable *table), double fval) {
     m1_symbol *sym = table->syms;
     
     while (sym != NULL) {
@@ -283,7 +285,7 @@ sym_find_num(m1_symboltable *table, double fval) {
 }
 
 m1_symbol *
-sym_find_int(m1_symboltable *table, int ival) {
+sym_find_int(NOTNULL(m1_symboltable *table), int ival) {
     m1_symbol *sym = table->syms;
     
     while (sym != NULL) {

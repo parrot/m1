@@ -546,6 +546,11 @@ check_vardecl(M1_compiler *comp, m1_var *v, unsigned line) {
         type_error(comp, line, "cannot find type '%s' for variable '%s'", v->type, v->name);   
     }
     else {
+        
+        /* "void" can be used as a type, but that's of course wrong. check that. */
+        if (v->sym->typedecl == VOIDTYPE) {
+            type_error(comp, line, "cannot declare variable '%s' as type 'void'", v->name);   
+        }
         /* Check the type of the initialization expression and check 
            compatibility with type of variable. Only do this check if 
            v->sym->typedecl was found.
@@ -568,8 +573,10 @@ check_vardecl(M1_compiler *comp, m1_var *v, unsigned line) {
             }
             m1_type *inittype = check_expr(comp, iter);
             if (inittype != v->sym->typedecl) 
-                type_error(comp, line, "incompatible types in initialization of variable '%s'", 
-                           v->name);   
+                type_error(comp, line, 
+                           "incompatible types in initialization type '%s' of "
+                           "variable '%s', which is type '%s'", 
+                           inittype->name, v->name, v->sym->typedecl->name);   
     
             iter = iter->next;   
         }

@@ -182,40 +182,13 @@ FLOATNUM        {SIGN}?(({DIGITS}{DOT}{DIGIT}*|{DOT}{DIGITS})([eE]{SIGN}?{DIGITS
                            M1_compiler *comp = yyget_extra(yyscanner);
                            yylval->sval      = strdup(yytext);                   
                            
-                           /* if parser is currently expecting a usertype ID
-                              check to see if yytext is indeed the name of 
-                              a user-defined type. Otherwise just return TK_IDENT.
-                            */
-                           if (comp->is_parsing_usertype == 1) {
-                               m1_type *decl = type_find_def(comp, yytext);
-                       
-                               if (decl == NULL) { /* it's not a user-defined type name. */
-                               
-                                   /* maybe it's an enum const.... */
-                                   m1_enumconst *econst = type_find_enumconst(comp, yytext);
-                                   if (econst == NULL) 
-                                       return TK_IDENT; /* no, it wasn't so must be an ident. */
-                                   else {
-                                       /* it was an enum const, so return its value. */
-                                       yylval->ival = econst->value;
-                                       return TK_INT;
-                                   }
-                               }                            
-                               else {
-                                  return TK_USERTYPE;
-                               }
-                           }
+                           m1_enumconst *econst = type_find_enumconst(comp, yytext);
+                           if (econst == NULL) 
+                               return TK_IDENT;
                            else {
-                               m1_enumconst *econst = type_find_enumconst(comp, yytext);
-                               if (econst == NULL) 
-                                   return TK_IDENT;
-                               else {
-                                   yylval->ival = econst->value;
-                                   return TK_INT;
-                               }
-                                
-                           }
-                           
+                               yylval->ival = econst->value;
+                               return TK_INT;
+                           }                                                                                      
                         }
 
 .                       { yyerror(yyscanner, yyget_extra(yyscanner), yytext); }

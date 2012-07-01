@@ -447,14 +447,7 @@ enter_var(M1_compiler *comp, char *varname, m1_expression *init, unsigned num_el
 m1_var *
 var(M1_compiler *comp, char *varname, m1_expression *init) {
     /* a single var is just size 1. */
-	m1_var *v = enter_var(comp, varname, init, 1);
-   		
-    /* XXX Can we do this in semcheck so that all types are parsed? */   		
-	/* get a pointer to the type declaration */	
-	v->sym->typedecl = type_find_def(comp, comp->parsingtype);
-
-    assert(v->sym->typedecl != NULL); 		
-    
+	m1_var *v = enter_var(comp, varname, init, 1);    
 	return v;
 }
 
@@ -484,10 +477,7 @@ enter_param(M1_compiler *comp, m1_var *parameter) {
                                     parameter->name,
                                     parameter->type, 
                                     1);       
-
-                                        
-    parameter->sym->typedecl = type_find_def(comp, parameter->type);
-                                    
+                                                                            
     assert(parameter->sym != NULL);                                    
 }
 
