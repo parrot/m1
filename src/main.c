@@ -45,7 +45,7 @@ main(int argc, char *argv[]) {
     yyscan_t     yyscanner;
     M1_compiler  comp;
     int          turnoff_reg_opt = 0;
-    char        *outputfile = "a.m1";
+    char        *outputfile = "a.m0";
     
     if (argc <= 1) {
         fprintf(stderr, "Usage: m1 <file>\n");

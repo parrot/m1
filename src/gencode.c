@@ -2010,6 +2010,7 @@ gencode_var(M1_compiler *comp, m1_var *v) {
                 INS (M0_ADD_I, "%I, %I, %I", index.no, index.no, one.no);
                 
                 iter = iter->next;
+                free_reg(comp, res);
             }    
             free_reg(comp, index);
             free_reg(comp, one);
@@ -2152,6 +2153,7 @@ gencode_expr(M1_compiler *comp, m1_expression *e) {
                 
                 INS (M0_DEREF, "%R, %R, %R", target, parent, index);
                                                             
+                free_reg(comp, index);
                 pushreg(comp->regstack, target); 
                 --num_regs; /* popped 2, pushed 1. */
             }
